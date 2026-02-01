@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "charliermarsh.ruff",
+    "ms-python.python",
+    "pyrefly.pyrefly",
+    "usernamehw.errorlens",
+    "carolynvs.multiple-cursor-case-preserve",
+    "streetsidesoftware.code-spell-checker",
+    "aaron-bond.better-comments"
+  ]
+}
