@@ -3,12 +3,17 @@
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 
 
 class BaseSchema(BaseModel):
     """Base schema with common configuration."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
 
 class TimestampSchema(BaseSchema):
@@ -18,7 +23,7 @@ class TimestampSchema(BaseSchema):
     updated_at: datetime
 
 
-class PaginationParams(BaseModel):
+class PaginationParams(BaseSchema):
     """Pagination query parameters."""
 
     page: int = 1
@@ -29,7 +34,7 @@ class PaginationParams(BaseModel):
         return (self.page - 1) * self.limit
 
 
-class PaginationMeta(BaseModel):
+class PaginationMeta(BaseSchema):
     """Pagination metadata in response."""
 
     page: int
@@ -38,7 +43,7 @@ class PaginationMeta(BaseModel):
     total_pages: int
 
 
-class PaginatedResponse[T](BaseModel):
+class PaginatedResponse[T](BaseSchema):
     """Generic paginated response."""
 
     data: list[T]

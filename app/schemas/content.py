@@ -2,7 +2,9 @@
 
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.schemas.base import BaseSchema
 
 
 class ContentType(str, Enum):
@@ -14,7 +16,7 @@ class ContentType(str, Enum):
     INVESTMENT_INSIGHT = "investment_insight"
 
 
-class ContentRequest(BaseModel):
+class ContentRequest(BaseSchema):
     """Content generation request."""
 
     content_type: ContentType = Field(..., description="Type of content to generate")
@@ -24,7 +26,7 @@ class ContentRequest(BaseModel):
     additional_context: str | None = Field(None, description="Additional context")
 
 
-class ContentResponse(BaseModel):
+class ContentResponse(BaseSchema):
     """Content generation response."""
 
     title: str = Field(..., description="Content title")

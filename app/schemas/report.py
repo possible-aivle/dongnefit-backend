@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from app.schemas.base import BaseSchema, PaginationParams, TimestampSchema
 from app.schemas.neighborhood import NeighborhoodSummary
@@ -20,7 +20,7 @@ class ReportStatus(str, Enum):
 # === Request Schemas ===
 
 
-class ReportCategoryCreate(BaseModel):
+class ReportCategoryCreate(BaseSchema):
     """Schema for creating a report category."""
 
     name: str = Field(..., min_length=1, max_length=100)
@@ -28,7 +28,7 @@ class ReportCategoryCreate(BaseModel):
     description: str | None = None
 
 
-class ReportCreate(BaseModel):
+class ReportCreate(BaseSchema):
     """Schema for creating a report."""
 
     neighborhood_id: int
@@ -44,7 +44,7 @@ class ReportCreate(BaseModel):
     meta_description: str | None = Field(None, max_length=500)
 
 
-class ReportUpdate(BaseModel):
+class ReportUpdate(BaseSchema):
     """Schema for updating a report."""
 
     category_id: int | None = None
@@ -73,7 +73,7 @@ class ReportQuery(PaginationParams):
     sort_by: str = "newest"  # newest, popular, rating, price_low, price_high
 
 
-class ReportReviewCreate(BaseModel):
+class ReportReviewCreate(BaseSchema):
     """Schema for creating a report review."""
 
     rating: int = Field(..., ge=1, le=5)

@@ -2,9 +2,7 @@
 
 from enum import Enum
 
-from pydantic import BaseModel
-
-from app.schemas.base import PaginationParams, TimestampSchema
+from app.schemas.base import BaseSchema, PaginationParams, TimestampSchema
 
 
 class NotificationType(str, Enum):
@@ -19,7 +17,7 @@ class NotificationType(str, Enum):
 # === Request Schemas ===
 
 
-class NotificationCreate(BaseModel):
+class NotificationCreate(BaseSchema):
     """Schema for creating a notification (admin/system)."""
 
     user_id: str
@@ -37,7 +35,7 @@ class NotificationQuery(PaginationParams):
     is_read: bool | None = None
 
 
-class NotificationSettingsUpdate(BaseModel):
+class NotificationSettingsUpdate(BaseSchema):
     """Schema for updating notification settings."""
 
     email_enabled: bool | None = None
@@ -79,7 +77,7 @@ class NotificationSettingsResponse(TimestampSchema):
     marketing_enabled: bool
 
 
-class UnreadCountResponse(BaseModel):
+class UnreadCountResponse(BaseSchema):
     """Unread notification count."""
 
     count: int

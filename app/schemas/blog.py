@@ -3,7 +3,7 @@
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from app.schemas.base import BaseSchema, PaginationParams, TimestampSchema
 from app.schemas.user import UserPublic
@@ -18,7 +18,7 @@ class BlogStatus(str, Enum):
 # === Request Schemas ===
 
 
-class BlogCreate(BaseModel):
+class BlogCreate(BaseSchema):
     """Schema for creating a blog post."""
 
     title: str = Field(..., min_length=1, max_length=255)
@@ -32,7 +32,7 @@ class BlogCreate(BaseModel):
     meta_description: str | None = Field(None, max_length=500)
 
 
-class BlogUpdate(BaseModel):
+class BlogUpdate(BaseSchema):
     """Schema for updating a blog post."""
 
     title: str | None = Field(None, min_length=1, max_length=255)

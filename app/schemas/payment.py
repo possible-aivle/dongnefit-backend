@@ -3,7 +3,7 @@
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from app.schemas.base import BaseSchema, PaginationParams, TimestampSchema
 
@@ -50,7 +50,7 @@ class SubscriptionStatus(str, Enum):
 # === Product Schemas ===
 
 
-class ProductCreate(BaseModel):
+class ProductCreate(BaseSchema):
     """Schema for creating a product."""
 
     name: str = Field(..., min_length=1, max_length=255)
@@ -62,7 +62,7 @@ class ProductCreate(BaseModel):
     metadata: dict | None = None
 
 
-class ProductUpdate(BaseModel):
+class ProductUpdate(BaseSchema):
     """Schema for updating a product."""
 
     name: str | None = Field(None, min_length=1, max_length=255)
@@ -90,7 +90,7 @@ class ProductResponse(TimestampSchema):
 # === Order Schemas ===
 
 
-class OrderItemCreate(BaseModel):
+class OrderItemCreate(BaseSchema):
     """Schema for order item."""
 
     product_id: int | None = None
@@ -100,7 +100,7 @@ class OrderItemCreate(BaseModel):
     quantity: int = 1
 
 
-class OrderCreate(BaseModel):
+class OrderCreate(BaseSchema):
     """Schema for creating an order."""
 
     items: list[OrderItemCreate]
@@ -143,14 +143,14 @@ class OrderResponse(TimestampSchema):
 # === Payment Schemas ===
 
 
-class PaymentRequest(BaseModel):
+class PaymentRequest(BaseSchema):
     """Schema for requesting payment."""
 
     order_id: int
     method: PaymentMethod = PaymentMethod.CARD
 
 
-class PaymentConfirm(BaseModel):
+class PaymentConfirm(BaseSchema):
     """Schema for confirming payment (after Toss redirect)."""
 
     payment_key: str
@@ -158,7 +158,7 @@ class PaymentConfirm(BaseModel):
     amount: int
 
 
-class PaymentCancel(BaseModel):
+class PaymentCancel(BaseSchema):
     """Schema for canceling payment."""
 
     cancel_reason: str
@@ -181,7 +181,7 @@ class PaymentResponse(TimestampSchema):
 # === Coupon Schemas ===
 
 
-class CouponCreate(BaseModel):
+class CouponCreate(BaseSchema):
     """Schema for creating a coupon."""
 
     code: str = Field(..., min_length=1, max_length=50)
@@ -196,7 +196,7 @@ class CouponCreate(BaseModel):
     valid_until: datetime | None = None
 
 
-class CouponUpdate(BaseModel):
+class CouponUpdate(BaseSchema):
     """Schema for updating a coupon."""
 
     name: str | None = None
@@ -205,7 +205,7 @@ class CouponUpdate(BaseModel):
     valid_until: datetime | None = None
 
 
-class CouponApply(BaseModel):
+class CouponApply(BaseSchema):
     """Schema for applying a coupon."""
 
     code: str
@@ -232,7 +232,7 @@ class CouponResponse(TimestampSchema):
 # === Subscription Schemas ===
 
 
-class SubscriptionCreate(BaseModel):
+class SubscriptionCreate(BaseSchema):
     """Schema for creating a subscription."""
 
     billing_key_id: int
@@ -269,7 +269,7 @@ class BillingKeyResponse(TimestampSchema):
 # === Stats Schemas ===
 
 
-class PaymentStats(BaseModel):
+class PaymentStats(BaseSchema):
     """Payment statistics."""
 
     total_revenue: int

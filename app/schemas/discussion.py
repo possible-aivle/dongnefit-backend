@@ -2,7 +2,7 @@
 
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from app.schemas.base import BaseSchema, PaginationParams, TimestampSchema
 from app.schemas.neighborhood import NeighborhoodSummary
@@ -18,7 +18,7 @@ class DiscussionType(str, Enum):
 # === Request Schemas ===
 
 
-class DiscussionCreate(BaseModel):
+class DiscussionCreate(BaseSchema):
     """Schema for creating a discussion."""
 
     neighborhood_id: int | None = None
@@ -27,7 +27,7 @@ class DiscussionCreate(BaseModel):
     type: DiscussionType = DiscussionType.GENERAL
 
 
-class DiscussionUpdate(BaseModel):
+class DiscussionUpdate(BaseSchema):
     """Schema for updating a discussion."""
 
     title: str | None = Field(None, min_length=1, max_length=255)
@@ -45,14 +45,14 @@ class DiscussionQuery(PaginationParams):
     sort_by: str = "newest"  # newest, popular, most_replies
 
 
-class DiscussionReplyCreate(BaseModel):
+class DiscussionReplyCreate(BaseSchema):
     """Schema for creating a reply."""
 
     content: str = Field(..., min_length=1)
     parent_id: int | None = None
 
 
-class DiscussionReplyUpdate(BaseModel):
+class DiscussionReplyUpdate(BaseSchema):
     """Schema for updating a reply."""
 
     content: str = Field(..., min_length=1)

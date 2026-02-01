@@ -3,7 +3,7 @@
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import EmailStr, Field
 
 from app.schemas.base import BaseSchema, PaginationParams, TimestampSchema
 
@@ -21,7 +21,7 @@ class AuthProvider(str, Enum):
 # === Request Schemas ===
 
 
-class UserCreate(BaseModel):
+class UserCreate(BaseSchema):
     """Schema for creating a user (admin only)."""
 
     email: EmailStr
@@ -32,7 +32,7 @@ class UserCreate(BaseModel):
     phone: str | None = None
 
 
-class UserUpdate(BaseModel):
+class UserUpdate(BaseSchema):
     """Schema for updating a user."""
 
     name: str | None = Field(None, min_length=1, max_length=100)
@@ -40,7 +40,7 @@ class UserUpdate(BaseModel):
     phone: str | None = None
 
 
-class UserRoleUpdate(BaseModel):
+class UserRoleUpdate(BaseSchema):
     """Schema for updating user role (admin only)."""
 
     role: UserRole

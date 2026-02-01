@@ -1,13 +1,11 @@
 """File storage schemas."""
 
-from pydantic import BaseModel
-
-from app.schemas.base import PaginationParams, TimestampSchema
+from app.schemas.base import BaseSchema, PaginationParams, TimestampSchema
 
 # === Request Schemas ===
 
 
-class FileUploadMeta(BaseModel):
+class FileUploadMeta(BaseSchema):
     """Metadata for file upload."""
 
     description: str | None = None
@@ -16,7 +14,7 @@ class FileUploadMeta(BaseModel):
     is_public: bool = True
 
 
-class FileUpdate(BaseModel):
+class FileUpdate(BaseSchema):
     """Schema for updating file metadata."""
 
     description: str | None = None
@@ -55,7 +53,7 @@ class FileResponse(TimestampSchema):
     is_public: bool
 
 
-class FileUploadResponse(BaseModel):
+class FileUploadResponse(BaseSchema):
     """Response after file upload."""
 
     id: int
@@ -65,7 +63,7 @@ class FileUploadResponse(BaseModel):
     file_size: int
 
 
-class PresignedUrlResponse(BaseModel):
+class PresignedUrlResponse(BaseSchema):
     """Presigned URL for direct upload."""
 
     upload_url: str

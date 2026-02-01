@@ -2,9 +2,9 @@
 
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from app.schemas.base import PaginationParams, TimestampSchema
+from app.schemas.base import BaseSchema, PaginationParams, TimestampSchema
 from app.schemas.user import UserPublic
 
 
@@ -43,7 +43,7 @@ class AdminActivityResponse(TimestampSchema):
 # === Violation Complaint Schemas ===
 
 
-class ViolationComplaintCreate(BaseModel):
+class ViolationComplaintCreate(BaseSchema):
     """Schema for creating a violation complaint."""
 
     target_type: str  # 'discussion', 'reply', 'user'
@@ -52,7 +52,7 @@ class ViolationComplaintCreate(BaseModel):
     description: str | None = None
 
 
-class ViolationComplaintResolve(BaseModel):
+class ViolationComplaintResolve(BaseSchema):
     """Schema for resolving a violation complaint."""
 
     status: ViolationStatus
@@ -85,7 +85,7 @@ class ViolationComplaintResponse(TimestampSchema):
 # === Analytics Schemas ===
 
 
-class AnalyticsSummary(BaseModel):
+class AnalyticsSummary(BaseSchema):
     """Analytics summary."""
 
     total_users: int
@@ -97,7 +97,7 @@ class AnalyticsSummary(BaseModel):
     total_revenue: int
 
 
-class UserAnalytics(BaseModel):
+class UserAnalytics(BaseSchema):
     """User analytics."""
 
     new_users_today: int
@@ -106,7 +106,7 @@ class UserAnalytics(BaseModel):
     active_users_today: int
 
 
-class NeighborhoodAnalytics(BaseModel):
+class NeighborhoodAnalytics(BaseSchema):
     """Neighborhood analytics."""
 
     neighborhood_id: int

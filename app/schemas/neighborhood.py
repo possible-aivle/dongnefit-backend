@@ -1,11 +1,11 @@
 """Neighborhood schemas."""
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from app.schemas.base import BaseSchema, PaginationParams, TimestampSchema
 
 
-class Coordinates(BaseModel):
+class Coordinates(BaseSchema):
     """Geographic coordinates."""
 
     lat: float = Field(..., ge=-90, le=90)
@@ -15,7 +15,7 @@ class Coordinates(BaseModel):
 # === Request Schemas ===
 
 
-class NeighborhoodCreate(BaseModel):
+class NeighborhoodCreate(BaseSchema):
     """Schema for creating a neighborhood."""
 
     name: str = Field(..., min_length=1, max_length=100)
@@ -25,7 +25,7 @@ class NeighborhoodCreate(BaseModel):
     description: str | None = None
 
 
-class NeighborhoodUpdate(BaseModel):
+class NeighborhoodUpdate(BaseSchema):
     """Schema for updating a neighborhood."""
 
     name: str | None = Field(None, min_length=1, max_length=100)
@@ -44,7 +44,7 @@ class NeighborhoodQuery(PaginationParams):
     sort_by: str = "name"  # name, newest
 
 
-class LocationQuery(BaseModel):
+class LocationQuery(BaseSchema):
     """Query for finding neighborhoods by location."""
 
     lat: float = Field(..., ge=-90, le=90)
