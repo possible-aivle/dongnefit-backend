@@ -51,10 +51,43 @@ dev = [
 [tool.ruff]
 target-version = "py313"
 line-length = 100
+fix = true
+exclude = [
+    "__pycache__",
+    ".git",
+    ".ruff_cache",
+    ".venv",
+    "CVS",
+    "migrations",
+    "tests",
+]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = ["B008"]  # Allow Depends() in function defaults (FastAPI pattern)
+select = [
+    "E",    # pycodestyle (PEP8 스타일)
+    "F",    # pyflakes (버그 탐지)
+    "I",    # isort (import 정렬)
+    "N",    # pep8-naming (변수명 규칙)
+    "W",    # pycodestyle warnings (경고)
+    "B",    # flake8-bugbear (잠재적 버그 탐지)
+    "C4",   # flake8-comprehensions (comprehension 규칙)
+    "UP",   # pyupgrade (최신 문법 권장)
+]
+ignore = [
+    "E501",  # 줄 길이 제한 무시 (Black 포매터와 충돌 방지)
+    "F401",  # 사용되지 않은 임포트 무시
+    "N801",  # 클래스 이름은 CapWords 규칙을 따름
+    "N815",  # 클래스 범위에서는 대소문자 혼용 가능
+    "N816",  # 전역 범위에서는 대소문자 혼용 가능
+    "B008",  # Allow Depends() in function defaults (FastAPI pattern)
+]
+
+[tool.ruff.lint.pylint]
+max-args = 10
+max-locals = 15
+max-returns = 6
+max-branches = 12
+max-statements = 50
 
 [tool.mypy]
 python_version = "3.13"
