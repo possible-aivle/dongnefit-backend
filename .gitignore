@@ -79,3 +79,7 @@ uv.lock
 # Selenium
 chromedriver
 geckodriver
+
+# files
+openapi.json
+openapi_formatted.json
