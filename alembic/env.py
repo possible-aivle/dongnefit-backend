@@ -11,7 +11,30 @@ from alembic import context
 
 from app.config import settings
 from app.database import Base
-from app.models import Property, GeneratedContent  # noqa: F401 - Import models for autogenerate
+from app.models import (  # noqa: F401 - Import all models for autogenerate
+    AdminActivity,
+    BillingKey,
+    BlogPost,
+    Coupon,
+    Discussion,
+    DiscussionLike,
+    DiscussionReply,
+    FileStorage,
+    Neighborhood,
+    Notification,
+    NotificationSettings,
+    Order,
+    OrderItem,
+    Payment,
+    Product,
+    Report,
+    ReportCategory,
+    ReportReview,
+    Subscription,
+    User,
+    UserCoupon,
+    ViolationComplaint,
+)
 
 # Alembic Config object
 config = context.config

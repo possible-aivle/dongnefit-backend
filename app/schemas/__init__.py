@@ -1,11 +1,18 @@
-"""Pydantic schemas."""
+"""Pydantic schemas for request/response validation."""
 
-from app.schemas.content import ContentRequest, ContentResponse
-from app.schemas.map import LocationResponse, LocationSearch
+from app.schemas.base import (
+    BaseSchema,
+    PaginatedResponse,
+    PaginationMeta,
+    PaginationParams,
+    TimestampSchema,
+)
 
 __all__ = [
-    "LocationSearch",
-    "LocationResponse",
-    "ContentRequest",
-    "ContentResponse",
+    # Base
+    "BaseSchema",
+    "TimestampSchema",
+    "PaginationParams",
+    "PaginationMeta",
+    "PaginatedResponse",
 ]

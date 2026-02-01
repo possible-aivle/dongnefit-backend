@@ -1,6 +1,6 @@
 # DongneFit Backend
 
-부동산 콘텐츠 생성 및 지도 서비스 백엔드
+커뮤니티 기반 부동산 정보 플랫폼 백엔드
 
 ## 기술 스택
 
@@ -9,68 +9,53 @@
 | Package Manager | uv |
 | Web Framework | FastAPI, Uvicorn |
 | Database | PostgreSQL, SQLAlchemy 2.0, Alembic, asyncpg |
-| AI/LLM | LangGraph, LangChain, OpenAI, Anthropic |
-| Web Scraping | Selenium, webdriver-manager |
-| Image Generation | Pillow, DALL-E API |
+| Authentication | OAuth2 (Google, Kakao), Session-based |
+| Payment | Toss Payments |
+| AI/LLM | LangGraph, LangChain |
+| Web Scraping | Selenium |
 
 ## 프로젝트 구조
 
-dongnefit-backend/
-├── app/
-│   ├── api/                 # Presentation Layer (요청/응답 처리)
-│   │   ├── deps.py/         # 공통 의존성 (DB 세션 등)
-│   │   └── v1/endpoints/
-│   ├── core/                # Core (핵심 모듈)
-│   │   └── langgraph/       # LangGraph 워크플로우
-│   ├── models/              # Data Layer (DB 테이블 정의), SQLAlchemy 모델 (Property, GeneratedContent)
-│   ├── schemas/             # DTO (Data Transfer Object), Pydantic 스키마
-│   ├── services/            # Business Layer (비즈니스 로직)
-│   │
-│   ├── config.py            # 환경설정 (환경변수 로드)
-│   ├── database.py          # DB 연결 설정
-│   └── main.py              # 진입점 (앱 생성, 미들웨어, 라우터 연결)
+```
+app/
+├── main.py              # FastAPI 앱 진입점
+├── config.py            # 환경설정
+├── database.py          # DB 연결
 │
-├── alembic/                 # DB 마이그레이션
-├── tests/                   # 테스트
-├── pyproject.toml
-└── .env.example
-
-## 요청 흐름
-
+├── api/v1/endpoints/    # API 엔드포인트
+│   ├── users.py         # 사용자 관리
+│   ├── neighborhoods.py # 동네 정보
+│   ├── reports.py       # 부동산 리포트
+│   ├── discussions.py   # 커뮤니티 게시판
+│   ├── payments.py      # 결제 (Toss)
+│   └── notifications.py # 알림
+│
+├── auth/                # 인증
+│   ├── deps.py          # 의존성 (get_current_user 등)
+│   └── oauth.py         # OAuth (Google, Kakao)
+│
+├── models/              # SQLAlchemy 모델
+│   ├── user.py
+│   ├── neighborhood.py
+│   ├── report.py
+│   ├── discussion.py
+│   ├── payment.py
+│   └── ...
+│
+├── schemas/             # Pydantic 스키마
+│   ├── user.py
+│   ├── neighborhood.py
+│   └── ...
+│
+├── crud/                # 데이터베이스 CRUD
+│   ├── user.py
+│   ├── neighborhood.py
+│   └── ...
+│
+└── services/            # 비즈니스 로직
+    ├── map/             # 지도 서비스
+    └── content/         # 콘텐츠 생성 (LangGraph)
 ```
-HTTP 요청
-    ↓
-[api/endpoints] ─── 요청 검증, 라우팅
-    ↓
-[schemas] ─── 데이터 유효성 검사 (Pydantic)
-    ↓
-[services] ─── 비즈니스 로직 실행
-    ↓
-[models] ─── DB 조회/저장
-    ↓
-HTTP 응답
-```
-
-## 각 레이어의 역할
-┌──────────────┬───────────┬──────────────────────────┬───────────────────┐
-│    layer     │ directory │           role           │     dependency    │
-├──────────────┼───────────┼──────────────────────────┼───────────────────┤
-│ Presentation │ api/      │ HTTP req/res.            │ schemas, services │
-├──────────────┼───────────┼──────────────────────────┼───────────────────┤
-│ Schema       │ schemas/  │ data def, validation     │ none              │
-├──────────────┼───────────┼──────────────────────────┼───────────────────┤
-│ Business     │ services/ │ main logic               │ models, API       │
-├──────────────┼───────────┼──────────────────────────┼───────────────────┤
-│ Data         │ models/   │ DB table mapping         │ database          │
-├──────────────┼───────────┼──────────────────────────┼───────────────────┤
-│ Core         │ core/     │ shared modules           │ external libs     │
-└──────────────┴───────────┴──────────────────────────┴───────────────────┘
-
-## 핵심 원칙
-
-1. 단방향 의존성: api → services → models (역방향 금지)
-2. 관심사 분리: 각 레이어는 한 가지 역할만 담당
-3. 버전 관리: api/v1/, api/v2/로 API 버전 분리 가능
 
 ## 시작하기
 
@@ -86,21 +71,24 @@ uv sync
 cp .env.example .env
 ```
 
-`.env` 파일을 열어 API 키를 설정합니다:
+`.env` 파일 수정:
 
 ```env
 # Database
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/dongnefit
 
-# OpenAI (콘텐츠 생성, 이미지 생성)
-OPENAI_API_KEY=your-openai-api-key
+# Session
+SECRET_KEY=your-secret-key
 
-# Anthropic (선택사항)
-ANTHROPIC_API_KEY=your-anthropic-api-key
+# OAuth
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+KAKAO_CLIENT_ID=...
+KAKAO_CLIENT_SECRET=...
 
-# Map API (Naver)
-MAP_PROVIDER=naver
-MAP_API_KEY=your-map-api-key
+# Toss Payments
+TOSS_CLIENT_KEY=...
+TOSS_SECRET_KEY=...
 ```
 
 ### 3. 데이터베이스 설정
@@ -120,89 +108,77 @@ uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
 ```
 
-서버가 시작되면 http://localhost:8000 에서 접속할 수 있습니다.
+## API 문서
+
+서버 실행 후:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
 
 ## API 엔드포인트
 
-### 헬스체크
-
-```
-GET /health
-```
-
-### 지도 서비스
-
+### 인증
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| POST | `/api/v1/map/search` | 위치 검색 |
-| GET | `/api/v1/map/geocode?address=` | 주소 → 좌표 변환 |
-| GET | `/api/v1/map/reverse-geocode?lat=&lng=` | 좌표 → 주소 변환 |
+| GET | `/api/auth/google` | Google OAuth 로그인 |
+| GET | `/api/auth/kakao` | Kakao OAuth 로그인 |
+| POST | `/api/auth/logout` | 로그아웃 |
+| GET | `/api/auth/me` | 현재 사용자 정보 |
 
-### 콘텐츠 생성
-
+### 사용자 (Admin)
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| POST | `/api/v1/content/generate` | 마크다운 콘텐츠 생성 |
-| POST | `/api/v1/content/generate-with-image` | 콘텐츠 + 이미지 생성 |
+| GET | `/api/v1/users` | 사용자 목록 |
+| GET | `/api/v1/users/me` | 내 정보 |
+| POST | `/api/v1/users` | 사용자 생성 |
+| PATCH | `/api/v1/users/{id}` | 사용자 수정 |
 
-#### 콘텐츠 생성 요청 예시
+### 동네
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/v1/neighborhoods` | 동네 목록 |
+| GET | `/api/v1/neighborhoods/{id}` | 동네 상세 |
+| POST | `/api/v1/neighborhoods/search-by-location` | 위치 기반 검색 |
 
-```json
-{
-  "content_type": "neighborhood_guide",
-  "location": "서울시 강남구 역삼동",
-  "keywords": ["직장인", "교통", "맛집"],
-  "include_image": true
-}
-```
+### 리포트
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/v1/reports` | 리포트 목록 |
+| GET | `/api/v1/reports/published` | 발행된 리포트 |
+| POST | `/api/v1/reports` | 리포트 생성 |
+| POST | `/api/v1/reports/{id}/publish` | 리포트 발행 |
 
-#### 콘텐츠 타입
+### 게시판
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/v1/discussions` | 게시글 목록 |
+| POST | `/api/v1/discussions` | 게시글 작성 |
+| POST | `/api/v1/discussions/{id}/like` | 좋아요 토글 |
+| POST | `/api/v1/discussions/{id}/replies` | 댓글 작성 |
 
-- `property_listing` - 매물 소개
-- `neighborhood_guide` - 동네 가이드
-- `market_analysis` - 시장 분석
-- `investment_insight` - 투자 인사이트
+### 결제
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/v1/payments/products` | 상품 목록 |
+| POST | `/api/v1/payments/orders` | 주문 생성 |
+| POST | `/api/v1/payments/request` | 결제 요청 |
+| POST | `/api/v1/payments/confirm` | 결제 확인 |
 
-## API 문서
-
-서버 실행 후 아래 URL에서 API 문서를 확인할 수 있습니다:
-
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+### 알림
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/v1/notifications` | 알림 목록 |
+| GET | `/api/v1/notifications/unread-count` | 읽지 않은 알림 수 |
+| POST | `/api/v1/notifications/read-all` | 모두 읽음 처리 |
 
 ## 개발
 
-### 린트 실행
-
 ```bash
+# 린트
 uv run ruff check app/
-uv run ruff check app/ --fix  # 자동 수정
-```
 
-### 타입 체크
+# 린트 + 자동 수정
+uv run ruff check app/ --fix
 
-```bash
-uv run mypy app/
-```
-
-### 테스트 실행
-
-```bash
+# 테스트
 uv run pytest
 ```
-
-## 시작 방법
-
-1. 환경변수 설정
-cp .env.example .env
-.env 파일에 API 키 입력
-
-2. PostgreSQL DB 생성
-createdb dongnefit
-
-3. 마이그레이션 실행
-uv run alembic revision --autogenerate -m "Initial"
-uv run alembic upgrade head
-
-4. 서버 실행
-uv run uvicorn app.main:app --reload

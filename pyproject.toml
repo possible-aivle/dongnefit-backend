@@ -16,7 +16,7 @@ dependencies = [
     "asyncpg>=0.30.0",
 
     # Validation & Settings
-    "pydantic>=2.10.0",
+    "pydantic[email]>=2.10.0",
     "pydantic-settings>=2.6.0",
 
     # AI & Content Generation
@@ -36,6 +36,7 @@ dependencies = [
     # Utilities
     "python-dotenv>=1.0.1",
     "python-multipart>=0.0.18",
+    "itsdangerous>=2.2.0",
 ]
 
 [project.optional-dependencies]
@@ -53,6 +54,7 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["B008"]  # Allow Depends() in function defaults (FastAPI pattern)
 
 [tool.mypy]
 python_version = "3.13"

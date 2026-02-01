@@ -2,9 +2,20 @@
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import content, map
+from app.api.v1.endpoints import (
+    discussions,
+    neighborhoods,
+    notifications,
+    payments,
+    reports,
+    users,
+)
 
 router = APIRouter()
 
-router.include_router(map.router, prefix="/map", tags=["map"])
-router.include_router(content.router, prefix="/content", tags=["content"])
+router.include_router(users.router, prefix="/users", tags=["users"])
+router.include_router(neighborhoods.router, prefix="/neighborhoods", tags=["neighborhoods"])
+router.include_router(reports.router, prefix="/reports", tags=["reports"])
+router.include_router(discussions.router, prefix="/discussions", tags=["discussions"])
+router.include_router(payments.router, prefix="/payments", tags=["payments"])
+router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
