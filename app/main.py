@@ -68,7 +68,10 @@ Session-based authentication is used for subsequent requests.
     # CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[settings.frontend_url],
+        allow_origins=[
+            settings.frontend_client_app_url,
+            settings.frontend_admin_app_url,
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -8,7 +8,6 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-
 from app.config import settings
 from app.database import Base
 from app.models import (  # noqa: F401 - Import all models for autogenerate
@@ -39,11 +38,8 @@ from app.models import (  # noqa: F401 - Import all models for autogenerate
 # Alembic Config object
 config = context.config
 
-# Set database URL from settings
-config.set_main_option(
-    "sqlalchemy.url",
-    settings.database_url.replace("+asyncpg", ""),  # Use sync driver for migrations
-)
+# Set database URL from settings (keep asyncpg for async migrations)
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 # Setup loggers
 if config.config_file_name is not None:

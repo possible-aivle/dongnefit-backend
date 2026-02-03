@@ -15,6 +15,7 @@ from app.models.user import AuthProvider, User, UserRole
 
 oauth_router = APIRouter(prefix="/auth", tags=["auth"])
 
+ALLOWED_ORIGINS = [settings.frontend_client_app_url, settings.frontend_admin_app_url]
 
 # === Google OAuth ===
 
@@ -22,16 +23,25 @@ oauth_router = APIRouter(prefix="/auth", tags=["auth"])
 @oauth_router.get("/google")
 async def google_login(
     request: Request,
-    return_to: str = Query("/", description="URL to redirect after login"),
+    return_to: str = Query("/", description="Path to redirect after login"),
+    origin: str = Query(None, description="Frontend origin URL"),
 ):
+    if origin not in ALLOWED_ORIGINS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid origin",
+        )
+
     """Initiate Google OAuth login."""
     state = secrets.token_urlsafe(32)
     request.session["oauth_state"] = state
     request.session["return_to"] = return_to
+    # Store origin or use default frontend URL
+    request.session["origin"] = origin
 
     params = {
         "client_id": settings.google_client_id,
-        "redirect_uri": f"{settings.backend_url}/api/auth/google/callback",
+        "redirect_uri": settings.google_callback_url,
         "response_type": "code",
         "scope": "email profile",
         "state": state,
@@ -65,7 +75,7 @@ async def google_callback(
                 "client_secret": settings.google_client_secret,
                 "code": code,
                 "grant_type": "authorization_code",
-                "redirect_uri": f"{settings.backend_url}/api/auth/google/callback",
+                "redirect_uri": settings.google_callback_url,
             },
         )
 
@@ -106,9 +116,17 @@ async def google_callback(
     request.session["user_id"] = user.id
     request.session.pop("oauth_state", None)
 
-    # Redirect to frontend
+    origin = request.session.pop("origin")
     return_to = request.session.pop("return_to", "/")
-    return RedirectResponse(url=f"{settings.frontend_url}{return_to}")
+
+    if origin not in ALLOWED_ORIGINS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid origin",
+        )
+
+    # Redirect to frontend
+    return RedirectResponse(url=f"{origin}{return_to}")
 
 
 # === Kakao OAuth ===
@@ -117,16 +135,25 @@ async def google_callback(
 @oauth_router.get("/kakao")
 async def kakao_login(
     request: Request,
-    return_to: str = Query("/", description="URL to redirect after login"),
+    return_to: str = Query("/", description="Path to redirect after login"),
+    origin: str = Query(None, description="Frontend origin URL"),
 ):
+    if origin not in ALLOWED_ORIGINS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid origin",
+        )
+
     """Initiate Kakao OAuth login."""
     state = secrets.token_urlsafe(32)
     request.session["oauth_state"] = state
     request.session["return_to"] = return_to
+    # Store origin or use default frontend URL
+    request.session["origin"] = origin or settings.frontend_client_app_url
 
     params = {
         "client_id": settings.kakao_client_id,
-        "redirect_uri": f"{settings.backend_url}/api/auth/kakao/callback",
+        "redirect_uri": settings.kakao_callback_url,
         "response_type": "code",
         "state": state,
     }
@@ -159,7 +186,7 @@ async def kakao_callback(
                 "client_id": settings.kakao_client_id,
                 "client_secret": settings.kakao_client_secret,
                 "code": code,
-                "redirect_uri": f"{settings.backend_url}/api/auth/kakao/callback",
+                "redirect_uri": settings.kakao_callback_url,
             },
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -210,9 +237,17 @@ async def kakao_callback(
     request.session["user_id"] = user.id
     request.session.pop("oauth_state", None)
 
-    # Redirect to frontend
+    origin = request.session.pop("origin")
     return_to = request.session.pop("return_to", "/")
-    return RedirectResponse(url=f"{settings.frontend_url}{return_to}")
+
+    if origin not in ALLOWED_ORIGINS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid origin",
+        )
+
+    # Redirect to frontend
+    return RedirectResponse(url=f"{origin}{return_to}")
 
 
 # === Common ===

@@ -29,9 +29,7 @@ class CRUDBase(Generic[ModelType]):
         limit: int = 100,
     ) -> list[ModelType]:
         """Get multiple records with pagination."""
-        result = await db.execute(
-            select(self.model).offset(offset).limit(limit)
-        )
+        result = await db.execute(select(self.model).offset(offset).limit(limit))
         return list(result.scalars().all())
 
     async def count(self, db: AsyncSession) -> int:

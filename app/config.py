@@ -18,8 +18,11 @@ class Settings(BaseSettings):
     app_name: str = "DongneFit Backend"
     debug: bool = False
     api_v1_prefix: str = "/api/v1"
-    frontend_url: str = "http://localhost:3000"
     backend_url: str = "http://localhost:8000"
+
+    # Frontend
+    frontend_client_app_url: str = "http://localhost:5173"
+    frontend_admin_app_url: str = "http://localhost:5174"
 
     # Database
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/dongnefit"
@@ -32,10 +35,12 @@ class Settings(BaseSettings):
     # OAuth - Google
     google_client_id: str = ""
     google_client_secret: str = ""
+    google_callback_url: str = "http://localhost:8000/api/auth/google/callback"
 
     # OAuth - Kakao
     kakao_client_id: str = ""
     kakao_client_secret: str = ""
+    kakao_callback_url: str = "http://localhost:8000/api/auth/kakao/callback"
 
     # OpenAI
     openai_api_key: str = ""
