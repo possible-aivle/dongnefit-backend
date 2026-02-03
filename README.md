@@ -102,7 +102,21 @@ uv run alembic revision --autogenerate -m "Initial migration"
 uv run alembic upgrade head
 ```
 
-### 4. 서버 실행
+### 4. 데이터베이스 초기화 및 시딩
+
+더미 데이터를 추가하거나 데이터베이스를 초기화할 수 있습니다. (관리자 계정은 보존됩니다)
+
+**데이터베이스 초기화:**
+```bash
+uv run python -m app.scripts.clear_data
+```
+
+**더미 데이터 시딩:**
+```bash
+uv run python -m app.scripts.seed_data
+```
+
+### 5. 서버 실행
 
 ```bash
 uv run uvicorn app.main:app --reload
