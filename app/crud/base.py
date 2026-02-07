@@ -1,16 +1,14 @@
 """Base CRUD operations."""
 
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import SQLModel, func, select
 
-from app.database import Base
-
-ModelType = TypeVar("ModelType", bound=Base)
+ModelType = TypeVar("ModelType", bound=SQLModel)
 
 
-class CRUDBase(Generic[ModelType]):
+class CRUDBase[ModelType: SQLModel]:
     """Base class for CRUD operations."""
 
     def __init__(self, model: type[ModelType]):

@@ -1,6 +1,5 @@
 """Database models."""
 
-from app.models.admin import AdminActivity, ViolationComplaint
 from app.models.base import TimestampMixin
 from app.models.blog import BlogPost, BlogStatus
 from app.models.discussion import (
@@ -43,7 +42,4 @@ __all__ = [
     "BlogStatus",
     # File
     "FileStorage",
-    # Admin
-    "AdminActivity",
-    "ViolationComplaint",
 ]

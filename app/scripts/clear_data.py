@@ -1,11 +1,10 @@
 import asyncio
 import logging
 
-from sqlalchemy import delete
+from sqlmodel import delete
 
 from app.database import async_session_maker
 from app.models import (
-    AdminActivity,
     BlogPost,
     Discussion,
     DiscussionLike,
@@ -19,7 +18,6 @@ from app.models import (
     ReportReview,
     User,
     UserRole,
-    ViolationComplaint,
 )
 
 # Setup logging
@@ -38,14 +36,12 @@ async def clear_database():
                 DiscussionLike,
                 ReportReview,
                 DiscussionReply,
-                ViolationComplaint,
                 Report,
                 Notification,
                 NotificationSettings,
                 FileStorage,
                 Discussion,
                 BlogPost,
-                AdminActivity,
             ]
 
             for table in tables_to_clear:

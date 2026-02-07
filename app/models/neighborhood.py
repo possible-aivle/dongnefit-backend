@@ -1,20 +1,20 @@
 """Neighborhood model for location-based services."""
 
-from sqlalchemy import JSON, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import JSON
+from sqlmodel import Field
 
-from app.database import Base
 from app.models.base import TimestampMixin
 
 
-class Neighborhood(Base, TimestampMixin):
+class Neighborhood(TimestampMixin, table=True):
     """Neighborhood/district model."""
 
     __tablename__ = "neighborhoods"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    district: Mapped[str] = mapped_column(String(100), nullable=False)  # 구/군
-    city: Mapped[str] = mapped_column(String(100), nullable=False)  # 시/도
-    coordinates: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # {lat, lng}
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(max_length=100)
+    district: str = Field(max_length=100)  # 구/군
+    city: str = Field(max_length=100)  # 시/도
+    coordinates: dict | None = Field(default=None, sa_column=Column(JSON))  # {lat, lng}
+    description: str | None = Field(default=None)

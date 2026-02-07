@@ -1,16 +1,15 @@
 import asyncio
 import logging
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 from faker import Faker
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
 from app.database import async_session_maker
 from app.models import (
-    AdminActivity,
     BlogPost,
     BlogStatus,
     Discussion,
@@ -208,7 +207,8 @@ async def seed_data():
                     summary=fake.paragraph(),
                     content=f"# {fake.sentence()}\n\n" + "\n\n".join(fake.paragraphs(nb=5)),
                     status=ReportStatus.PUBLISHED.value,
-                    published_at=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 30)),
+                    published_at=datetime.now(UTC).replace(tzinfo=None)
+                    - timedelta(days=random.randint(1, 30)),
                     tags=fake.words(nb=5),
                 )
                 session.add(report)
@@ -225,7 +225,8 @@ async def seed_data():
                     content="\n\n".join(fake.paragraphs(nb=5)),
                     excerpt=fake.sentence(),
                     status=BlogStatus.PUBLISHED.value,
-                    published_at=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 30)),
+                    published_at=datetime.now(UTC).replace(tzinfo=None)
+                    - timedelta(days=random.randint(1, 30)),
                 )
                 session.add(blog)
             await session.flush()
@@ -305,18 +306,6 @@ async def seed_data():
                 )
                 session.add(review)
             await session.flush()
-
-            # 11. Admin Activities
-            logger.info("Creating admin activity logs...")
-            for _ in range(10):
-                activity = AdminActivity(
-                    admin_id=admin_user.id,
-                    action=random.choice(["create_report", "update_user", "delete_comment"]),
-                    target_type=random.choice(["report", "user", "comment"]),
-                    target_id=str(random.randint(1, 100)),
-                    description=fake.sentence(),
-                )
-                session.add(activity)
 
             await session.commit()
             logger.info("✅ Database seeding completed successfully!")

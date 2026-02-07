@@ -2,8 +2,8 @@
 
 from datetime import datetime
 
-from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import and_, func, or_, select
 
 from app.crud.base import CRUDBase
 from app.models.report import Report, ReportCategory, ReportReview, ReportStatus
@@ -15,16 +15,12 @@ class CRUDReportCategory(CRUDBase[ReportCategory]):
 
     async def get_by_slug(self, db: AsyncSession, slug: str) -> ReportCategory | None:
         """Get category by slug."""
-        result = await db.execute(
-            select(ReportCategory).where(ReportCategory.slug == slug)
-        )
+        result = await db.execute(select(ReportCategory).where(ReportCategory.slug == slug))
         return result.scalar_one_or_none()
 
     async def get_all(self, db: AsyncSession) -> list[ReportCategory]:
         """Get all categories."""
-        result = await db.execute(
-            select(ReportCategory).order_by(ReportCategory.name)
-        )
+        result = await db.execute(select(ReportCategory).order_by(ReportCategory.name))
         return list(result.scalars().all())
 
 

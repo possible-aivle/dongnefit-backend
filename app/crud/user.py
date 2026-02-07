@@ -2,8 +2,8 @@
 
 from datetime import datetime
 
-from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import and_, func, or_, select
 
 from app.crud.base import CRUDBase
 from app.models.user import User
@@ -70,9 +70,7 @@ class CRUDUser(CRUDBase[User]):
         users = list(result.scalars().all())
 
         # Get total count
-        count_result = await db.execute(
-            select(func.count()).select_from(User).where(where_clause)
-        )
+        count_result = await db.execute(select(func.count()).select_from(User).where(where_clause))
         total = count_result.scalar() or 0
 
         return users, total

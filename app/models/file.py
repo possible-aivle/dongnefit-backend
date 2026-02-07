@@ -1,34 +1,34 @@
 """File storage model for uploaded files."""
 
-from sqlalchemy import JSON, Boolean, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import JSON
+from sqlmodel import Field
 
-from app.database import Base
 from app.models.base import TimestampMixin
 
 
-class FileStorage(Base, TimestampMixin):
+class FileStorage(TimestampMixin, table=True):
     """File storage record for S3 uploads."""
 
     __tablename__ = "file_storages"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    original_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    mime_type: Mapped[str] = mapped_column(String(100), nullable=False)
-    file_size: Mapped[int] = mapped_column(Integer, nullable=False)  # bytes
+    id: int | None = Field(default=None, primary_key=True)
+    file_name: str = Field(max_length=255)
+    original_name: str = Field(max_length=255)
+    mime_type: str = Field(max_length=100)
+    file_size: int  # bytes
 
     # S3 details
-    s3_key: Mapped[str] = mapped_column(String(500), nullable=False)
-    s3_bucket: Mapped[str] = mapped_column(String(100), nullable=False)
-    s3_url: Mapped[str] = mapped_column(String(1000), nullable=False)
+    s3_key: str = Field(max_length=500)
+    s3_bucket: str = Field(max_length=100)
+    s3_url: str = Field(max_length=1000)
 
     # Metadata
-    uploaded_by: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    alt_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    tags: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    uploaded_by: str = Field(foreign_key="users.id", max_length=255, ondelete="CASCADE")
+    description: str | None = Field(default=None)
+    alt_text: str | None = Field(default=None, max_length=255)
+    tags: list | None = Field(default=None, sa_column=Column(JSON))
 
     # Stats
-    download_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    is_public: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    download_count: int = Field(default=0)
+    is_public: bool = Field(default=True)

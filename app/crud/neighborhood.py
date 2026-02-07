@@ -1,7 +1,7 @@
 """CRUD operations for neighborhoods."""
 
-from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import and_, func, or_, select
 
 from app.crud.base import CRUDBase
 from app.models.neighborhood import Neighborhood
@@ -105,9 +105,7 @@ class CRUDNeighborhood(CRUDBase[Neighborhood]):
         # PostgreSQL Earth distance calculation
         # This is a simplified version - for production, use PostGIS
         result = await db.execute(
-            select(Neighborhood)
-            .where(Neighborhood.coordinates.isnot(None))
-            .limit(20)
+            select(Neighborhood).where(Neighborhood.coordinates.isnot(None)).limit(20)
         )
         neighborhoods = list(result.scalars().all())
 
@@ -128,9 +126,7 @@ class CRUDNeighborhood(CRUDBase[Neighborhood]):
 
     async def get_cities(self, db: AsyncSession) -> list[str]:
         """Get list of unique cities."""
-        result = await db.execute(
-            select(Neighborhood.city).distinct().order_by(Neighborhood.city)
-        )
+        result = await db.execute(select(Neighborhood.city).distinct().order_by(Neighborhood.city))
         return [row[0] for row in result.all()]
 
     async def get_districts(self, db: AsyncSession, city: str) -> list[str]:

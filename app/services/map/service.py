@@ -110,8 +110,8 @@ class NaverMapProvider(MapProvider):
             return {"error": "Location not found"}
 
 
-class NaverMapProvider(MapProvider):
-    """Naver Map API provider."""
+class NaverCloudMapProvider(MapProvider):
+    """Naver Cloud Platform Map API provider."""
 
     BASE_URL = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2"
 
@@ -122,12 +122,12 @@ class NaverMapProvider(MapProvider):
         }
 
     async def search(self, query: str) -> LocationResponse:
-        """Search for locations using Naver API."""
+        """Search for locations using Naver Cloud API."""
         # Implementation for Naver search
         return LocationResponse(results=[], total=0)
 
     async def geocode(self, address: str) -> dict:
-        """Convert address to coordinates using Naver API."""
+        """Convert address to coordinates using Naver Cloud API."""
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{self.BASE_URL}/geocoding",
@@ -147,7 +147,7 @@ class NaverMapProvider(MapProvider):
             return {"error": "Address not found"}
 
     async def reverse_geocode(self, lat: float, lng: float) -> dict:
-        """Convert coordinates to address using Naver API."""
+        """Convert coordinates to address using Naver Cloud API."""
         return {"error": "Not implemented"}
 
 
@@ -159,11 +159,9 @@ class MapService:
 
     def _get_provider(self) -> MapProvider:
         """Get the configured map provider."""
-        if settings.map_provider == "naver":
-            return NaverMapProvider(settings.map_api_key)
-        elif settings.map_provider == "naver":
-            # Naver requires both client_id and client_secret
-            return NaverMapProvider(settings.map_api_key, "")
+        if settings.map_provider == "naver_cloud":
+            # Naver Cloud Platform requires both client_id and client_secret
+            return NaverCloudMapProvider(settings.map_api_key, "")
         else:
             # Default to Naver
             return NaverMapProvider(settings.map_api_key)

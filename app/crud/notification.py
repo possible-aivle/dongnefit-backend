@@ -1,7 +1,7 @@
 """CRUD operations for notifications."""
 
-from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import and_, func, select
 
 from app.crud.base import CRUDBase
 from app.models.notification import Notification, NotificationSettings
@@ -94,7 +94,7 @@ class CRUDNotification(CRUDBase[Notification]):
             .where(
                 and_(
                     Notification.user_id == user_id,
-                    Notification.is_read == False,
+                    Notification.is_read.is_(False),
                 )
             )
             .values(is_read=True)
@@ -114,7 +114,7 @@ class CRUDNotification(CRUDBase[Notification]):
             .where(
                 and_(
                     Notification.user_id == user_id,
-                    Notification.is_read == False,
+                    Notification.is_read.is_(False),
                 )
             )
         )
@@ -132,9 +132,7 @@ class CRUDNotificationSettings(CRUDBase[NotificationSettings]):
     ) -> NotificationSettings | None:
         """Get notification settings for a user."""
         result = await db.execute(
-            select(NotificationSettings).where(
-                NotificationSettings.user_id == user_id
-            )
+            select(NotificationSettings).where(NotificationSettings.user_id == user_id)
         )
         return result.scalar_one_or_none()
 

@@ -10,6 +10,7 @@ dependencies = [
     "uvicorn[standard]>=0.32.0",
 
     # Database
+    "sqlmodel>=0.0.22",
     "sqlalchemy>=2.0.36",
     "alembic>=1.14.0",
     "psycopg[binary]>=3.2.0",

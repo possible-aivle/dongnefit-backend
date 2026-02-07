@@ -4,10 +4,10 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, Numeric, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import JSON
+from sqlmodel import Field
 
-from app.database import Base
 from app.models.base import TimestampMixin
 
 
@@ -19,69 +19,61 @@ class ReportStatus(Enum):
     ARCHIVED = "archived"
 
 
-class ReportCategory(Base, TimestampMixin):
+class ReportCategory(TimestampMixin, table=True):
     """Category for reports."""
 
     __tablename__ = "report_categories"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    slug: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(max_length=100)
+    slug: str = Field(max_length=100, unique=True, index=True)
+    description: str | None = Field(default=None)
 
 
-class Report(Base, TimestampMixin):
+class Report(TimestampMixin, table=True):
     """Neighborhood report/content model."""
 
     __tablename__ = "reports"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    author_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    neighborhood_id: Mapped[int] = mapped_column(
-        ForeignKey("neighborhoods.id", ondelete="CASCADE"), nullable=False
-    )
-    category_id: Mapped[int | None] = mapped_column(
-        ForeignKey("report_categories.id", ondelete="SET NULL"), nullable=True
+    id: int | None = Field(default=None, primary_key=True)
+    author_id: str = Field(foreign_key="users.id", max_length=255, ondelete="CASCADE")
+    neighborhood_id: int = Field(foreign_key="neighborhoods.id", ondelete="CASCADE")
+    category_id: int | None = Field(
+        default=None, foreign_key="report_categories.id", ondelete="SET NULL"
     )
 
     # Content
-    title: Mapped[str] = mapped_column(String(255), nullable=False)
-    subtitle: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    cover_image: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
-    content: Mapped[str] = mapped_column(Text, nullable=False)  # Markdown
+    title: str = Field(max_length=255)
+    subtitle: str | None = Field(default=None, max_length=500)
+    cover_image: str | None = Field(default=None, max_length=500)
+    summary: str | None = Field(default=None)
+    content: str  # Markdown
 
     # Pricing
-    price: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=0, nullable=False)
-    original_price: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    price: Decimal = Field(default=Decimal("0"), max_digits=10, decimal_places=2)
+    original_price: Decimal | None = Field(default=None, max_digits=10, decimal_places=2)
 
     # Status & Stats
-    status: Mapped[str] = mapped_column(
-        String(20), default=ReportStatus.DRAFT.value, nullable=False
-    )
-    purchase_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    rating: Mapped[Decimal] = mapped_column(Numeric(2, 1), default=0, nullable=False)
-    review_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    status: str = Field(default=ReportStatus.DRAFT.value, max_length=20)
+    purchase_count: int = Field(default=0)
+    rating: Decimal = Field(default=Decimal("0"), max_digits=2, decimal_places=1)
+    review_count: int = Field(default=0)
 
     # Metadata
-    tags: Mapped[list | None] = mapped_column(JSON, nullable=True)
-    meta_description: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    featured_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    last_updated: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    tags: list | None = Field(default=None, sa_column=Column(JSON))
+    meta_description: str | None = Field(default=None, max_length=500)
+    featured_until: datetime | None = Field(default=None)
+    published_at: datetime | None = Field(default=None)
+    last_updated: datetime | None = Field(default=None)
 
 
-class ReportReview(Base, TimestampMixin):
+class ReportReview(TimestampMixin, table=True):
     """Review for a report."""
 
     __tablename__ = "report_reviews"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    report_id: Mapped[int] = mapped_column(
-        ForeignKey("reports.id", ondelete="CASCADE"), nullable=False
-    )
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    rating: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5
-    content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    id: int | None = Field(default=None, primary_key=True)
+    report_id: int = Field(foreign_key="reports.id", ondelete="CASCADE")
+    user_id: str = Field(foreign_key="users.id", max_length=255, ondelete="CASCADE")
+    rating: int  # 1-5
+    content: str | None = Field(default=None)

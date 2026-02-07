@@ -1,22 +1,17 @@
 """Base model mixins."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlmodel import Field, SQLModel
 
 
-class TimestampMixin:
+def get_utc_now() -> datetime:
+    """Get current UTC time (naive)."""
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
+class TimestampMixin(SQLModel):
     """Mixin for adding created_at and updated_at timestamps."""
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        nullable=False,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-        nullable=False,
-    )
+    created_at: datetime | None = Field(default_factory=get_utc_now)
+    updated_at: datetime | None = Field(default_factory=get_utc_now)

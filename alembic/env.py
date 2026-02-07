@@ -6,12 +6,11 @@ from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlmodel import SQLModel
 
 from alembic import context
 from app.config import settings
-from app.database import Base
 from app.models import (  # noqa: F401 - Import all models for autogenerate
-    AdminActivity,
     BlogPost,
     Discussion,
     DiscussionLike,
@@ -24,7 +23,6 @@ from app.models import (  # noqa: F401 - Import all models for autogenerate
     ReportCategory,
     ReportReview,
     User,
-    ViolationComplaint,
 )
 
 # Alembic Config object
@@ -38,7 +36,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Model metadata for autogenerate
-target_metadata = Base.metadata
+target_metadata = SQLModel.metadata
 
 
 def run_migrations_offline() -> None:

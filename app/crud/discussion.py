@@ -1,7 +1,7 @@
 """CRUD operations for discussions."""
 
-from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import and_, func, or_, select
 
 from app.crud.base import CRUDBase
 from app.models.discussion import Discussion, DiscussionLike, DiscussionReply
@@ -213,9 +213,7 @@ class CRUDDiscussionLike(CRUDBase[DiscussionLike]):
         if reply_id:
             conditions.append(DiscussionLike.reply_id == reply_id)
 
-        result = await db.execute(
-            select(DiscussionLike).where(and_(*conditions))
-        )
+        result = await db.execute(select(DiscussionLike).where(and_(*conditions)))
         return result.scalar_one_or_none()
 
     async def toggle_like(

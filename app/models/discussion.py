@@ -2,10 +2,8 @@
 
 from enum import Enum
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlmodel import Field
 
-from app.database import Base
 from app.models.base import TimestampMixin
 
 
@@ -17,60 +15,56 @@ class DiscussionType(Enum):
     ANNOUNCEMENT = "announcement"
 
 
-class Discussion(Base, TimestampMixin):
+class Discussion(TimestampMixin, table=True):
     """Community discussion post model."""
 
     __tablename__ = "discussions"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    neighborhood_id: Mapped[int | None] = mapped_column(
-        ForeignKey("neighborhoods.id", ondelete="SET NULL"), nullable=True
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: str = Field(foreign_key="users.id", max_length=255, ondelete="CASCADE")
+    neighborhood_id: int | None = Field(
+        default=None, foreign_key="neighborhoods.id", ondelete="SET NULL"
     )
 
     # Content
-    title: Mapped[str] = mapped_column(String(255), nullable=False)
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    type: Mapped[str] = mapped_column(
-        String(20), default=DiscussionType.GENERAL.value, nullable=False
-    )
+    title: str = Field(max_length=255)
+    content: str
+    type: str = Field(default=DiscussionType.GENERAL.value, max_length=20)
 
     # Stats
-    like_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    reply_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    view_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    is_edited: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    like_count: int = Field(default=0)
+    reply_count: int = Field(default=0)
+    view_count: int = Field(default=0)
+    is_edited: bool = Field(default=False)
 
 
-class DiscussionReply(Base, TimestampMixin):
+class DiscussionReply(TimestampMixin, table=True):
     """Reply to a discussion."""
 
     __tablename__ = "discussion_replies"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    discussion_id: Mapped[int] = mapped_column(
-        ForeignKey("discussions.id", ondelete="CASCADE"), nullable=False
-    )
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    parent_id: Mapped[int | None] = mapped_column(
-        ForeignKey("discussion_replies.id", ondelete="CASCADE"), nullable=True
+    id: int | None = Field(default=None, primary_key=True)
+    discussion_id: int = Field(foreign_key="discussions.id", ondelete="CASCADE")
+    user_id: str = Field(foreign_key="users.id", max_length=255, ondelete="CASCADE")
+    parent_id: int | None = Field(
+        default=None, foreign_key="discussion_replies.id", ondelete="CASCADE"
     )
 
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    like_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    is_edited: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    content: str
+    like_count: int = Field(default=0)
+    is_edited: bool = Field(default=False)
 
 
-class DiscussionLike(Base, TimestampMixin):
+class DiscussionLike(TimestampMixin, table=True):
     """Like on a discussion or reply."""
 
     __tablename__ = "discussion_likes"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    discussion_id: Mapped[int | None] = mapped_column(
-        ForeignKey("discussions.id", ondelete="CASCADE"), nullable=True
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: str = Field(foreign_key="users.id", max_length=255, ondelete="CASCADE")
+    discussion_id: int | None = Field(
+        default=None, foreign_key="discussions.id", ondelete="CASCADE"
     )
-    reply_id: Mapped[int | None] = mapped_column(
-        ForeignKey("discussion_replies.id", ondelete="CASCADE"), nullable=True
+    reply_id: int | None = Field(
+        default=None, foreign_key="discussion_replies.id", ondelete="CASCADE"
     )
