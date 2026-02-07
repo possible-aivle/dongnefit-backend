@@ -9,7 +9,7 @@ from app.schemas.neighborhood import NeighborhoodSummary
 from app.schemas.user import UserPublic
 
 
-class DiscussionType(str, Enum):
+class DiscussionType(Enum):
     GENERAL = "general"
     QUESTION = "question"
     ANNOUNCEMENT = "announcement"

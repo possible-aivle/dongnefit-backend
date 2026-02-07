@@ -1,15 +1,12 @@
 import asyncio
 import logging
 
-from sqlalchemy import delete, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import delete
 
 from app.database import async_session_maker
 from app.models import (
     AdminActivity,
-    BillingKey,
     BlogPost,
-    Coupon,
     Discussion,
     DiscussionLike,
     DiscussionReply,
@@ -17,16 +14,10 @@ from app.models import (
     Neighborhood,
     Notification,
     NotificationSettings,
-    Order,
-    OrderItem,
-    Payment,
-    Product,
     Report,
     ReportCategory,
     ReportReview,
-    Subscription,
     User,
-    UserCoupon,
     UserRole,
     ViolationComplaint,
 )
@@ -45,21 +36,15 @@ async def clear_database():
             # Order based on foreign key dependencies
             tables_to_clear = [
                 DiscussionLike,
-                Subscription,
                 ReportReview,
-                Payment,
-                OrderItem,
                 DiscussionReply,
                 ViolationComplaint,
-                UserCoupon,
                 Report,
-                Order,
                 Notification,
                 NotificationSettings,
                 FileStorage,
                 Discussion,
                 BlogPost,
-                BillingKey,
                 AdminActivity,
             ]
 
@@ -72,7 +57,7 @@ async def clear_database():
             logger.info("✓ Cleared users (admin users preserved)")
 
             # Other tables
-            for table in [ReportCategory, Product, Neighborhood, Coupon]:
+            for table in [ReportCategory, Neighborhood]:
                 await session.execute(delete(table))
                 logger.info(f"✓ Cleared {table.__tablename__}")
 

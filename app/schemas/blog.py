@@ -9,7 +9,7 @@ from app.schemas.base import BaseSchema, PaginationParams, TimestampSchema
 from app.schemas.user import UserPublic
 
 
-class BlogStatus(str, Enum):
+class BlogStatus(Enum):
     DRAFT = "draft"
     PUBLISHED = "published"
     ARCHIVED = "archived"

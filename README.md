@@ -10,7 +10,6 @@
 | Web Framework | FastAPI, Uvicorn |
 | Database | PostgreSQL, SQLAlchemy 2.0, Alembic, asyncpg |
 | Authentication | OAuth2 (Google, Kakao), Session-based |
-| Payment | Toss Payments |
 | AI/LLM | LangGraph, LangChain |
 | Web Scraping | Selenium |
 
@@ -27,7 +26,6 @@ app/
 │   ├── neighborhoods.py # 동네 정보
 │   ├── reports.py       # 부동산 리포트
 │   ├── discussions.py   # 커뮤니티 게시판
-│   ├── payments.py      # 결제 (Toss)
 │   └── notifications.py # 알림
 │
 ├── auth/                # 인증
@@ -39,7 +37,6 @@ app/
 │   ├── neighborhood.py
 │   ├── report.py
 │   ├── discussion.py
-│   ├── payment.py
 │   └── ...
 │
 ├── schemas/             # Pydantic 스키마
@@ -86,9 +83,6 @@ GOOGLE_CLIENT_SECRET=...
 KAKAO_CLIENT_ID=...
 KAKAO_CLIENT_SECRET=...
 
-# Toss Payments
-TOSS_CLIENT_KEY=...
-TOSS_SECRET_KEY=...
 ```
 
 ### 3. 데이터베이스 설정
@@ -98,7 +92,7 @@ TOSS_SECRET_KEY=...
 createdb dongnefit
 
 # 마이그레이션 생성 및 실행
-uv run alembic revision --autogenerate -m "Initial migration"
+uv run alembic revision --autogenerate -m "마이그레이션 설명 작성"
 uv run alembic upgrade head
 ```
 
@@ -168,14 +162,6 @@ uv run uvicorn app.main:app --reload
 | POST | `/api/v1/discussions` | 게시글 작성 |
 | POST | `/api/v1/discussions/{id}/like` | 좋아요 토글 |
 | POST | `/api/v1/discussions/{id}/replies` | 댓글 작성 |
-
-### 결제
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| GET | `/api/v1/payments/products` | 상품 목록 |
-| POST | `/api/v1/payments/orders` | 주문 생성 |
-| POST | `/api/v1/payments/request` | 결제 요청 |
-| POST | `/api/v1/payments/confirm` | 결제 확인 |
 
 ### 알림
 | Method | Endpoint | 설명 |

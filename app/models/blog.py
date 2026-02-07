@@ -10,7 +10,7 @@ from app.database import Base
 from app.models.base import TimestampMixin
 
 
-class BlogStatus(str, Enum):
+class BlogStatus(Enum):
     """Blog post status."""
 
     DRAFT = "draft"
@@ -24,7 +24,9 @@ class BlogPost(Base, TimestampMixin):
     __tablename__ = "blog_posts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    author_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    author_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
 
     # Content
     title: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -36,7 +38,7 @@ class BlogPost(Base, TimestampMixin):
     # Status
     status: Mapped[str] = mapped_column(String(20), default=BlogStatus.DRAFT.value, nullable=False)
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # SEO
     meta_title: Mapped[str | None] = mapped_column(String(255), nullable=True)

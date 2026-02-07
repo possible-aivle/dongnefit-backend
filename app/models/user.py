@@ -10,14 +10,14 @@ from app.database import Base
 from app.models.base import TimestampMixin
 
 
-class UserRole(str, Enum):
+class UserRole(Enum):
     """User role enum."""
 
     USER = "user"
     ADMIN = "admin"
 
 
-class AuthProvider(str, Enum):
+class AuthProvider(Enum):
     """OAuth provider enum."""
 
     GOOGLE = "google"
@@ -38,5 +38,7 @@ class User(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     password: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    customer_key: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Toss Payments
+    customer_key: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )  # TODO: 빌링키로 나중에 구현
     last_login_at: Mapped[datetime | None] = mapped_column(default=None, nullable=True)

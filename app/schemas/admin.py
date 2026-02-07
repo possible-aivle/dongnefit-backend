@@ -8,7 +8,7 @@ from app.schemas.base import BaseSchema, PaginationParams, TimestampSchema
 from app.schemas.user import UserPublic
 
 
-class ViolationStatus(str, Enum):
+class ViolationStatus(Enum):
     PENDING = "pending"
     REVIEWING = "reviewing"
     RESOLVED = "resolved"

@@ -12,9 +12,7 @@ from app.config import settings
 from app.database import Base
 from app.models import (  # noqa: F401 - Import all models for autogenerate
     AdminActivity,
-    BillingKey,
     BlogPost,
-    Coupon,
     Discussion,
     DiscussionLike,
     DiscussionReply,
@@ -22,16 +20,10 @@ from app.models import (  # noqa: F401 - Import all models for autogenerate
     Neighborhood,
     Notification,
     NotificationSettings,
-    Order,
-    OrderItem,
-    Payment,
-    Product,
     Report,
     ReportCategory,
     ReportReview,
-    Subscription,
     User,
-    UserCoupon,
     ViolationComplaint,
 )
 

@@ -9,7 +9,7 @@ from app.database import Base
 from app.models.base import TimestampMixin
 
 
-class DiscussionType(str, Enum):
+class DiscussionType(Enum):
     """Type of discussion post."""
 
     GENERAL = "general"
@@ -31,7 +31,9 @@ class Discussion(Base, TimestampMixin):
     # Content
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    type: Mapped[str] = mapped_column(String(20), default=DiscussionType.GENERAL.value, nullable=False)
+    type: Mapped[str] = mapped_column(
+        String(20), default=DiscussionType.GENERAL.value, nullable=False
+    )
 
     # Stats
     like_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

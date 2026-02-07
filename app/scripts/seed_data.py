@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from faker import Faker
@@ -208,7 +208,7 @@ async def seed_data():
                     summary=fake.paragraph(),
                     content=f"# {fake.sentence()}\n\n" + "\n\n".join(fake.paragraphs(nb=5)),
                     status=ReportStatus.PUBLISHED.value,
-                    published_at=datetime.utcnow() - timedelta(days=random.randint(1, 30)),
+                    published_at=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 30)),
                     tags=fake.words(nb=5),
                 )
                 session.add(report)
@@ -224,8 +224,8 @@ async def seed_data():
                     slug=f"{fake.slug()}-{i}",
                     content="\n\n".join(fake.paragraphs(nb=5)),
                     excerpt=fake.sentence(),
-                    status=BlogStatus.PUBLISHED,
-                    published_at=datetime.utcnow() - timedelta(days=random.randint(1, 30)),
+                    status=BlogStatus.PUBLISHED.value,
+                    published_at=datetime.now(timezone.utc) - timedelta(days=random.randint(1, 30)),
                 )
                 session.add(blog)
             await session.flush()

@@ -5,7 +5,7 @@ from enum import Enum
 from app.schemas.base import BaseSchema, PaginationParams, TimestampSchema
 
 
-class NotificationType(str, Enum):
+class NotificationType(Enum):
     MENTION = "mention"
     REPLY = "reply"
     LIKE = "like"

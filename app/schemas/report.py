@@ -11,7 +11,7 @@ from app.schemas.neighborhood import NeighborhoodSummary
 from app.schemas.user import UserPublic
 
 
-class ReportStatus(str, Enum):
+class ReportStatus(Enum):
     DRAFT = "draft"
     PUBLISHED = "published"
     ARCHIVED = "archived"

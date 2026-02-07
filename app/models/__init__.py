@@ -12,21 +12,6 @@ from app.models.discussion import (
 from app.models.file import FileStorage
 from app.models.neighborhood import Neighborhood
 from app.models.notification import Notification, NotificationSettings, NotificationType
-from app.models.payment import (
-    BillingCycle,
-    BillingKey,
-    Coupon,
-    Order,
-    OrderItem,
-    OrderStatus,
-    Payment,
-    PaymentMethod,
-    PaymentStatus,
-    Product,
-    Subscription,
-    SubscriptionStatus,
-    UserCoupon,
-)
 from app.models.report import Report, ReportCategory, ReportReview, ReportStatus
 from app.models.user import AuthProvider, User, UserRole
 
@@ -49,20 +34,6 @@ __all__ = [
     "DiscussionReply",
     "DiscussionLike",
     "DiscussionType",
-    # Payment
-    "Product",
-    "Order",
-    "OrderItem",
-    "OrderStatus",
-    "Payment",
-    "PaymentStatus",
-    "PaymentMethod",
-    "BillingKey",
-    "Subscription",
-    "SubscriptionStatus",
-    "BillingCycle",
-    "Coupon",
-    "UserCoupon",
     # Notification
     "Notification",
     "NotificationSettings",

@@ -7,7 +7,7 @@ from pydantic import Field
 from app.schemas.base import BaseSchema
 
 
-class ContentType(str, Enum):
+class ContentType(Enum):
     """Types of real estate content."""
 
     PROPERTY_LISTING = "property_listing"

@@ -52,11 +52,6 @@ class Settings(BaseSettings):
     map_api_key: str = ""
     map_provider: str = "naver"  # naver, google
 
-    # Toss Payments
-    toss_client_key: str = ""
-    toss_secret_key: str = ""
-    toss_webhook_secret: str = ""
-
     # AWS S3
     aws_access_key_id: str = ""
     aws_secret_access_key: str = ""

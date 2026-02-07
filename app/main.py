@@ -32,7 +32,6 @@ DongneFit Backend API
 - **Neighborhoods**: Location-based neighborhood information
 - **Reports**: Real estate content and reports
 - **Discussions**: Community forum
-- **Payments**: Toss Payments integration
 - **Notifications**: User notification system
 
 ## Authentication
@@ -48,7 +47,6 @@ Session-based authentication is used for subsequent requests.
             {"name": "neighborhoods", "description": "Neighborhood information"},
             {"name": "reports", "description": "Real estate reports and content"},
             {"name": "discussions", "description": "Community discussions"},
-            {"name": "payments", "description": "Payment processing"},
             {"name": "products", "description": "Product management"},
             {"name": "orders", "description": "Order management"},
             {"name": "coupons", "description": "Coupon management"},

@@ -9,7 +9,7 @@ from app.database import Base
 from app.models.base import TimestampMixin
 
 
-class NotificationType(str, Enum):
+class NotificationType(Enum):
     """Notification type enum."""
 
     MENTION = "mention"
