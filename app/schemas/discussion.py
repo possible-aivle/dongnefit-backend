@@ -13,6 +13,8 @@ class DiscussionType(Enum):
     GENERAL = "general"
     QUESTION = "question"
     ANNOUNCEMENT = "announcement"
+    EXPERIENCE = "experience"
+    TIP = "tip"
 
 
 # === Request Schemas ===
