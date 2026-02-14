@@ -87,3 +87,7 @@ openapi_formatted.json
 # Tistory Images
 images/
 app/core/tistory/images/
+
+# Pipeline dumps
+dumps/
+public_data/
