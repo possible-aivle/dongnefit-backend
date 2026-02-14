@@ -83,3 +83,7 @@ geckodriver
 # files
 openapi.json
 openapi_formatted.json
+
+# Tistory Images
+images/
+app/core/tistory/images/

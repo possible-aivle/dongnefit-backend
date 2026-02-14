@@ -20,6 +20,8 @@ class ContentGenerator:
     - 해시태그 생성
     """
 
+    ENABLE_IMAGE_GENERATION = False  # 이미지 생성 활성화 여부
+
     def __init__(self, openai_api_key: str, model: str = "gpt-3.5-turbo"):
         """
         ContentGenerator 초기화
@@ -54,7 +56,7 @@ class ContentGenerator:
             )
             return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"❌ OpenAI API 호출 중 오류 발생: {e}")
+            print(f"[오류] OpenAI API 호출 중 오류 발생: {e}")
             raise
 
     def extract_keywords(self, texts: List[str], top_n: int = 5) -> List[str]:
@@ -92,11 +94,11 @@ class ContentGenerator:
                 )[:top_n]
             ]
 
-            print(f"✅ 키워드 추출 완료: {top_keywords}")
+            print(f"[시스템] 키워드 추출 완료: {top_keywords}")
             return top_keywords
 
         except Exception as e:
-            print(f"❌ 키워드 추출 중 오류 발생: {e}")
+            print(f"[오류] 키워드 추출 중 오류 발생: {e}")
             # 오류 발생 시 빈 리스트 반환
             return []
 
@@ -126,7 +128,7 @@ class ContentGenerator:
             {"role": "user", "content": user_prompt},
         ]
 
-        print(f"📝 '{keyword}'에 대한 제목 생성 중...")
+        print(f"[시스템] '{keyword}'에 대한 제목 생성 중...")
         return self._call_openai(messages, temperature=0.7)
 
     def _generate_image(self, prompt: str) -> str:
@@ -139,6 +141,10 @@ class ContentGenerator:
         Returns:
             str: 생성된 이미지의 URL
         """
+        if not self.ENABLE_IMAGE_GENERATION:
+            print("[안내] 이미지 생성이 비활성화되어 있습니다.")
+            return ""
+
         try:
             response = self.client.images.generate(
                 model="dall-e-3",
@@ -149,7 +155,7 @@ class ContentGenerator:
             )
             return response.data[0].url
         except Exception as e:
-            print(f"❌ 이미지 생성 중 오류: {e}")
+            print(f"[오류] 이미지 생성 중 오류: {e}")
             return ""
 
     def _download_image(self, image_url: str, save_dir: str = "images") -> str:
@@ -158,11 +164,12 @@ class ContentGenerator:
 
         Args:
             image_url (str): 다운로드할 이미지 URL
-            save_dir (str, optional): 저장할 디렉토리. 기본값은 "images"
-
-        Returns:
-            str: 저장된 이미지의 로컬 경로 (저장 실패 시 빈 문자열)
+            save_dir (str, optional): 저장할 디렉토리. 기본값은 "images" (현재 모듈 폴더 내)
         """
+        if save_dir == "images":
+            # tistory 폴더 내부의 images 폴더로 변경
+            save_dir = os.path.join(os.path.dirname(__file__), "images")
+
         if not image_url:
             return ""
 
@@ -184,11 +191,11 @@ class ContentGenerator:
             with open(filepath, "wb") as f:
                 f.write(response.content)
 
-            print(f"✅ 이미지 다운로드 완료: {filepath}")
+            print(f"[시스템] 이미지 다운로드 완료: {filepath}")
             return filepath
 
         except Exception as e:
-            print(f"❌ 이미지 다운로드 중 오류: {e}")
+            print(f"[오류] 이미지 다운로드 중 오류: {e}")
             return ""
 
     def _insert_images(
@@ -208,14 +215,14 @@ class ContentGenerator:
         Returns:
             Tuple[str, list]: 이미지가 삽입된 콘텐츠와 생성된 이미지 로컬 경로 리스트
         """
-        if num_images <= 0:
+        if num_images <= 0 or not self.ENABLE_IMAGE_GENERATION:
             return content, []
 
         # 1. 소제목(##) 기준으로 섹션 분리
         lines = content.split("\n")
         sections = []
         current_section = {"title": "", "content": []}
-        
+
         for line in lines:
             if line.strip().startswith("##") and not line.strip().startswith("###"):
                 # 이전 섹션 저장 (내용이 있는 경우에만)
@@ -228,22 +235,22 @@ class ContentGenerator:
                 }
             else:
                 current_section["content"].append(line)
-        
+
         # 마지막 섹션 저장
         if current_section["content"]:
             sections.append(current_section)
-        
-        print(f"📊 총 {len(sections)}개 섹션 발견")
+
+        print(f"[시스템] 총 {len(sections)}개 섹션 발견")
         for idx, sec in enumerate(sections):
             print(f"  섹션 {idx}: {sec['title'][:30] if sec['title'] else '(제목 없음)'}")
-        
+
         # 섹션이 충분하지 않으면 기존 방식 사용
         if len(sections) < 2:
-            print("⚠️ 소제목이 충분하지 않아 단락 기준으로 이미지 배치")
+            print("[경고] 소제목이 충분하지 않아 단락 기준으로 이미지 배치")
             paragraphs = [p.strip() for p in content.split("\n\n") if p.strip()]
             if len(paragraphs) < 3:
                 return content, []
-            
+
             # 기존 로직 사용 (fallback)
             total_paragraphs = len(paragraphs)
             step = max(2, total_paragraphs // (num_images + 1))
@@ -252,20 +259,20 @@ class ContentGenerator:
                 for i in range(num_images)
                 if step * (i + 1) < total_paragraphs
             ]
-            
-            print(f"📍 단락 기준 이미지 삽입 위치: {insert_positions}")
-            
+
+            print(f"[시스템] 단락 기준 이미지 삽입 위치: {insert_positions}")
+
             result = []
             image_paths = []
             image_count = 0
-            
+
             for i, para in enumerate(paragraphs):
                 result.append(para)
-                if (image_count < len(insert_positions) 
+                if (image_count < len(insert_positions)
                     and i == insert_positions[image_count]):
                     image_prompt = f"{keyword} 관련 이미지, {para[:100]}"
-                    print(f"🖼️ 이미지 생성 중 [{image_count+1}/{len(insert_positions)}]: 단락 {i} 뒤")
-                    
+                    print(f"[시스템] 이미지 생성 중 [{image_count+1}/{len(insert_positions)}]: 단락 {i} 뒤")
+
                     image_url = self._generate_image(image_prompt)
                     if image_url:
                         local_path = self._download_image(image_url)
@@ -274,22 +281,22 @@ class ContentGenerator:
                             image_placeholder = f'{{{{IMAGE:{local_path}|{alt_text}}}}}'
                             result.append(image_placeholder)
                             image_paths.append(local_path)
-                            print(f"✅ 이미지 저장 완료: {local_path}")
+                            print(f"[시스템] 이미지 저장 완료: {local_path}")
                     image_count += 1
-            
+
             return "\n\n".join(result), image_paths
 
         # 2. SEO 최적화: 첫 번째 섹션(서론) 제외하고 이미지 삽입 위치 결정
         # 본문 섹션들(1번 인덱스부터)에 균등하게 분배
         body_sections = sections[1:]  # 첫 섹션(서론) 제외
-        
+
         if len(body_sections) == 0:
-            print("⚠️ 본문 섹션이 없어 이미지를 삽입하지 않습니다")
+            print("[경고] 본문 섹션이 없어 이미지를 삽입하지 않습니다")
             return content, []
-        
+
         # 이미지 삽입 위치 계산 (균등 분배)
         num_insertable = min(num_images, len(body_sections))
-        
+
         # 더 나은 분산을 위한 로직: body_sections를 균등하게 나눔
         if num_insertable == 1:
             # 이미지가 1개면 중간쯤에 배치
@@ -301,63 +308,63 @@ class ContentGenerator:
             # 이미지를 균등하게 분산
             step = len(body_sections) / num_insertable
             insert_indices = [int(step * i) for i in range(num_insertable)]
-        
-        print(f"📊 서론 제외 {len(body_sections)}개 섹션에 {len(insert_indices)}개 이미지 배치")
-        print(f"📍 이미지 삽입 섹션 인덱스: {insert_indices}")
-        
+
+        print(f"[시스템] 서론 제외 {len(body_sections)}개 섹션에 {len(insert_indices)}개 이미지 배치")
+        print(f"[시스템] 이미지 삽입 섹션 인덱스: {insert_indices}")
+
         # 3. 이미지 생성 및 삽입
         result_lines = []
         image_paths = []
-        
+
         # 첫 번째 섹션(서론)은 이미지 없이 추가
         result_lines.extend(sections[0]["content"])
-        print(f"✏️ 서론 추가 완료 (이미지 없음)")
-        
+        print(f"[시스템] 서론 추가 완료 (이미지 없음)")
+
         # 본문 섹션들 처리
         images_to_insert = {}  # {섹션_인덱스: 이미지_정보}
-        
+
         # 먼저 모든 이미지를 생성 (병렬 처리는 아니지만 명확하게)
         for img_idx, section_idx in enumerate(insert_indices):
             if section_idx >= len(body_sections):
                 continue
-                
+
             section = body_sections[section_idx]
             section_title = section["title"]
             section_content_preview = " ".join(section["content"][:5])[:200]
-            
+
             # 섹션 제목과 내용을 반영한 이미지 프롬프트
             image_prompt = f"{keyword}, {section_title}, {section_content_preview}"
-            print(f"🖼️ 이미지 생성 중 [{img_idx+1}/{len(insert_indices)}]: '{section_title}'")
-            
+            print(f"[시스템] 이미지 생성 중 [{img_idx+1}/{len(insert_indices)}]: '{section_title}'")
+
             # DALL-E로 이미지 생성
             image_url = self._generate_image(image_prompt)
-            
+
             if image_url:
                 # 이미지 다운로드
                 local_path = self._download_image(image_url)
-                
+
                 if local_path:
                     # SEO 친화적인 alt 텍스트 생성
                     alt_text = f"{keyword} - {section_title}"
-                    
+
                     images_to_insert[section_idx] = {
                         "path": local_path,
                         "alt": alt_text
                     }
                     image_paths.append(local_path)
-                    print(f"✅ 이미지 저장 완료: {local_path}")
+                    print(f"[시스템] 이미지 저장 완료: {local_path}")
                     print(f"   섹션 '{section_title}' 뒤에 삽입 예정")
                 else:
-                    print(f"❌ 이미지 다운로드 실패: '{section_title}'")
+                    print(f"[오류] 이미지 다운로드 실패: '{section_title}'")
             else:
-                print(f"❌ 이미지 생성 실패: '{section_title}'")
-        
+                print(f"[오류] 이미지 생성 실패: '{section_title}'")
+
         # 이제 섹션들을 추가하면서 해당 위치에 이미지 삽입
         for i, section in enumerate(body_sections):
             # 섹션 내용 추가
             result_lines.extend(section["content"])
-            print(f"✏️ 섹션 {i+1} 추가: '{section['title'][:30] if section['title'] else '(제목 없음)'}'")
-            
+            print(f"[시스템] 섹션 {i+1} 추가: '{section['title'][:30] if section['title'] else '(제목 없음)'}'")
+
             # 이 섹션 뒤에 이미지가 있으면 삽입
             if i in images_to_insert:
                 img_info = images_to_insert[i]
@@ -366,7 +373,7 @@ class ContentGenerator:
                 result_lines.append("")  # 빈 줄
                 result_lines.append(image_placeholder)
                 result_lines.append("")  # 빈 줄
-                print(f"🖼️ 이미지 삽입: 섹션 {i+1} 뒤")
+                print(f"[시스템] 이미지 삽입: 섹션 {i+1} 뒤")
 
         return "\n".join(result_lines), image_paths
 
@@ -408,7 +415,7 @@ class ContentGenerator:
             "가독성을 높이기 위해 적절한 소제목(##)을 사용해주세요."
         )
 
-        print(f"📄 '{keyword}'에 대한 본문 생성 중...")
+        print(f"[시스템] '{keyword}'에 대한 본문 생성 중...")
         content = self._call_openai(
             [
                 {"role": "system", "content": system_prompt},
@@ -418,10 +425,10 @@ class ContentGenerator:
         )
 
         # 2. 이미지 생성 및 삽입
-        if num_images > 0:
-            print(f"🖼️ {num_images}개의 이미지 생성 및 삽입 중...")
+        if num_images > 0 and self.ENABLE_IMAGE_GENERATION:
+            print(f"[시스템] {num_images}개의 이미지 생성 및 삽입 중...")
             content, image_paths = self._insert_images(content, keyword, num_images)
-            print(f"✅ {len(image_paths)}개의 이미지가 성공적으로 삽입되었습니다.")
+            print(f"[시스템] {len(image_paths)}개의 이미지가 성공적으로 삽입되었습니다.")
         else:
             image_paths = []
 
@@ -518,4 +525,3 @@ class ContentGenerator:
         내부적으로는 새로운 _generate_hashtags 메서드를 호출합니다.
         """
         return self._generate_hashtags(content, max_tags)
-        

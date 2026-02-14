@@ -85,6 +85,10 @@ class ContentGenerator:
         keywords: list[str],
     ) -> str | None:
         """Generate an image for the content using OpenAI DALL-E."""
+        # 이미지 생성 잠시 중단 (요금 절감)
+        print("ℹ️ 이미지 생성이 비활성화되어 있습니다.")
+        return None
+
         if not settings.openai_api_key:
             return None
 
