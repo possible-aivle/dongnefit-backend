@@ -16,6 +16,7 @@ class UserRole(Enum):
 class AuthProvider(Enum):
     GOOGLE = "google"
     KAKAO = "kakao"
+    LOCAL = "local"
 
 
 # === Request Schemas ===
