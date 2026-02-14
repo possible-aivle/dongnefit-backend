@@ -20,6 +20,7 @@ class AuthProvider(Enum):
 
     GOOGLE = "google"
     KAKAO = "kakao"
+    LOCAL = "local"
 
 
 class User(TimestampMixin, table=True):

@@ -43,6 +43,10 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "python-multipart>=0.0.18",
     "itsdangerous>=2.2.0",
+
+    # CLI (pipeline)
+    "rich>=13.0.0",
+    "InquirerPy>=0.3.4",
 ]
 
 [project.optional-dependencies]

@@ -1,11 +1,49 @@
 """Pydantic schemas for request/response validation."""
 
+from app.schemas.administrative import (
+    AdministrativeDivisionCreate,
+    AdministrativeDivisionRead,
+    AdministrativeEmdCreate,
+    AdministrativeEmdRead,
+)
 from app.schemas.base import (
     BaseSchema,
     PaginatedResponse,
     PaginationMeta,
     PaginationParams,
     TimestampSchema,
+)
+from app.schemas.building import (
+    BuildingRegisterFloorDetailCreate,
+    BuildingRegisterFloorDetailRead,
+    BuildingRegisterHeaderCreate,
+    BuildingRegisterHeaderRead,
+)
+from app.schemas.land import (
+    LandAndForestInfoCreate,
+    LandAndForestInfoRead,
+    LandCharacteristicCreate,
+    LandCharacteristicRead,
+    LandUsePlanCreate,
+    LandUsePlanRead,
+)
+from app.schemas.lot import (
+    AncillaryLandCreate,
+    AncillaryLandRead,
+    LotCreate,
+    LotRead,
+)
+from app.schemas.spatial import (
+    RoadCenterLineCreate,
+    RoadCenterLineRead,
+    UseRegionDistrictCreate,
+    UseRegionDistrictRead,
+)
+from app.schemas.transaction import (
+    OfficialLandPriceCreate,
+    OfficialLandPriceRead,
+    RealEstateTransactionCreate,
+    RealEstateTransactionRead,
 )
 
 __all__ = [
@@ -15,4 +53,36 @@ __all__ = [
     "PaginationParams",
     "PaginationMeta",
     "PaginatedResponse",
+    # Lot
+    "LotCreate",
+    "LotRead",
+    "AncillaryLandCreate",
+    "AncillaryLandRead",
+    # Administrative
+    "AdministrativeDivisionCreate",
+    "AdministrativeDivisionRead",
+    "AdministrativeEmdCreate",
+    "AdministrativeEmdRead",
+    # Land
+    "LandCharacteristicCreate",
+    "LandCharacteristicRead",
+    "LandUsePlanCreate",
+    "LandUsePlanRead",
+    "LandAndForestInfoCreate",
+    "LandAndForestInfoRead",
+    # Building
+    "BuildingRegisterHeaderCreate",
+    "BuildingRegisterHeaderRead",
+    "BuildingRegisterFloorDetailCreate",
+    "BuildingRegisterFloorDetailRead",
+    # Transaction
+    "OfficialLandPriceCreate",
+    "OfficialLandPriceRead",
+    "RealEstateTransactionCreate",
+    "RealEstateTransactionRead",
+    # Spatial
+    "RoadCenterLineCreate",
+    "RoadCenterLineRead",
+    "UseRegionDistrictCreate",
+    "UseRegionDistrictRead",
 ]

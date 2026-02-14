@@ -11,18 +11,31 @@ from sqlmodel import SQLModel
 from alembic import context
 from app.config import settings
 from app.models import (  # noqa: F401 - Import all models for autogenerate
+    AdministrativeDivision,
+    AdministrativeEmd,
+    AncillaryLand,
     BlogPost,
+    BuildingRegisterFloorDetail,
+    BuildingRegisterHeader,
     Discussion,
     DiscussionLike,
     DiscussionReply,
     FileStorage,
+    LandAndForestInfo,
+    LandCharacteristic,
+    LandUsePlan,
+    Lot,
     Neighborhood,
     Notification,
     NotificationSettings,
+    OfficialLandPrice,
+    RealEstateTransaction,
     Report,
     ReportCategory,
     ReportReview,
+    RoadCenterLine,
     User,
+    UseRegionDistrict,
 )
 
 # Alembic Config object
