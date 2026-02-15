@@ -29,6 +29,10 @@ from app.schemas.land import (
     LandUsePlanCreate,
     LandUsePlanRead,
 )
+from app.schemas.land_ownership import (
+    LandOwnershipCreate,
+    LandOwnershipRead,
+)
 from app.schemas.lot import (
     AncillaryLandCreate,
     AncillaryLandRead,
@@ -74,6 +78,8 @@ __all__ = [
     "LandUsePlanRead",
     "LandAndForestInfoCreate",
     "LandAndForestInfoRead",
+    "LandOwnershipCreate",
+    "LandOwnershipRead",
     # Building
     "BuildingRegisterHeaderCreate",
     "BuildingRegisterHeaderRead",

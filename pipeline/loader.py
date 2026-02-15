@@ -25,6 +25,7 @@ from app.models.land import (
     LandCharacteristic,
     LandUsePlan,
 )
+from app.models.land_ownership import LandOwnership
 from app.models.lot import AncillaryLand, Lot
 from app.models.spatial import RoadCenterLine, UseRegionDistrict
 from app.models.transaction import (
@@ -55,6 +56,7 @@ MODEL_MAP: dict[PublicDataType, type[SQLModel]] = {
     PublicDataType.ROAD_CENTER_LINE: RoadCenterLine,
     PublicDataType.USE_REGION_DISTRICT: UseRegionDistrict,
     PublicDataType.GIS_BUILDING_INTEGRATED: GisBuildingIntegrated,
+    PublicDataType.LAND_OWNERSHIP: LandOwnership,
 }
 
 # PNU 기반 테이블의 upsert 키 (unique constraint 기준)
@@ -69,6 +71,7 @@ UPSERT_KEYS: dict[PublicDataType, list[str]] = {
     PublicDataType.BUILDING_REGISTER_HEADER: ["mgm_bldrgst_pk"],
     PublicDataType.BUILDING_REGISTER_GENERAL: ["mgm_bldrgst_pk"],
     PublicDataType.GIS_BUILDING_INTEGRATED: ["pnu", "building_id"],
+    PublicDataType.LAND_OWNERSHIP: ["pnu", "co_owner_seq"],
 }
 
 

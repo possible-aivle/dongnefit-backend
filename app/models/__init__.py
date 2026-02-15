@@ -25,6 +25,7 @@ from app.models.enums import (
 )
 from app.models.file import FileStorage
 from app.models.land import LandAndForestInfo, LandCharacteristic, LandUsePlan
+from app.models.land_ownership import LandOwnership
 from app.models.lot import AncillaryLand, Lot
 from app.models.neighborhood import Neighborhood
 from app.models.notification import Notification, NotificationSettings, NotificationType
@@ -77,6 +78,7 @@ __all__ = [
     "LandCharacteristic",
     "LandUsePlan",
     "LandAndForestInfo",
+    "LandOwnership",
     # Building (건물)
     "BuildingRegisterHeader",
     "BuildingRegisterGeneral",
