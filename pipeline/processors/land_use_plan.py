@@ -16,11 +16,7 @@ class LandUsePlanProcessor(VworldCsvProcessor):
 
     COLUMN_MAP: dict[str, str] = {
         "고유번호": "pnu",
-        "법정동코드": "bjd_code",
-        "지번": "jibun",
-        "용도지역지구코드": "use_district_code",
         "용도지역지구명": "use_district_name",
-        "저촉여부코드": "inclusion_code",
         "데이터기준일자": "data_base_date",
     }
 
@@ -32,7 +28,7 @@ class LandUsePlanProcessor(VworldCsvProcessor):
         mapped["pnu"] = pnu
 
         # data_year 추출
-        data_base_date = mapped.get("data_base_date", "") or ""
+        data_base_date = mapped.pop("data_base_date", "") or ""
         mapped["data_year"] = self._safe_int(data_base_date[:4]) or 0
 
         mapped["raw_data"] = raw_row

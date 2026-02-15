@@ -24,19 +24,11 @@ class LandCharacteristic(PublicDataBase, table=True):
     )
     data_year: int = Field(description="기준년도")
 
-    # 핵심 컬럼 (AL_D195 컬럼정의서 기반)
-    bjd_code: str | None = Field(default=None, max_length=10, description="법정동코드")
-    jibun: str | None = Field(default=None, max_length=20, description="지번")
-    jimok_code: str | None = Field(default=None, max_length=5, description="지목코드")
     jimok_name: str | None = Field(default=None, max_length=20, description="지목명")
     land_area: float | None = Field(default=None, description="토지면적(㎡)")
-    use_zone_code: str | None = Field(default=None, max_length=5, description="용도지역코드")
     use_zone_name: str | None = Field(default=None, max_length=50, description="용도지역명")
-    land_use_code: str | None = Field(default=None, max_length=5, description="토지이용상황코드")
     land_use_name: str | None = Field(default=None, max_length=30, description="토지이용상황")
-    road_side_code: str | None = Field(default=None, max_length=5, description="도로접면코드")
     official_price: int | None = Field(default=None, description="공시지가(원)")
-    data_base_date: str | None = Field(default=None, max_length=10, description="데이터기준일자")
 
 
 class LandUsePlan(PublicDataBase, table=True):
@@ -57,15 +49,7 @@ class LandUsePlan(PublicDataBase, table=True):
     )
     data_year: int = Field(description="기준년도")
 
-    # 핵심 컬럼 (AL_D154 컬럼정의서 기반)
-    bjd_code: str | None = Field(default=None, max_length=10, description="법정동코드")
-    jibun: str | None = Field(default=None, max_length=20, description="지번")
-    use_district_code: str | None = Field(
-        default=None, max_length=10, description="용도지역지구코드"
-    )
     use_district_name: str | None = Field(default=None, max_length=50, description="용도지역지구명")
-    inclusion_code: str | None = Field(default=None, max_length=1, description="저촉여부코드")
-    data_base_date: str | None = Field(default=None, max_length=10, description="데이터기준일자")
 
 
 class LandAndForestInfo(PublicDataBase, table=True):
@@ -87,13 +71,7 @@ class LandAndForestInfo(PublicDataBase, table=True):
     )
     data_year: int = Field(description="기준년도")
 
-    # 핵심 컬럼 (AL_D003 컬럼정의서 기반)
-    bjd_code: str | None = Field(default=None, max_length=10, description="법정동코드")
-    jibun: str | None = Field(default=None, max_length=20, description="지번")
-    jimok_code: str | None = Field(default=None, max_length=5, description="지목코드")
     jimok_name: str | None = Field(default=None, max_length=20, description="지목명")
     area: float | None = Field(default=None, description="면적(㎡)")
-    ownership_code: str | None = Field(default=None, max_length=5, description="소유구분코드")
     ownership_name: str | None = Field(default=None, max_length=20, description="소유구분명")
     owner_count: int | None = Field(default=None, description="소유(공유)인수")
-    data_base_date: str | None = Field(default=None, max_length=10, description="데이터기준일자")

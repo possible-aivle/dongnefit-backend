@@ -13,16 +13,6 @@ class OfficialLandPriceCreate(BaseSchema):
     pnu: str
     base_year: int
     price_per_sqm: int | None = None
-    bjd_code: str | None = None
-    bjd_name: str | None = None
-    special_land_code: str | None = None
-    special_land_name: str | None = None
-    jibun: str | None = None
-    base_month: int | None = None
-    announcement_date: date | None = None
-    is_standard: bool | None = None
-    data_base_date: str | None = None
-    source_sigungu_code: str | None = None
     raw_data: dict[str, Any] | None = None
 
 
@@ -33,16 +23,6 @@ class OfficialLandPriceRead(BaseSchema):
     pnu: str
     base_year: int
     price_per_sqm: int | None
-    bjd_code: str | None
-    bjd_name: str | None
-    special_land_code: str | None
-    special_land_name: str | None
-    jibun: str | None
-    base_month: int | None
-    announcement_date: date | None
-    is_standard: bool | None
-    data_base_date: str | None
-    source_sigungu_code: str | None
     raw_data: dict[str, Any] | None
     collected_at: datetime
     created_at: datetime | None

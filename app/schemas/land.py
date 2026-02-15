@@ -11,18 +11,11 @@ class LandCharacteristicCreate(BaseSchema):
 
     pnu: str
     data_year: int
-    bjd_code: str | None = None
-    jibun: str | None = None
-    jimok_code: str | None = None
     jimok_name: str | None = None
     land_area: float | None = None
-    use_zone_code: str | None = None
     use_zone_name: str | None = None
-    land_use_code: str | None = None
     land_use_name: str | None = None
-    road_side_code: str | None = None
     official_price: int | None = None
-    data_base_date: str | None = None
     raw_data: dict[str, Any] | None = None
 
 
@@ -32,18 +25,11 @@ class LandCharacteristicRead(BaseSchema):
     id: int
     pnu: str
     data_year: int
-    bjd_code: str | None
-    jibun: str | None
-    jimok_code: str | None
     jimok_name: str | None
     land_area: float | None
-    use_zone_code: str | None
     use_zone_name: str | None
-    land_use_code: str | None
     land_use_name: str | None
-    road_side_code: str | None
     official_price: int | None
-    data_base_date: str | None
     raw_data: dict[str, Any] | None
     collected_at: datetime
     created_at: datetime | None
@@ -55,12 +41,7 @@ class LandUsePlanCreate(BaseSchema):
 
     pnu: str
     data_year: int
-    bjd_code: str | None = None
-    jibun: str | None = None
-    use_district_code: str | None = None
     use_district_name: str | None = None
-    inclusion_code: str | None = None
-    data_base_date: str | None = None
     raw_data: dict[str, Any] | None = None
 
 
@@ -70,12 +51,7 @@ class LandUsePlanRead(BaseSchema):
     id: int
     pnu: str
     data_year: int
-    bjd_code: str | None
-    jibun: str | None
-    use_district_code: str | None
     use_district_name: str | None
-    inclusion_code: str | None
-    data_base_date: str | None
     raw_data: dict[str, Any] | None
     collected_at: datetime
     created_at: datetime | None
@@ -87,15 +63,10 @@ class LandAndForestInfoCreate(BaseSchema):
 
     pnu: str
     data_year: int
-    bjd_code: str | None = None
-    jibun: str | None = None
-    jimok_code: str | None = None
     jimok_name: str | None = None
     area: float | None = None
-    ownership_code: str | None = None
     ownership_name: str | None = None
     owner_count: int | None = None
-    data_base_date: str | None = None
     raw_data: dict[str, Any] | None = None
 
 
@@ -105,15 +76,10 @@ class LandAndForestInfoRead(BaseSchema):
     id: int
     pnu: str
     data_year: int
-    bjd_code: str | None
-    jibun: str | None
-    jimok_code: str | None
     jimok_name: str | None
     area: float | None
-    ownership_code: str | None
     ownership_name: str | None
     owner_count: int | None
-    data_base_date: str | None
     raw_data: dict[str, Any] | None
     collected_at: datetime
     created_at: datetime | None

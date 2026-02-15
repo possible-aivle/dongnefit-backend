@@ -184,27 +184,19 @@ class BuildingRegisterHeaderProcessor(BuildingRegisterTxtProcessor):
     # 핵심 컬럼만 매핑 (인덱스 → DB 컬럼)
     COLUMN_INDICES: dict[int, str] = {
         0: "mgm_bldrgst_pk",
-        1: "ledger_type",          # 대장구분코드 (1:일반, 2:집합)
-        6: "road_address",         # 도로명대지위치
         7: "building_name",        # 건물명
-        22: "dong_name",           # 동명
-        23: "main_atch_type",      # 주부속구분코드
         25: "site_area",           # 대지면적
         26: "building_area",       # 건축면적
         27: "bcr",                 # 건폐율
         28: "total_floor_area",    # 연면적
-        29: "far_area",            # 용적률산정연면적
         30: "far",                 # 용적률
         32: "structure_name",      # 구조코드명
         35: "main_use_name",       # 주용도코드명
         40: "household_count",     # 세대수
-        41: "family_count",        # 가구수
         42: "height",              # 높이
         43: "above_ground_floors", # 지상층수
         44: "underground_floors",  # 지하층수
         60: "approval_date",       # 사용승인일
-        66: "ho_count",            # 호수
-        74: "created_date",        # 생성일자
     }
 
     def transform_row(
@@ -219,14 +211,11 @@ class BuildingRegisterHeaderProcessor(BuildingRegisterTxtProcessor):
         mapped["building_area"] = self._safe_float(mapped.get("building_area"))
         mapped["bcr"] = self._safe_float(mapped.get("bcr"))
         mapped["total_floor_area"] = self._safe_float(mapped.get("total_floor_area"))
-        mapped["far_area"] = self._safe_float(mapped.get("far_area"))
         mapped["far"] = self._safe_float(mapped.get("far"))
         mapped["height"] = self._safe_float(mapped.get("height"))
         mapped["household_count"] = self._safe_int(mapped.get("household_count"))
-        mapped["family_count"] = self._safe_int(mapped.get("family_count"))
         mapped["above_ground_floors"] = self._safe_int(mapped.get("above_ground_floors"))
         mapped["underground_floors"] = self._safe_int(mapped.get("underground_floors"))
-        mapped["ho_count"] = self._safe_int(mapped.get("ho_count"))
         mapped["raw_data"] = {str(i): v for i, v in enumerate(fields)}
         return mapped
 
@@ -246,24 +235,16 @@ class BuildingRegisterGeneralProcessor(BuildingRegisterTxtProcessor):
 
     COLUMN_INDICES: dict[int, str] = {
         0: "mgm_bldrgst_pk",
-        1: "ledger_type",          # 대장구분코드
-        8: "road_address",         # 도로명대지위치
         9: "building_name",        # 건물명
         24: "site_area",           # 대지면적
         25: "building_area",       # 건축면적
         26: "bcr",                 # 건폐율
         27: "total_floor_area",    # 연면적
-        28: "far_area",            # 용적률산정연면적
         29: "far",                 # 용적률
         31: "main_use_name",       # 주용도코드명
         33: "household_count",     # 세대수
-        34: "family_count",        # 가구수
-        35: "main_bldcnt",         # 주건축물수
-        36: "atch_bldcnt",         # 부속건축물수
         38: "total_parking",       # 총주차수
         49: "approval_date",       # 사용승인일
-        55: "ho_count",            # 호수
-        63: "created_date",        # 생성일자
     }
 
     def transform_row(
@@ -278,14 +259,9 @@ class BuildingRegisterGeneralProcessor(BuildingRegisterTxtProcessor):
         mapped["building_area"] = self._safe_float(mapped.get("building_area"))
         mapped["bcr"] = self._safe_float(mapped.get("bcr"))
         mapped["total_floor_area"] = self._safe_float(mapped.get("total_floor_area"))
-        mapped["far_area"] = self._safe_float(mapped.get("far_area"))
         mapped["far"] = self._safe_float(mapped.get("far"))
         mapped["household_count"] = self._safe_int(mapped.get("household_count"))
-        mapped["family_count"] = self._safe_int(mapped.get("family_count"))
-        mapped["main_bldcnt"] = self._safe_int(mapped.get("main_bldcnt"))
-        mapped["atch_bldcnt"] = self._safe_int(mapped.get("atch_bldcnt"))
         mapped["total_parking"] = self._safe_int(mapped.get("total_parking"))
-        mapped["ho_count"] = self._safe_int(mapped.get("ho_count"))
         mapped["raw_data"] = {str(i): v for i, v in enumerate(fields)}
         return mapped
 
@@ -305,15 +281,10 @@ class BuildingRegisterFloorDetailProcessor(BuildingRegisterTxtProcessor):
 
     COLUMN_INDICES: dict[int, str] = {
         0: "mgm_bldrgst_pk",
-        17: "dong_name",           # 동명
-        18: "floor_type",          # 층구분코드 (10:지하, 20:지상)
         19: "floor_type_name",     # 층구분코드명
         20: "floor_no",            # 층번호
-        23: "structure_name",      # 구조코드명
         26: "main_use_name",       # 주용도코드명
         28: "area",                # 면적
-        29: "main_atch_type",      # 주부속구분코드
-        32: "created_date",        # 생성일자
     }
 
     def transform_row(
@@ -349,16 +320,11 @@ class BuildingRegisterAreaProcessor(BuildingRegisterTxtProcessor):
 
     COLUMN_INDICES: dict[int, str] = {
         0: "mgm_bldrgst_pk",
-        1: "ledger_type",          # 대장구분코드
         21: "dong_name",           # 동명
         22: "ho_name",             # 호명
-        23: "floor_type",          # 층구분코드
         25: "floor_no",            # 층번호
         26: "exclu_common_type",   # 전유공용구분코드 (1:전유, 2:공용)
-        28: "main_atch_type",      # 주부속구분코드
-        35: "main_use_name",       # 주용도코드명
         37: "area",                # 면적
-        38: "created_date",        # 생성일자
     }
 
     def transform_row(

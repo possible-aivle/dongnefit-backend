@@ -7,7 +7,6 @@ PNU(19자리): 시도(2) + 시군구(3) + 읍면동(3) + 리(2) + 산구분(1) +
 from datetime import datetime
 
 from sqlalchemy import Column, String
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
 
 from app.models.base import PublicDataBase, get_utc_now
@@ -43,31 +42,10 @@ class Lot(SQLModel, table=True):
         index=True,
         description="읍면동코드 (8자리: 시도+시군구+읍면동)",
     )
-    ri_code: str = Field(
-        max_length=10,
-        description="리코드 (10자리: 시도+시군구+읍면동+리)",
-    )
-    is_mountain: bool = Field(
-        default=False,
-        description="산 여부 (산구분 1=산, 2=일반)",
-    )
-    main_number: str = Field(
-        max_length=4,
-        description="본번 (4자리)",
-    )
-    sub_number: str = Field(
-        max_length=4,
-        description="부번 (4자리)",
-    )
     jibun_address: str | None = Field(
         default=None,
         sa_column=Column(String(500)),
         description="지번주소",
-    )
-    raw_data: dict | None = Field(
-        default=None,
-        sa_column=Column(JSONB),
-        description="연속지적도 원본 데이터",
     )
     collected_at: datetime = Field(default_factory=get_utc_now)
     created_at: datetime | None = Field(default_factory=get_utc_now)

@@ -16,16 +16,10 @@ class LandCharacteristicProcessor(VworldCsvProcessor):
 
     COLUMN_MAP: dict[str, str] = {
         "고유번호": "pnu",
-        "법정동코드": "bjd_code",
-        "지번": "jibun",
-        "지목코드": "jimok_code",
         "지목명": "jimok_name",
         "토지면적": "land_area",
-        "용도지역코드1": "use_zone_code",
         "용도지역명1": "use_zone_name",
-        "토지이용상황코드": "land_use_code",
         "토지이용상황": "land_use_name",
-        "도로접면코드": "road_side_code",
         "공시지가": "official_price",
         "데이터기준일자": "data_base_date",
     }
@@ -40,7 +34,7 @@ class LandCharacteristicProcessor(VworldCsvProcessor):
         mapped["official_price"] = self._safe_int(mapped.get("official_price"))
 
         # data_year 추출 (데이터기준일자에서 연도)
-        data_base_date = mapped.get("data_base_date", "") or ""
+        data_base_date = mapped.pop("data_base_date", "") or ""
         mapped["data_year"] = self._safe_int(data_base_date[:4]) or 0
 
         mapped["raw_data"] = raw_row

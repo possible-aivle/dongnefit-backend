@@ -15,12 +15,7 @@ class LotCreate(BaseSchema):
     sido_code: str
     sgg_code: str
     emd_code: str
-    ri_code: str
-    is_mountain: bool = False
-    main_number: str
-    sub_number: str
     jibun_address: str | None = None
-    raw_data: dict[str, Any] | None = None
 
     @field_validator("pnu")
     @classmethod
@@ -37,10 +32,6 @@ class LotRead(BaseSchema):
     sido_code: str
     sgg_code: str
     emd_code: str
-    ri_code: str
-    is_mountain: bool
-    main_number: str
-    sub_number: str
     jibun_address: str | None
     collected_at: datetime
     created_at: datetime | None

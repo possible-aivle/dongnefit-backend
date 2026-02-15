@@ -47,9 +47,6 @@ PROPERTY_TYPE_MAP: dict[str, PropertyType] = {
 
 SALE_COLUMN_MAP: dict[str, str] = {
     "시군구": "sigungu",
-    "번지": "lot_number",
-    "본번": "main_lot_number",
-    "부번": "sub_lot_number",
     "단지명": "building_name",
     "건물명": "building_name",
     "전용면적(㎡)": "exclusive_area",
@@ -58,31 +55,18 @@ SALE_COLUMN_MAP: dict[str, str] = {
     "연면적(㎡)": "floor_area",
     "계약면적(㎡)": "contract_area",
     "층": "floor",
-    "동": "dong",
     "건축년도": "build_year",
-    "주택유형": "housing_type",
-    "도로명": "road_name",
     "거래금액(만원)": "transaction_amount",
-    "매수자": "buyer_type",
-    "매도자": "seller_type",
     "거래유형": "deal_type",
-    "중개사소재지": "broker_location",
-    "등기일자": "registration_date",
-    "해제사유발생일": "cancellation_date",
-    "도로조건": "road_condition",
     # 토지 전용
     "지목": "land_category",
     "용도지역": "use_area",
-    "지분구분": "share_type",
 }
 
 # ── 전월세 전용 컬럼 매핑 ──
 
 RENTAL_COLUMN_MAP: dict[str, str] = {
     "시군구": "sigungu",
-    "번지": "lot_number",
-    "본번": "main_lot_number",
-    "부번": "sub_lot_number",
     "단지명": "building_name",
     "건물명": "building_name",
     "전용면적(㎡)": "exclusive_area",
@@ -90,25 +74,17 @@ RENTAL_COLUMN_MAP: dict[str, str] = {
     "대지권면적(㎡)": "land_area",
     "연면적(㎡)": "floor_area",
     "층": "floor",
-    "동": "dong",
     "건축년도": "build_year",
-    "주택유형": "housing_type",
-    "도로명": "road_name",
-    "전월세구분": "rent_type",
     "보증금(만원)": "deposit",
     "월세금(만원)": "monthly_rent_amount",
     "계약기간": "contract_period",
     "계약구분": "contract_type",
-    "갱신요구권 사용": "renewal_right_used",
-    "종전계약 보증금(만원)": "previous_deposit",
-    "종전계약 월세(만원)": "previous_monthly_rent",
     "거래유형": "deal_type",
-    "중개사소재지": "broker_location",
 }
 
 # 금액 필드 (쉼표 제거 + int 변환)
 SALE_AMOUNT_FIELDS = {"transaction_amount"}
-RENTAL_AMOUNT_FIELDS = {"deposit", "monthly_rent_amount", "previous_deposit", "previous_monthly_rent"}
+RENTAL_AMOUNT_FIELDS = {"deposit", "monthly_rent_amount"}
 
 # float 필드
 FLOAT_FIELDS = {"exclusive_area", "land_area", "floor_area", "contract_area"}

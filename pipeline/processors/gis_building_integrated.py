@@ -19,66 +19,41 @@ console = Console()
 class GisBuildingIntegratedProcessor(BaseProcessor):
     """GIS건물통합정보 SHP 프로세서.
 
-    vworld AL_D010 (29개 SHP 컬럼 중 22개 사용).
-    제외: 원천도형ID(A0), 원천시도시군구코드(A1), 특수지코드(A6),
-          건축물용도코드(A8), 건축물구조코드(A10), GIS건물통합식별번호(A21),
-          참조체계연계키(A23).
+    vworld AL_D010 (29개 SHP 컬럼 중 유지 필드만 매핑).
     """
 
     name = "gis_building_integrated"
     description = "GIS건물통합정보 (AL_D010, SHP)"
     data_type = PublicDataType.GIS_BUILDING_INTEGRATED
 
-    # SHP 속성명(A0~A28) → DB 컬럼명 매핑 (제외 컬럼 생략)
+    # SHP 속성명(A0~A28) → DB 컬럼명 매핑 (유지 필드만)
     FIELD_MAP: dict[str, str] = {
         "A2": "pnu",
-        "A3": "bjd_code",
-        "A4": "bjd_name",
-        "A5": "jibun",
-        "A7": "special_land_name",
         "A9": "use_name",
-        "A11": "structure_name",
         "A12": "building_area",
         "A13": "approval_date",
         "A14": "total_floor_area",
         "A15": "site_area",
         "A16": "height",
-        "A17": "building_coverage_ratio",
-        "A18": "floor_area_ratio",
         "A19": "building_id",
-        "A20": "is_violation",
-        "A22": "data_base_date",
         "A24": "building_name",
-        "A25": "building_dong_name",
         "A26": "above_ground_floors",
         "A27": "underground_floors",
-        "A28": "data_change_date",
     }
 
     # 한글 속성명 fallback (일부 SHP에서 한글 필드명 사용)
     FIELD_MAP_KR: dict[str, str] = {
         "고유번호": "pnu",
-        "법정동코드": "bjd_code",
-        "법정동명": "bjd_name",
-        "지번": "jibun",
-        "특수지구분명": "special_land_name",
         "건축물용도명": "use_name",
-        "건축물구조명": "structure_name",
         "건축물면적": "building_area",
         "사용승인일자": "approval_date",
         "연면적": "total_floor_area",
         "대지면적": "site_area",
         "높이": "height",
-        "건폐율": "building_coverage_ratio",
-        "용적율": "floor_area_ratio",
         "건축물ID": "building_id",
-        "위반건축물여부": "is_violation",
-        "데이터기준일자": "data_base_date",
         "건물명": "building_name",
-        "건물동명": "building_dong_name",
         "지상층수": "above_ground_floors",
         "지하층수": "underground_floors",
-        "데이터생성변경일자": "data_change_date",
     }
 
     async def collect(self, params: dict[str, Any]) -> list[dict]:
@@ -127,10 +102,6 @@ class GisBuildingIntegratedProcessor(BaseProcessor):
             mapped["total_floor_area"] = self._safe_float(mapped.get("total_floor_area"))
             mapped["site_area"] = self._safe_float(mapped.get("site_area"))
             mapped["height"] = self._safe_float(mapped.get("height"))
-            mapped["building_coverage_ratio"] = self._safe_float(
-                mapped.get("building_coverage_ratio")
-            )
-            mapped["floor_area_ratio"] = self._safe_float(mapped.get("floor_area_ratio"))
             mapped["above_ground_floors"] = self._safe_int(mapped.get("above_ground_floors"))
             mapped["underground_floors"] = self._safe_int(mapped.get("underground_floors"))
 

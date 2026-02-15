@@ -22,16 +22,8 @@ class IndividualHousePrice(PublicDataBase, table=True):
         index=True,
         description="필지고유번호",
     )
-    bjd_code: str | None = Field(default=None, max_length=10, description="법정동코드")
-    jibun: str | None = Field(default=None, max_length=20, description="지번")
     base_year: int = Field(description="기준년도")
-    base_month: int | None = Field(default=None, description="기준월")
-    building_floor_area: float | None = Field(default=None, description="건물산정연면적(㎡)")
-    land_area: float | None = Field(default=None, description="토지대장면적(㎡)")
-    total_floor_area: float | None = Field(default=None, description="건물전체연면적(㎡)")
     house_price: int | None = Field(default=None, description="주택가격(원)")
-    is_standard: str | None = Field(default=None, max_length=1, description="표준지여부")
-    data_base_date: str | None = Field(default=None, max_length=10, description="데이터기준일자")
 
 
 class ApartmentPrice(PublicDataBase, table=True):
@@ -58,16 +50,10 @@ class ApartmentPrice(PublicDataBase, table=True):
         index=True,
         description="필지고유번호",
     )
-    bjd_code: str | None = Field(default=None, max_length=10, description="법정동코드")
-    jibun: str | None = Field(default=None, max_length=20, description="지번")
     base_year: int = Field(description="기준년도")
-    base_month: int | None = Field(default=None, description="기준월")
-    apt_type_code: str | None = Field(default=None, max_length=5, description="공동주택구분코드")
     apt_type_name: str | None = Field(default=None, max_length=20, description="공동주택구분명")
     apt_name: str | None = Field(default=None, max_length=100, description="공동주택명")
     dong_name: str | None = Field(default=None, max_length=50, description="동명")
-    floor_name: str | None = Field(default=None, max_length=10, description="층명")
     ho_name: str | None = Field(default=None, max_length=10, description="호명")
     exclusive_area: float | None = Field(default=None, description="전용면적(㎡)")
     official_price: int | None = Field(default=None, description="공시가격(원)")
-    data_base_date: str | None = Field(default=None, max_length=10, description="데이터기준일자")

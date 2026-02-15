@@ -11,15 +11,7 @@ class IndividualHousePriceCreate(BaseSchema):
 
     pnu: str
     base_year: int
-    bjd_code: str | None = None
-    jibun: str | None = None
-    base_month: int | None = None
-    building_floor_area: float | None = None
-    land_area: float | None = None
-    total_floor_area: float | None = None
     house_price: int | None = None
-    is_standard: str | None = None
-    data_base_date: str | None = None
     raw_data: dict[str, Any] | None = None
 
 
@@ -29,15 +21,7 @@ class IndividualHousePriceRead(BaseSchema):
     id: int
     pnu: str
     base_year: int
-    bjd_code: str | None
-    jibun: str | None
-    base_month: int | None
-    building_floor_area: float | None
-    land_area: float | None
-    total_floor_area: float | None
     house_price: int | None
-    is_standard: str | None
-    data_base_date: str | None
     raw_data: dict[str, Any] | None
     collected_at: datetime
     created_at: datetime | None
@@ -49,18 +33,12 @@ class ApartmentPriceCreate(BaseSchema):
 
     pnu: str
     base_year: int
-    bjd_code: str | None = None
-    jibun: str | None = None
-    base_month: int | None = None
-    apt_type_code: str | None = None
     apt_type_name: str | None = None
     apt_name: str | None = None
     dong_name: str | None = None
-    floor_name: str | None = None
     ho_name: str | None = None
     exclusive_area: float | None = None
     official_price: int | None = None
-    data_base_date: str | None = None
     raw_data: dict[str, Any] | None = None
 
 
@@ -70,18 +48,12 @@ class ApartmentPriceRead(BaseSchema):
     id: int
     pnu: str
     base_year: int
-    bjd_code: str | None
-    jibun: str | None
-    base_month: int | None
-    apt_type_code: str | None
     apt_type_name: str | None
     apt_name: str | None
     dong_name: str | None
-    floor_name: str | None
     ho_name: str | None
     exclusive_area: float | None
     official_price: int | None
-    data_base_date: str | None
     raw_data: dict[str, Any] | None
     collected_at: datetime
     created_at: datetime | None

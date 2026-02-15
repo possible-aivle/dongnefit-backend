@@ -16,12 +16,8 @@ class LandForestProcessor(VworldCsvProcessor):
 
     COLUMN_MAP: dict[str, str] = {
         "고유번호": "pnu",
-        "법정동코드": "bjd_code",
-        "지번": "jibun",
-        "지목코드": "jimok_code",
         "지목명": "jimok_name",
         "면적": "area",
-        "소유구분코드": "ownership_code",
         "소유구분명": "ownership_name",
         "소유(공유)인수": "owner_count",
         "데이터기준일자": "data_base_date",
@@ -37,7 +33,7 @@ class LandForestProcessor(VworldCsvProcessor):
         mapped["owner_count"] = self._safe_int(mapped.get("owner_count"))
 
         # data_year 추출
-        data_base_date = mapped.get("data_base_date", "") or ""
+        data_base_date = mapped.pop("data_base_date", "") or ""
         mapped["data_year"] = self._safe_int(data_base_date[:4]) or 0
 
         mapped["raw_data"] = raw_row
