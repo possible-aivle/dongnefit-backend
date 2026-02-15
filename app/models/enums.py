@@ -42,7 +42,6 @@ class PublicDataType(Enum):
     ROAD_CENTER_LINE = "road_center_line"
     USE_REGION_DISTRICT = "use_region_district"
     GIS_BUILDING_INTEGRATED = "gis_building_integrated"
-    STANDARD_LAND_PRICE = "standard_land_price"
     INDIVIDUAL_HOUSE_PRICE = "individual_house_price"
     APARTMENT_PRICE = "apartment_price"
 

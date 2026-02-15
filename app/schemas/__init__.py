@@ -52,8 +52,6 @@ from app.schemas.transaction import (
     OfficialLandPriceRead,
     RealEstateTransactionCreate,
     RealEstateTransactionRead,
-    StandardLandPriceCreate,
-    StandardLandPriceRead,
 )
 
 __all__ = [
@@ -92,8 +90,6 @@ __all__ = [
     "OfficialLandPriceRead",
     "RealEstateTransactionCreate",
     "RealEstateTransactionRead",
-    "StandardLandPriceCreate",
-    "StandardLandPriceRead",
     # Price
     "IndividualHousePriceCreate",
     "IndividualHousePriceRead",

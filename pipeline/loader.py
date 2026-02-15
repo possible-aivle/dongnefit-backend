@@ -31,7 +31,6 @@ from app.models.spatial import RoadCenterLine, UseRegionDistrict
 from app.models.transaction import (
     OfficialLandPrice,
     RealEstateTransaction,
-    StandardLandPrice,
 )
 from pipeline.processors.base import ProcessResult
 
@@ -55,7 +54,6 @@ MODEL_MAP: dict[PublicDataType, type[SQLModel]] = {
     PublicDataType.ROAD_CENTER_LINE: RoadCenterLine,
     PublicDataType.USE_REGION_DISTRICT: UseRegionDistrict,
     PublicDataType.GIS_BUILDING_INTEGRATED: GisBuildingIntegrated,
-    PublicDataType.STANDARD_LAND_PRICE: StandardLandPrice,
     PublicDataType.INDIVIDUAL_HOUSE_PRICE: IndividualHousePrice,
     PublicDataType.APARTMENT_PRICE: ApartmentPrice,
 }
@@ -72,7 +70,6 @@ UPSERT_KEYS: dict[PublicDataType, list[str]] = {
     PublicDataType.BUILDING_REGISTER_HEADER: ["mgm_bldrgst_pk"],
     PublicDataType.BUILDING_REGISTER_GENERAL: ["mgm_bldrgst_pk"],
     PublicDataType.GIS_BUILDING_INTEGRATED: ["pnu", "building_id"],
-    PublicDataType.STANDARD_LAND_PRICE: ["pnu", "base_year"],
     PublicDataType.INDIVIDUAL_HOUSE_PRICE: ["pnu", "base_year"],
     PublicDataType.APARTMENT_PRICE: ["pnu", "base_year", "dong_name", "ho_name"],
 }
