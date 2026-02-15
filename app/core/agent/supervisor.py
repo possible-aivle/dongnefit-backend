@@ -18,7 +18,7 @@ except ImportError:
 
 from app.config import settings
 from app.core.agent.sub_agents.data_classifier import ArticleAnalyzer
-from app.core.agent.sub_agents.news_collector import NewsSearchService
+from app.core.agent.sub_agents.data_collector import NewsSearchService
 from app.core.agent.sub_agents.content_generator import ContentGenerator
 from app.core.agent.tools.geocoding import GeocodingService
 from app.core.agent.models import (
