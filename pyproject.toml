@@ -8,7 +8,6 @@ dependencies = [
     # Web Framework
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
-
     # Database
     "sqlmodel>=0.0.22",
     "sqlalchemy>=2.0.36",
@@ -17,33 +16,28 @@ dependencies = [
     "asyncpg>=0.30.0",
     "greenlet>=3.0.0",
     "faker>=33.0.0",
-
     # Validation & Settings
     "pydantic[email]>=2.10.0",
     "pydantic-settings>=2.6.0",
-
     # AI & Content Generation
     "langgraph>=0.2.0",
     "langchain>=0.3.0",
     "langchain-openai>=0.2.0",
     "langchain-anthropic>=0.3.0",
-
     # Web Scraping
     "selenium>=4.27.0",
     "webdriver-manager>=4.0.0",
     "krwordrank>=1.0.3",
     "openai>=1.82.1",
     "pandas>=3.0.0",
-
     # Image Generation
     "pillow>=11.0.0",
     "httpx>=0.28.0",
-
     # Utilities
     "python-dotenv>=1.0.1",
     "python-multipart>=0.0.18",
     "itsdangerous>=2.2.0",
-
+    "beautifulsoup4>=4.14.3",
     # CLI (pipeline)
     "rich>=13.0.0",
     "InquirerPy>=0.3.4",
