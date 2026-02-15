@@ -3,7 +3,11 @@
 from app.models.administrative import AdministrativeDivision, AdministrativeEmd
 from app.models.base import PublicDataBase, TimestampMixin
 from app.models.blog import BlogPost, BlogStatus
-from app.models.building import BuildingRegisterFloorDetail, BuildingRegisterHeader
+from app.models.building import (
+    BuildingRegisterFloorDetail,
+    BuildingRegisterHeader,
+    GisBuildingIntegrated,
+)
 from app.models.discussion import (
     Discussion,
     DiscussionLike,
@@ -21,9 +25,10 @@ from app.models.land import LandAndForestInfo, LandCharacteristic, LandUsePlan
 from app.models.lot import AncillaryLand, Lot
 from app.models.neighborhood import Neighborhood
 from app.models.notification import Notification, NotificationSettings, NotificationType
+from app.models.price import ApartmentPrice, IndividualHousePrice
 from app.models.report import Report, ReportCategory, ReportReview, ReportStatus
 from app.models.spatial import RoadCenterLine, UseRegionDistrict
-from app.models.transaction import OfficialLandPrice, RealEstateTransaction
+from app.models.transaction import OfficialLandPrice, RealEstateTransaction, StandardLandPrice
 from app.models.user import AuthProvider, User, UserRole
 
 __all__ = [
@@ -73,9 +78,14 @@ __all__ = [
     # Building (건물)
     "BuildingRegisterHeader",
     "BuildingRegisterFloorDetail",
+    "GisBuildingIntegrated",
     # Transaction (실거래가/공시지가)
     "OfficialLandPrice",
     "RealEstateTransaction",
+    "StandardLandPrice",
+    # Price (주택가격)
+    "IndividualHousePrice",
+    "ApartmentPrice",
     # Spatial (GIS)
     "RoadCenterLine",
     "UseRegionDistrict",

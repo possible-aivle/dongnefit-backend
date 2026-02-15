@@ -13,13 +13,11 @@ class OfficialLandPrice(PublicDataBase, table=True):
     """개별공시지가 테이블.
 
     사업성 분석 필수 데이터.
-    vworld csv 데이터 기반 (개별공시지가정보).
+    vworld csv 데이터 기반 (AL_D151, 13개 CSV 컬럼).
     """
 
     __tablename__ = "official_land_prices"
-    __table_args__ = (
-        UniqueConstraint("pnu", "base_year", name="uq_official_price_pnu_year"),
-    )
+    __table_args__ = (UniqueConstraint("pnu", "base_year", name="uq_official_price_pnu_year"),)
 
     pnu: str = Field(
         max_length=19,
@@ -30,6 +28,43 @@ class OfficialLandPrice(PublicDataBase, table=True):
     base_year: int = Field(description="기준년도")
     base_date: date | None = Field(default=None, description="기준일")
     price_per_sqm: int | None = Field(default=None, description="㎡당 공시지가 (원)")
+
+    # 핵심 컬럼 (AL_D151 컬럼정의서 기반)
+    bjd_code: str | None = Field(default=None, max_length=10, description="법정동코드")
+    jibun: str | None = Field(default=None, max_length=20, description="지번")
+    base_month: int | None = Field(default=None, description="기준월")
+    is_standard: bool | None = Field(default=None, description="표준지여부")
+    data_base_date: str | None = Field(default=None, max_length=10, description="데이터기준일자")
+
+
+class StandardLandPrice(PublicDataBase, table=True):
+    """표준지공시지가 테이블.
+
+    사업성 분석 참고 데이터.
+    vworld csv 데이터 기반 (AL_D153, 40개 CSV 컬럼).
+    """
+
+    __tablename__ = "standard_land_prices"
+    __table_args__ = (UniqueConstraint("pnu", "base_year", name="uq_std_price_pnu_year"),)
+
+    pnu: str = Field(
+        max_length=19,
+        foreign_key="lots.pnu",
+        index=True,
+        description="필지고유번호",
+    )
+    bjd_code: str | None = Field(default=None, max_length=10, description="법정동코드")
+    jibun: str | None = Field(default=None, max_length=20, description="지번")
+    base_year: int = Field(description="기준년도")
+    jimok_code: str | None = Field(default=None, max_length=5, description="지목코드")
+    jimok_name: str | None = Field(default=None, max_length=20, description="지목명")
+    land_area: float | None = Field(default=None, description="토지면적(㎡)")
+    use_zone_code: str | None = Field(default=None, max_length=5, description="용도지역코드1")
+    use_zone_name: str | None = Field(default=None, max_length=50, description="용도지역명1")
+    land_use_code: str | None = Field(default=None, max_length=5, description="토지이용상황코드")
+    land_use_name: str | None = Field(default=None, max_length=30, description="토지이용상황")
+    official_price: int | None = Field(default=None, description="공시지가(원/㎡)")
+    data_base_date: str | None = Field(default=None, max_length=10, description="데이터기준일자")
 
 
 class RealEstateTransaction(PublicDataBase, table=True):

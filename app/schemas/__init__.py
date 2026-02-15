@@ -18,6 +18,8 @@ from app.schemas.building import (
     BuildingRegisterFloorDetailRead,
     BuildingRegisterHeaderCreate,
     BuildingRegisterHeaderRead,
+    GisBuildingIntegratedCreate,
+    GisBuildingIntegratedRead,
 )
 from app.schemas.land import (
     LandAndForestInfoCreate,
@@ -33,6 +35,12 @@ from app.schemas.lot import (
     LotCreate,
     LotRead,
 )
+from app.schemas.price import (
+    ApartmentPriceCreate,
+    ApartmentPriceRead,
+    IndividualHousePriceCreate,
+    IndividualHousePriceRead,
+)
 from app.schemas.spatial import (
     RoadCenterLineCreate,
     RoadCenterLineRead,
@@ -44,6 +52,8 @@ from app.schemas.transaction import (
     OfficialLandPriceRead,
     RealEstateTransactionCreate,
     RealEstateTransactionRead,
+    StandardLandPriceCreate,
+    StandardLandPriceRead,
 )
 
 __all__ = [
@@ -75,11 +85,20 @@ __all__ = [
     "BuildingRegisterHeaderRead",
     "BuildingRegisterFloorDetailCreate",
     "BuildingRegisterFloorDetailRead",
+    "GisBuildingIntegratedCreate",
+    "GisBuildingIntegratedRead",
     # Transaction
     "OfficialLandPriceCreate",
     "OfficialLandPriceRead",
     "RealEstateTransactionCreate",
     "RealEstateTransactionRead",
+    "StandardLandPriceCreate",
+    "StandardLandPriceRead",
+    # Price
+    "IndividualHousePriceCreate",
+    "IndividualHousePriceRead",
+    "ApartmentPriceCreate",
+    "ApartmentPriceRead",
     # Spatial
     "RoadCenterLineCreate",
     "RoadCenterLineRead",

@@ -41,6 +41,8 @@ dependencies = [
     # CLI (pipeline)
     "rich>=13.0.0",
     "InquirerPy>=0.3.4",
+    "openpyxl>=3.1.5",
+    "fiona>=1.10.1",
 ]
 
 [project.optional-dependencies]

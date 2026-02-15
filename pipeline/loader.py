@@ -14,6 +14,7 @@ from app.models.administrative import AdministrativeDivision, AdministrativeEmd
 from app.models.building import (
     BuildingRegisterFloorDetail,
     BuildingRegisterHeader,
+    GisBuildingIntegrated,
 )
 from app.models.enums import PublicDataType
 from app.models.land import (
@@ -22,8 +23,13 @@ from app.models.land import (
     LandUsePlan,
 )
 from app.models.lot import AncillaryLand, Lot
+from app.models.price import ApartmentPrice, IndividualHousePrice
 from app.models.spatial import RoadCenterLine, UseRegionDistrict
-from app.models.transaction import OfficialLandPrice, RealEstateTransaction
+from app.models.transaction import (
+    OfficialLandPrice,
+    RealEstateTransaction,
+    StandardLandPrice,
+)
 from pipeline.processors.base import ProcessResult
 
 # ── 데이터타입 ↔ 모델 매핑 ──
@@ -42,6 +48,10 @@ MODEL_MAP: dict[PublicDataType, type[SQLModel]] = {
     PublicDataType.ADMINISTRATIVE_EMD: AdministrativeEmd,
     PublicDataType.ROAD_CENTER_LINE: RoadCenterLine,
     PublicDataType.USE_REGION_DISTRICT: UseRegionDistrict,
+    PublicDataType.GIS_BUILDING_INTEGRATED: GisBuildingIntegrated,
+    PublicDataType.STANDARD_LAND_PRICE: StandardLandPrice,
+    PublicDataType.INDIVIDUAL_HOUSE_PRICE: IndividualHousePrice,
+    PublicDataType.APARTMENT_PRICE: ApartmentPrice,
 }
 
 # PNU 기반 테이블의 upsert 키 (unique constraint 기준)
@@ -53,6 +63,10 @@ UPSERT_KEYS: dict[PublicDataType, list[str]] = {
     PublicDataType.OFFICIAL_LAND_PRICE: ["pnu", "base_year"],
     PublicDataType.ADMINISTRATIVE_DIVISION: ["code"],
     PublicDataType.ADMINISTRATIVE_EMD: ["code"],
+    PublicDataType.GIS_BUILDING_INTEGRATED: ["pnu", "building_id"],
+    PublicDataType.STANDARD_LAND_PRICE: ["pnu", "base_year"],
+    PublicDataType.INDIVIDUAL_HOUSE_PRICE: ["pnu", "base_year"],
+    PublicDataType.APARTMENT_PRICE: ["pnu", "base_year", "dong_name", "ho_name"],
 }
 
 
@@ -71,10 +85,7 @@ def get_table_name(data_type: PublicDataType) -> str:
 
 def get_all_public_tables() -> dict[str, PublicDataType]:
     """모든 공공데이터 테이블명 → 데이터타입 매핑을 반환합니다."""
-    return {
-        get_table_name(dt): dt
-        for dt in MODEL_MAP
-    }
+    return {get_table_name(dt): dt for dt in MODEL_MAP}
 
 
 # ── Bulk Insert ──
