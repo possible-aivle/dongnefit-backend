@@ -35,12 +35,6 @@ from app.schemas.lot import (
     LotCreate,
     LotRead,
 )
-from app.schemas.price import (
-    ApartmentPriceCreate,
-    ApartmentPriceRead,
-    IndividualHousePriceCreate,
-    IndividualHousePriceRead,
-)
 from app.schemas.spatial import (
     RoadCenterLineCreate,
     RoadCenterLineRead,
@@ -94,11 +88,6 @@ __all__ = [
     "RealEstateSaleRead",
     "RealEstateRentalCreate",
     "RealEstateRentalRead",
-    # Price
-    "IndividualHousePriceCreate",
-    "IndividualHousePriceRead",
-    "ApartmentPriceCreate",
-    "ApartmentPriceRead",
     # Spatial
     "RoadCenterLineCreate",
     "RoadCenterLineRead",

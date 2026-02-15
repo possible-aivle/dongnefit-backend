@@ -26,7 +26,6 @@ from app.models.land import (
     LandUsePlan,
 )
 from app.models.lot import AncillaryLand, Lot
-from app.models.price import ApartmentPrice, IndividualHousePrice
 from app.models.spatial import RoadCenterLine, UseRegionDistrict
 from app.models.transaction import (
     OfficialLandPrice,
@@ -56,8 +55,6 @@ MODEL_MAP: dict[PublicDataType, type[SQLModel]] = {
     PublicDataType.ROAD_CENTER_LINE: RoadCenterLine,
     PublicDataType.USE_REGION_DISTRICT: UseRegionDistrict,
     PublicDataType.GIS_BUILDING_INTEGRATED: GisBuildingIntegrated,
-    PublicDataType.INDIVIDUAL_HOUSE_PRICE: IndividualHousePrice,
-    PublicDataType.APARTMENT_PRICE: ApartmentPrice,
 }
 
 # PNU 기반 테이블의 upsert 키 (unique constraint 기준)
@@ -72,8 +69,6 @@ UPSERT_KEYS: dict[PublicDataType, list[str]] = {
     PublicDataType.BUILDING_REGISTER_HEADER: ["mgm_bldrgst_pk"],
     PublicDataType.BUILDING_REGISTER_GENERAL: ["mgm_bldrgst_pk"],
     PublicDataType.GIS_BUILDING_INTEGRATED: ["pnu", "building_id"],
-    PublicDataType.INDIVIDUAL_HOUSE_PRICE: ["pnu", "base_year"],
-    PublicDataType.APARTMENT_PRICE: ["pnu", "base_year", "dong_name", "ho_name"],
 }
 
 

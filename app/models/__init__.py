@@ -28,7 +28,6 @@ from app.models.land import LandAndForestInfo, LandCharacteristic, LandUsePlan
 from app.models.lot import AncillaryLand, Lot
 from app.models.neighborhood import Neighborhood
 from app.models.notification import Notification, NotificationSettings, NotificationType
-from app.models.price import ApartmentPrice, IndividualHousePrice
 from app.models.report import Report, ReportCategory, ReportReview, ReportStatus
 from app.models.spatial import RoadCenterLine, UseRegionDistrict
 from app.models.transaction import OfficialLandPrice, RealEstateRental, RealEstateSale
@@ -89,9 +88,6 @@ __all__ = [
     "OfficialLandPrice",
     "RealEstateSale",
     "RealEstateRental",
-    # Price (주택가격)
-    "IndividualHousePrice",
-    "ApartmentPrice",
     # Spatial (GIS)
     "RoadCenterLine",
     "UseRegionDistrict",
