@@ -4,7 +4,10 @@ from app.models.administrative import AdministrativeDivision, AdministrativeEmd
 from app.models.base import PublicDataBase, TimestampMixin
 from app.models.blog import BlogPost, BlogStatus
 from app.models.building import (
+    BuildingRegisterAncillaryLot,
+    BuildingRegisterArea,
     BuildingRegisterFloorDetail,
+    BuildingRegisterGeneral,
     BuildingRegisterHeader,
     GisBuildingIntegrated,
 )
@@ -77,7 +80,10 @@ __all__ = [
     "LandAndForestInfo",
     # Building (건물)
     "BuildingRegisterHeader",
+    "BuildingRegisterGeneral",
     "BuildingRegisterFloorDetail",
+    "BuildingRegisterArea",
+    "BuildingRegisterAncillaryLot",
     "GisBuildingIntegrated",
     # Transaction (실거래가/공시지가)
     "OfficialLandPrice",

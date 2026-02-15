@@ -12,7 +12,10 @@ from sqlmodel import SQLModel
 
 from app.models.administrative import AdministrativeDivision, AdministrativeEmd
 from app.models.building import (
+    BuildingRegisterAncillaryLot,
+    BuildingRegisterArea,
     BuildingRegisterFloorDetail,
+    BuildingRegisterGeneral,
     BuildingRegisterHeader,
     GisBuildingIntegrated,
 )
@@ -43,7 +46,10 @@ MODEL_MAP: dict[PublicDataType, type[SQLModel]] = {
     PublicDataType.OFFICIAL_LAND_PRICE: OfficialLandPrice,
     PublicDataType.REAL_ESTATE_TRANSACTION: RealEstateTransaction,
     PublicDataType.BUILDING_REGISTER_HEADER: BuildingRegisterHeader,
+    PublicDataType.BUILDING_REGISTER_GENERAL: BuildingRegisterGeneral,
     PublicDataType.BUILDING_REGISTER_FLOOR_DETAIL: BuildingRegisterFloorDetail,
+    PublicDataType.BUILDING_REGISTER_AREA: BuildingRegisterArea,
+    PublicDataType.BUILDING_REGISTER_ANCILLARY_LOT: BuildingRegisterAncillaryLot,
     PublicDataType.ADMINISTRATIVE_DIVISION: AdministrativeDivision,
     PublicDataType.ADMINISTRATIVE_EMD: AdministrativeEmd,
     PublicDataType.ROAD_CENTER_LINE: RoadCenterLine,
@@ -63,6 +69,8 @@ UPSERT_KEYS: dict[PublicDataType, list[str]] = {
     PublicDataType.OFFICIAL_LAND_PRICE: ["pnu", "base_year"],
     PublicDataType.ADMINISTRATIVE_DIVISION: ["code"],
     PublicDataType.ADMINISTRATIVE_EMD: ["code"],
+    PublicDataType.BUILDING_REGISTER_HEADER: ["mgm_bldrgst_pk"],
+    PublicDataType.BUILDING_REGISTER_GENERAL: ["mgm_bldrgst_pk"],
     PublicDataType.GIS_BUILDING_INTEGRATED: ["pnu", "building_id"],
     PublicDataType.STANDARD_LAND_PRICE: ["pnu", "base_year"],
     PublicDataType.INDIVIDUAL_HOUSE_PRICE: ["pnu", "base_year"],
