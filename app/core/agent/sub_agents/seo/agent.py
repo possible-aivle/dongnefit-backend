@@ -2,8 +2,8 @@
 
 from typing import Any, Optional
 
-from app.core.seo_agent.models import BlogDraft
-from app.core.seo_agent.workflow import build_seo_workflow
+from .models import BlogDraft
+from .workflow import build_seo_workflow
 
 
 class SEOAgent:

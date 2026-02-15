@@ -3,7 +3,7 @@
 import re
 from typing import Any
 
-from app.core.seo_agent.models import BlogDraft, SEOScoreBreakdown
+from .models import BlogDraft, SEOScoreBreakdown
 
 
 class SEOScorer:

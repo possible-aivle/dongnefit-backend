@@ -7,14 +7,14 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import tool
 
-from app.core.seo_agent.models import (
+from .models import (
     BlogDraft,
     ComparisonReport,
     ImprovedBlog,
     SEOIssue,
     SEOScoreBreakdown,
 )
-from app.core.seo_agent.scoring import SEOScorer
+from .scoring import SEOScorer
 
 
 class SEOTools:

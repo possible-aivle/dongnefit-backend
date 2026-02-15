@@ -106,6 +106,10 @@ class Settings(BaseSettings):
     selenium_headless: bool = True
     selenium_timeout: int = 30
 
+    # Naver API
+    naver_client_id: str = ""
+    naver_client_secret: str = ""
+
     # Tistory Credentials
     tistory_id: str = ""
     tistory_password: str = ""

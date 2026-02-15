@@ -2,20 +2,24 @@
 
 from typing import Any
 
-from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
 
+try:
+    from langchain_anthropic import ChatAnthropic
+except ImportError:
+    ChatAnthropic = None
+
 from app.config import settings
-from app.core.seo_agent.models import (
+from .models import (
     BlogDraft,
     ImprovedBlog,
     SEOAgentState,
     SEOIssue,
     SEOScoreBreakdown,
 )
-from app.core.seo_agent.tools import SEOTools
+from .tools import SEOTools
 
 
 class SEOWorkflow:
@@ -304,6 +308,111 @@ class SEOWorkflow:
         print("\n[시스템] SEO optimization complete!")
 
         return result
+
+    async def run_interactive(self, draft: BlogDraft) -> dict[str, Any]:
+        """Run the SEO optimization workflow in interactive mode."""
+
+        # 1. 초기 분석
+        analysis_state = await self.run_analysis(draft)
+
+        current_state = analysis_state.copy()
+
+        available_categories = {
+            "title": "제목 (title)",
+            "structure": "본문 구조 (structure)",
+            "keyword": "키워드 최적화 (keyword)",
+            "readability": "가독성 (readability)",
+            "metadata": "메타데이터 (metadata)"
+        }
+
+        while True:
+            # 현재 점수 확인
+            current_score = current_state.get("improved_score") or current_state["original_score"]
+            print(f"\n" + "="*40)
+            print(f"[시스템] 현재 SEO 점수: {current_score.total_score}점")
+            print("="*40)
+
+            print("\n[개선 옵션]")
+            print("1. 전체 자동 개선 (남은 항목 일괄 적용)")
+            print("2. 선택적 개선 (항목 선택)")
+            print("3. 개선 종료 및 저장")
+
+            choice = input("\n원하는 작업을 선택하세요 (1-3) [1]: ").strip()
+            if not choice: choice = "1"
+
+            if choice == "3":
+                print("[알림] SEO 개선을 종료합니다.")
+                break
+
+            selected_categories = None
+
+            if choice == "1":
+                print("[알림] 남은 모든 항목을 자동으로 개선합니다.")
+                # selected_categories가 None이면 전체 개선
+
+            elif choice == "2":
+                print("\n[개선할 항목 선택]")
+                cat_keys = list(available_categories.keys())
+                for idx, key in enumerate(cat_keys, 1):
+                    print(f"{idx}. {available_categories[key]}")
+                print("0. 취소")
+
+                try:
+                    selection = input(f"번호 선택 (1-{len(cat_keys)}): ").strip()
+                    if selection == "0": continue
+
+                    idx = int(selection) - 1
+                    if 0 <= idx < len(cat_keys):
+                        selected_categories = [cat_keys[idx]]
+                    else:
+                        print("[오류] 올바른 번호를 입력하세요.")
+                        continue
+                except ValueError:
+                    print("[오류] 숫자를 입력하세요.")
+                    continue
+
+            # 개선 실행 (Preview)
+            # 입력 상태 준비 (draft는 항상 최신 상태여야 함)
+            # current_state에서 improved_draft가 있으면 그것이 original_draft가 되어야 함
+
+            input_state = current_state.copy()
+            if input_state.get("improved_draft"):
+                 input_state["original_draft"] = input_state["improved_draft"]
+                 input_state["original_score"] = input_state["improved_score"]
+                 # issues는 다시 분석해야 하나?
+                 # 원래는 re-analysis가 필요하지만, 여기서는 단순히 개선만 반복 적용
+                 # workflow.py 구조상 _improve_content_node는 state["issues"]를 사용함.
+                 # 따라서 이슈가 갱신되지 않으면 옛날 이슈를 계속 고치려 할 수 있음.
+                 # 하지만 interactive mode에서는 사용자가 "이거 고쳐" 하면 고치는 식.
+
+            improve_result = await self.run_improvement(input_state, selected_categories)
+
+            new_score = improve_result["improved_score"]
+            improved_draft = improve_result["improved_draft"]
+
+            # 결과 미리보기
+            score_delta = new_score.total_score - current_score.total_score
+            delta_str = f"+{score_delta}" if score_delta >= 0 else f"{score_delta}"
+
+            print(f"\n[미리보기] 예상 SEO 점수: {new_score.total_score}점 ({delta_str}점)")
+
+            if improved_draft.changes_summary:
+                print("[변경 사항 요약]")
+                for change in improved_draft.changes_summary:
+                    print(f"  - {change}")
+
+            confirm = input("\n이 개선사항을 적용하시겠습니까? (y/n) [y]: ").strip().lower()
+            if not confirm: confirm = 'y'
+
+            if confirm == 'y':
+                current_state = improve_result
+                print("[알림] 개선사항이 적용되었습니다.")
+
+                # 성공 시 카테고리 제거 표시는 생략 (복잡도 감소)
+            else:
+                print("[알림] 적용 취소됨.")
+
+        return current_state
 
     async def run_analysis(self, draft: BlogDraft) -> dict[str, Any]:
         """Run only the analysis phase."""

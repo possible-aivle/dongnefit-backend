@@ -1,7 +1,7 @@
 """SEO AI Agent for blog content optimization."""
 
-from app.core.seo_agent.agent import SEOAgent
-from app.core.seo_agent.models import (
+from .agent import SEOAgent
+from .models import (
     BlogDraft,
     ImprovedBlog,
     SEOIssue,
