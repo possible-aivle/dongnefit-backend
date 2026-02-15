@@ -91,6 +91,7 @@ app/core/tistory/images/
 # Pipeline dumps
 dumps/
 public_data/
+api_data/
 
 # docs
 docs/
