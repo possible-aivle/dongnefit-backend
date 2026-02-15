@@ -31,7 +31,7 @@ from app.models.notification import Notification, NotificationSettings, Notifica
 from app.models.price import ApartmentPrice, IndividualHousePrice
 from app.models.report import Report, ReportCategory, ReportReview, ReportStatus
 from app.models.spatial import RoadCenterLine, UseRegionDistrict
-from app.models.transaction import OfficialLandPrice, RealEstateTransaction
+from app.models.transaction import OfficialLandPrice, RealEstateRental, RealEstateSale
 from app.models.user import AuthProvider, User, UserRole
 
 __all__ = [
@@ -87,7 +87,8 @@ __all__ = [
     "GisBuildingIntegrated",
     # Transaction (실거래가/공시지가)
     "OfficialLandPrice",
-    "RealEstateTransaction",
+    "RealEstateSale",
+    "RealEstateRental",
     # Price (주택가격)
     "IndividualHousePrice",
     "ApartmentPrice",

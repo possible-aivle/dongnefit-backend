@@ -30,7 +30,8 @@ from app.models.price import ApartmentPrice, IndividualHousePrice
 from app.models.spatial import RoadCenterLine, UseRegionDistrict
 from app.models.transaction import (
     OfficialLandPrice,
-    RealEstateTransaction,
+    RealEstateRental,
+    RealEstateSale,
 )
 from pipeline.processors.base import ProcessResult
 
@@ -43,7 +44,8 @@ MODEL_MAP: dict[PublicDataType, type[SQLModel]] = {
     PublicDataType.LAND_USE_PLAN: LandUsePlan,
     PublicDataType.LAND_AND_FOREST_INFO: LandAndForestInfo,
     PublicDataType.OFFICIAL_LAND_PRICE: OfficialLandPrice,
-    PublicDataType.REAL_ESTATE_TRANSACTION: RealEstateTransaction,
+    PublicDataType.REAL_ESTATE_SALE: RealEstateSale,
+    PublicDataType.REAL_ESTATE_RENTAL: RealEstateRental,
     PublicDataType.BUILDING_REGISTER_HEADER: BuildingRegisterHeader,
     PublicDataType.BUILDING_REGISTER_GENERAL: BuildingRegisterGeneral,
     PublicDataType.BUILDING_REGISTER_FLOOR_DETAIL: BuildingRegisterFloorDetail,

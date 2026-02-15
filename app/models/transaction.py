@@ -1,4 +1,4 @@
-"""실거래가 및 공시지가 모델."""
+"""실거래가(매매/전월세) 및 공시지가 모델."""
 
 from datetime import date
 
@@ -43,19 +43,16 @@ class OfficialLandPrice(PublicDataBase, table=True):
     )
 
 
-class RealEstateTransaction(PublicDataBase, table=True):
-    """부동산 실거래가 테이블.
+class RealEstateSale(PublicDataBase, table=True):
+    """부동산 매매 실거래가 테이블.
 
-    사업성 분석 필수 데이터.
-    토지/상업업무용/단독다가구/연립다세대/아파트/오피스텔 실거래가 통합.
-    매매 및 전월세 포함.
-    rt.molit.go.kr 데이터 기반 (달별 csv, 현재 API로 변경됨).
-
-    주의: 전월세 데이터 업로드 시 해당 전 기간의 전월세전환율 데이터가 먼저 필요.
+    토지/단독다가구/연립다세대/아파트/오피스텔 매매 실거래가.
+    https://rt.molit.go.kr/pt/xls/xls.do?mobileAt=
     """
 
-    __tablename__ = "real_estate_transactions"
+    __tablename__ = "real_estate_sales"
 
+    # ── 핵심 식별 필드 ──
     pnu: str | None = Field(
         default=None,
         max_length=19,
@@ -64,17 +61,182 @@ class RealEstateTransaction(PublicDataBase, table=True):
     )
     property_type: PropertyType = Field(
         sa_column=Column(
-            Enum(PropertyType, name="property_type_enum", create_constraint=True),
+            Enum(PropertyType, name="property_type_enum", create_constraint=False),
+            nullable=False,
+        ),
+        description="부동산 유형",
+    )
+
+    # ── 위치 정보 ──
+    sigungu: str | None = Field(
+        default=None, max_length=100, index=True, description="시군구"
+    )
+    lot_number: str | None = Field(
+        default=None, max_length=30, description="번지"
+    )
+    main_lot_number: str | None = Field(
+        default=None, max_length=10, description="본번"
+    )
+    sub_lot_number: str | None = Field(
+        default=None, max_length=10, description="부번"
+    )
+    road_name: str | None = Field(
+        default=None, max_length=200, description="도로명"
+    )
+
+    # ── 건물 정보 ──
+    building_name: str | None = Field(
+        default=None, max_length=200, index=True, description="단지명/건물명",
+    )
+    exclusive_area: float | None = Field(
+        default=None, description="전용면적 (㎡)"
+    )
+    land_area: float | None = Field(
+        default=None, description="대지면적/대지권면적 (㎡)"
+    )
+    floor_area: float | None = Field(
+        default=None, description="연면적 (㎡, 단독다가구)"
+    )
+    contract_area: float | None = Field(
+        default=None, description="계약면적 (㎡, 토지)"
+    )
+    floor: str | None = Field(default=None, max_length=10, description="층")
+    dong: str | None = Field(default=None, max_length=50, description="동 (아파트)")
+    build_year: int | None = Field(default=None, description="건축년도")
+    housing_type: str | None = Field(
+        default=None, max_length=30, description="주택유형"
+    )
+
+    # ── 매매 거래 정보 ──
+    transaction_date: date | None = Field(default=None, index=True, description="계약일")
+    transaction_amount: int | None = Field(default=None, description="거래금액 (만원)")
+    buyer_type: str | None = Field(
+        default=None, max_length=20, description="매수자 (개인/법인)"
+    )
+    seller_type: str | None = Field(
+        default=None, max_length=20, description="매도자 (개인/법인)"
+    )
+    deal_type: str | None = Field(
+        default=None, max_length=30, description="거래유형 (중개거래/직거래 등)"
+    )
+    broker_location: str | None = Field(
+        default=None, max_length=100, description="중개사소재지"
+    )
+    registration_date: str | None = Field(
+        default=None, max_length=20, description="등기일자"
+    )
+    cancellation_date: str | None = Field(
+        default=None, max_length=20, description="해제사유발생일"
+    )
+
+    # ── 토지 전용 필드 ──
+    land_category: str | None = Field(
+        default=None, max_length=20, description="지목 (토지)"
+    )
+    use_area: str | None = Field(
+        default=None, max_length=50, description="용도지역 (토지)"
+    )
+    road_condition: str | None = Field(
+        default=None, max_length=30, description="도로조건 (토지/단독다가구)"
+    )
+    share_type: str | None = Field(
+        default=None, max_length=20, description="지분구분 (토지)"
+    )
+
+
+class RealEstateRental(PublicDataBase, table=True):
+    """부동산 전월세 실거래가 테이블.
+
+    토지 제외, 단독다가구/연립다세대/아파트/오피스텔 전월세 실거래가.
+    https://rt.molit.go.kr/pt/xls/xls.do?mobileAt=
+    """
+
+    __tablename__ = "real_estate_rentals"
+
+    # ── 핵심 식별 필드 ──
+    pnu: str | None = Field(
+        default=None,
+        max_length=19,
+        index=True,
+        description="필지고유번호 (매칭 가능한 경우)",
+    )
+    property_type: PropertyType = Field(
+        sa_column=Column(
+            Enum(PropertyType, name="property_type_enum", create_constraint=False),
             nullable=False,
         ),
         description="부동산 유형",
     )
     transaction_type: TransactionType = Field(
         sa_column=Column(
-            Enum(TransactionType, name="transaction_type_enum", create_constraint=True),
+            Enum(TransactionType, name="transaction_type_enum", create_constraint=False),
             nullable=False,
         ),
-        description="거래 유형 (매매/전세/월세)",
+        description="거래 유형 (전세/월세)",
     )
-    transaction_date: date | None = Field(default=None, description="거래일")
-    transaction_amount: int | None = Field(default=None, description="거래금액 (만원)")
+
+    # ── 위치 정보 ──
+    sigungu: str | None = Field(
+        default=None, max_length=100, index=True, description="시군구"
+    )
+    lot_number: str | None = Field(
+        default=None, max_length=30, description="번지"
+    )
+    main_lot_number: str | None = Field(
+        default=None, max_length=10, description="본번"
+    )
+    sub_lot_number: str | None = Field(
+        default=None, max_length=10, description="부번"
+    )
+    road_name: str | None = Field(
+        default=None, max_length=200, description="도로명"
+    )
+
+    # ── 건물 정보 ──
+    building_name: str | None = Field(
+        default=None, max_length=200, index=True, description="단지명/건물명",
+    )
+    exclusive_area: float | None = Field(
+        default=None, description="전용면적 (㎡)"
+    )
+    land_area: float | None = Field(
+        default=None, description="대지면적/대지권면적 (㎡)"
+    )
+    floor_area: float | None = Field(
+        default=None, description="연면적 (㎡, 단독다가구)"
+    )
+    floor: str | None = Field(default=None, max_length=10, description="층")
+    dong: str | None = Field(default=None, max_length=50, description="동 (아파트)")
+    build_year: int | None = Field(default=None, description="건축년도")
+    housing_type: str | None = Field(
+        default=None, max_length=30, description="주택유형"
+    )
+
+    # ── 전월세 거래 정보 ──
+    transaction_date: date | None = Field(default=None, index=True, description="계약일")
+    rent_type: str | None = Field(
+        default=None, max_length=10, description="전월세구분 (전세/월세)"
+    )
+    deposit: int | None = Field(default=None, description="보증금 (만원)")
+    monthly_rent_amount: int | None = Field(default=None, description="월세금 (만원)")
+    contract_period: str | None = Field(
+        default=None, max_length=30, description="계약기간 (예: 202604~202804)"
+    )
+    contract_type: str | None = Field(
+        default=None, max_length=10, description="계약구분 (신규/갱신)"
+    )
+    renewal_right_used: str | None = Field(
+        default=None, max_length=10, description="갱신요구권 사용 여부"
+    )
+    previous_deposit: int | None = Field(
+        default=None, description="종전계약 보증금 (만원)"
+    )
+    previous_monthly_rent: int | None = Field(
+        default=None, description="종전계약 월세 (만원)"
+    )
+    deal_type: str | None = Field(
+        default=None, max_length=30, description="거래유형 (중개거래/직거래 등)"
+    )
+    broker_location: str | None = Field(
+        default=None, max_length=100, description="중개사소재지"
+    )

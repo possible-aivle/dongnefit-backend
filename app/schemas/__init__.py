@@ -50,8 +50,10 @@ from app.schemas.spatial import (
 from app.schemas.transaction import (
     OfficialLandPriceCreate,
     OfficialLandPriceRead,
-    RealEstateTransactionCreate,
-    RealEstateTransactionRead,
+    RealEstateRentalCreate,
+    RealEstateRentalRead,
+    RealEstateSaleCreate,
+    RealEstateSaleRead,
 )
 
 __all__ = [
@@ -88,8 +90,10 @@ __all__ = [
     # Transaction
     "OfficialLandPriceCreate",
     "OfficialLandPriceRead",
-    "RealEstateTransactionCreate",
-    "RealEstateTransactionRead",
+    "RealEstateSaleCreate",
+    "RealEstateSaleRead",
+    "RealEstateRentalCreate",
+    "RealEstateRentalRead",
     # Price
     "IndividualHousePriceCreate",
     "IndividualHousePriceRead",
