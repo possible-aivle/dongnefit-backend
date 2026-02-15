@@ -84,9 +84,10 @@ class Settings(BaseSettings):
     # Anthropic
     anthropic_api_key: str = ""
 
-    # Map Service (e.g., Naver, Google)
-    map_api_key: str = ""
-    map_provider: str = "naver"  # naver, google
+    # Naver API
+    naver_map_provider: str = "naver"
+    naver_client_id: str = ""
+    naver_client_secret: str = ""
 
     # -----------------------------------------
     # 인프라
@@ -105,10 +106,6 @@ class Settings(BaseSettings):
     # Selenium
     selenium_headless: bool = True
     selenium_timeout: int = 30
-
-    # Naver API
-    naver_client_id: str = ""
-    naver_client_secret: str = ""
 
     # Tistory Credentials
     tistory_id: str = ""

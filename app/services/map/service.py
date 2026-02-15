@@ -159,12 +159,12 @@ class MapService:
 
     def _get_provider(self) -> MapProvider:
         """Get the configured map provider."""
-        if settings.map_provider == "naver_cloud":
+        if settings.naver_map_provider == "naver_cloud":
             # Naver Cloud Platform requires both client_id and client_secret
-            return NaverCloudMapProvider(settings.map_api_key, "")
+            return NaverCloudMapProvider(settings.naver_client_id, settings.naver_client_secret)
         else:
             # Default to Naver
-            return NaverMapProvider(settings.map_api_key)
+            return NaverMapProvider(settings.naver_client_id)
 
     async def search(self, query: str) -> LocationResponse:
         """Search for locations."""
