@@ -46,6 +46,18 @@ DEFAULT_DELAY = 3.0
 MAX_RETRIES = 3
 
 
+def scan_existing_files(*dirs: Path) -> set[str]:
+    """디렉토리에서 이미 다운로드된 파일명 세트를 반환합니다."""
+    existing = set()
+    for dir_path in dirs:
+        if not dir_path.exists():
+            continue
+        for f in dir_path.iterdir():
+            if f.name.endswith(".xlsx") and f.stat().st_size > 100:
+                existing.add(f.name)
+    return existing
+
+
 def get_monthly_ranges(start_date: date, end_date: date) -> list[tuple[date, date]]:
     """날짜 범위를 월별로 분할합니다.
 
@@ -254,18 +266,34 @@ def run_crawler(
 
     monthly_ranges = get_monthly_ranges(start_date, end_date)
 
-    # 총 다운로드 수 계산
+    # 이미 다운로드된 파일 스캔
+    if dest_dir:
+        existing_files = scan_existing_files(dest_dir)
+    else:
+        existing_files = scan_existing_files(SALE_OUTPUT_DIR, RENTAL_OUTPUT_DIR)
+
+    # 총 다운로드 수 계산 (기존 파일 제외)
+    total_all = 0
     total = 0
     download_plan: list[tuple[str, str, str]] = []  # (pt_code, tx_code, new_ron_secd)
     for pt_code in property_types:
         pt_config = PROPERTY_TYPES[pt_code]
+        pt_name = pt_config["name"]
         # 매매
         download_plan.append((pt_code, "1", ""))
-        total += len(monthly_ranges)
+        for from_dt, _ in monthly_ranges:
+            total_all += 1
+            month_str = from_dt.strftime("%Y%m")
+            if f"{pt_name}_매매_{month_str}.xlsx" not in existing_files:
+                total += 1
         # 전월세 (신규만)
         if include_rent and pt_config["has_rent"]:
             download_plan.append((pt_code, "2", "1"))
-            total += len(monthly_ranges)
+            for from_dt, _ in monthly_ranges:
+                total_all += 1
+                month_str = from_dt.strftime("%Y%m")
+                if f"{pt_name}_전월세_{month_str}.xlsx" not in existing_files:
+                    total += 1
 
     console.print()
     console.print("[bold]━━━ 실거래가 크롤러 ━━━[/]")
@@ -275,13 +303,21 @@ def run_crawler(
         f"  대상: {', '.join(PROPERTY_TYPES[c]['name'] for c in property_types)}"
     )
     console.print(f"  전월세 포함: {'예 (신규만)' if include_rent else '아니오'}")
-    console.print(f"  총 다운로드: {total}건")
+    skipped_count = total_all - total
+    if skipped_count > 0:
+        console.print(f"  신규 다운로드: {total}건 (기존 {skipped_count}건 스킵)")
+    else:
+        console.print(f"  총 다운로드: {total}건")
     if dest_dir:
         console.print(f"  출력 경로: {dest_dir}")
     else:
         console.print(f"  출력 경로: {SALE_OUTPUT_DIR} (매매)")
         console.print(f"             {RENTAL_OUTPUT_DIR} (전월세)")
     console.print()
+
+    if total == 0:
+        console.print("\n[green]모든 파일이 이미 다운로드되어 있습니다.[/]\n")
+        return {"success": skipped_count, "no_data": 0, "failed": 0}
 
     stats: dict[str, int] = {"success": 0, "no_data": 0, "failed": 0}
 
@@ -323,7 +359,6 @@ def run_crawler(
             console.print(f"[bold cyan]▶ {pt_name} - {tx_name}[/]")
 
             for from_dt, to_dt in monthly_ranges:
-                count += 1
                 month_str = from_dt.strftime("%Y%m")
 
                 filename = f"{pt_name}_{tx_name}_{month_str}.xlsx"
@@ -336,11 +371,10 @@ def run_crawler(
                 output_path = file_dir / filename
 
                 # 이미 다운로드된 파일 스킵
-                if output_path.exists() and output_path.stat().st_size > 100:
-                    console.print(f"  [{count}/{total}] {filename} [dim]스킵 (이미 존재)[/]")
-                    stats["success"] += 1
+                if filename in existing_files:
                     continue
 
+                count += 1
                 console.print(
                     f"  [{count}/{total}] {filename} ({from_dt} ~ {to_dt})"
                 )
