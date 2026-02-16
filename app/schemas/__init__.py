@@ -8,10 +8,13 @@ from app.schemas.administrative import (
 )
 from app.schemas.base import (
     BaseSchema,
+    GeoJSON,
     PaginatedResponse,
     PaginationMeta,
     PaginationParams,
     TimestampSchema,
+    wkb_to_geojson,
+    wkb_to_shapely,
 )
 from app.schemas.building import (
     BuildingRegisterFloorDetailCreate,
@@ -61,6 +64,10 @@ __all__ = [
     "PaginationParams",
     "PaginationMeta",
     "PaginatedResponse",
+    # Geometry
+    "GeoJSON",
+    "wkb_to_geojson",
+    "wkb_to_shapely",
     # Lot
     "LotCreate",
     "LotRead",

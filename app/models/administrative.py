@@ -1,10 +1,10 @@
 """행정구역 모델."""
 
-from sqlalchemy import Column
-from sqlalchemy.dialects.postgresql import JSONB
+from typing import Any
+
 from sqlmodel import Field
 
-from app.models.base import PublicDataBase
+from app.models.base import PublicDataBase, geometry_column
 
 
 class AdministrativeDivision(PublicDataBase, table=True):
@@ -28,11 +28,7 @@ class AdministrativeDivision(PublicDataBase, table=True):
         max_length=5,
         description="상위 행정구역코드 (시군구의 경우 시도코드)",
     )
-    geometry: dict | None = Field(
-        default=None,
-        sa_column=Column(JSONB),
-        description="GeoJSON geometry (Polygon/MultiPolygon)",
-    )
+    geometry: Any = geometry_column(description="행정구역 경계 (Polygon/MultiPolygon)")
 
 
 class AdministrativeEmd(PublicDataBase, table=True):
@@ -57,8 +53,4 @@ class AdministrativeEmd(PublicDataBase, table=True):
         index=True,
         description="소속 시군구코드",
     )
-    geometry: dict | None = Field(
-        default=None,
-        sa_column=Column(JSONB),
-        description="GeoJSON geometry (Polygon/MultiPolygon)",
-    )
+    geometry: Any = geometry_column(description="읍면동 경계 (Polygon/MultiPolygon)")

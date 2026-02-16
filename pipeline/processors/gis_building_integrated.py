@@ -10,6 +10,7 @@ from InquirerPy import inquirer
 from rich.console import Console
 
 from app.models.enums import PublicDataType
+from pipeline.file_utils import geojson_to_wkt
 from pipeline.processors.base import BaseProcessor
 from pipeline.registry import Registry
 
@@ -160,8 +161,8 @@ class GisBuildingIntegratedProcessor(BaseProcessor):
             mapped["above_ground_floors"] = self._safe_int(mapped.get("above_ground_floors"))
             mapped["underground_floors"] = self._safe_int(mapped.get("underground_floors"))
 
-            # geometry (GeoJSON)
-            mapped["geometry"] = row.pop("__geometry__", None)
+            # geometry (GeoJSON → WKT)
+            mapped["geometry"] = geojson_to_wkt(row.pop("__geometry__", None))
 
             # raw_data 보존 (geometry 제외)
             mapped["raw_data"] = {k: v for k, v in row.items() if k != "__geometry__"}

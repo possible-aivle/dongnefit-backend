@@ -9,7 +9,13 @@ from typing import Any
 from rich.console import Console
 
 from app.models.enums import PublicDataType
-from pipeline.file_utils import cleanup_temp_dir, extract_zip, find_shp_in_dir, read_shp_features
+from pipeline.file_utils import (
+    cleanup_temp_dir,
+    extract_zip,
+    find_shp_in_dir,
+    geojson_to_wkt,
+    read_shp_features,
+)
 from pipeline.processors.base import BaseProcessor
 from pipeline.registry import Registry
 
@@ -59,14 +65,13 @@ class AdministrativeSidoProcessor(BaseProcessor):
                 continue
 
             code = bjcd[:2]
-            geometry = row.pop("__geometry__", None)
 
             records.append({
                 "code": code,
                 "name": name.strip(),
                 "level": 1,
                 "parent_code": None,
-                "geometry": geometry,
+                "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
                 "raw_data": {k: v for k, v in row.items() if k != "__geometry__"},
             })
 
@@ -138,14 +143,13 @@ class AdministrativeSigunguProcessor(BaseProcessor):
 
             code = bjcd[:5]
             parent_code = bjcd[:2]
-            geometry = row.pop("__geometry__", None)
 
             records.append({
                 "code": code,
                 "name": name.strip(),
                 "level": 2,
                 "parent_code": parent_code,
-                "geometry": geometry,
+                "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
                 "raw_data": {k: v for k, v in row.items() if k != "__geometry__"},
             })
 
@@ -215,13 +219,12 @@ class AdministrativeEmdProcessor(BaseProcessor):
                 continue
 
             division_code = bjcd[:5]
-            geometry = row.pop("__geometry__", None)
 
             records.append({
                 "code": bjcd,
                 "name": name.strip(),
                 "division_code": division_code,
-                "geometry": geometry,
+                "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
                 "raw_data": {k: v for k, v in row.items() if k != "__geometry__"},
             })
 

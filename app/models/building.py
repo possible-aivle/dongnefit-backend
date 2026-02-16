@@ -1,10 +1,11 @@
 """건물 관련 모델 (건축물대장 표제부, 총괄표제부, 층별개요, 전유공용면적, 부속지번, GIS건물통합정보)."""
 
-from sqlalchemy import Column, UniqueConstraint
-from sqlalchemy.dialects.postgresql import JSONB
+from typing import Any
+
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field
 
-from app.models.base import PublicDataBase
+from app.models.base import PublicDataBase, geometry_column
 
 
 class BuildingRegisterHeader(PublicDataBase, table=True):
@@ -146,7 +147,7 @@ class GisBuildingIntegrated(PublicDataBase, table=True):
 
     vworld shp 데이터 기반 (AL_D010).
     건물 공간정보(geometry) + 속성 데이터 통합 테이블.
-    geometry는 GeoJSON 형태로 JSONB에 저장.
+    geometry는 PostGIS Geometry 컬럼으로 저장 (SRID=4326).
     """
 
     __tablename__ = "gis_building_integrated"
@@ -168,8 +169,4 @@ class GisBuildingIntegrated(PublicDataBase, table=True):
     building_name: str | None = Field(default=None, max_length=100, description="건물명")
     above_ground_floors: int | None = Field(default=None, description="지상층수")
     underground_floors: int | None = Field(default=None, description="지하층수")
-    geometry: dict | None = Field(
-        default=None,
-        sa_column=Column(JSONB),
-        description="GeoJSON geometry",
-    )
+    geometry: Any = geometry_column(description="건물 경계 (Polygon/MultiPolygon)")

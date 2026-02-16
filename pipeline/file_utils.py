@@ -16,6 +16,22 @@ from rich.console import Console
 console = Console()
 
 
+def geojson_to_wkt(geojson: dict[str, Any] | None) -> str | None:
+    """GeoJSON dict를 WKT 문자열로 변환합니다.
+
+    Args:
+        geojson: fiona에서 읽은 GeoJSON geometry dict
+
+    Returns:
+        WKT 문자열 또는 None
+    """
+    if geojson is None:
+        return None
+    from shapely.geometry import shape as shapely_shape
+
+    return shapely_shape(geojson).wkt
+
+
 def extract_zip(zip_path: Path) -> Path:
     """ZIP 파일을 임시 디렉토리에 추출합니다.
 

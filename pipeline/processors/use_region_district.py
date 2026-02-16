@@ -14,6 +14,7 @@ from pipeline.file_utils import (
     cleanup_temp_dir,
     extract_zip,
     find_shp_in_dir,
+    geojson_to_wkt,
     read_shp_features,
 )
 from pipeline.processors.base import BaseProcessor, ProcessResult
@@ -91,7 +92,7 @@ class UseRegionDistrictProcessor(BaseProcessor):
             if not mapped.get("source_id"):
                 continue
 
-            geometry = row.pop("__geometry__", None)
+            geojson = row.pop("__geometry__", None)
 
             # cp949 디코딩이 필요한 경우 처리
             district_name = mapped.get("district_name")
@@ -108,7 +109,7 @@ class UseRegionDistrictProcessor(BaseProcessor):
                 "district_name": district_name[:200] if district_name else None,
                 "district_code": str(mapped.get("district_code", ""))[:50] or None,
                 "admin_code": str(mapped.get("admin_code", ""))[:10] or None,
-                "geometry": geometry,
+                "geometry": geojson_to_wkt(geojson),
                 "raw_data": {k: v for k, v in row.items() if k != "__geometry__"},
             })
 

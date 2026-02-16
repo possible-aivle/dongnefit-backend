@@ -1,10 +1,10 @@
 """공간(GIS) 데이터 모델 (도로중심선, 용도지역지구)."""
 
-from sqlalchemy import Column
-from sqlalchemy.dialects.postgresql import JSONB
+from typing import Any
+
 from sqlmodel import Field
 
-from app.models.base import PublicDataBase
+from app.models.base import PublicDataBase, geometry_column
 
 
 class RoadCenterLine(PublicDataBase, table=True):
@@ -12,8 +12,7 @@ class RoadCenterLine(PublicDataBase, table=True):
 
     코어 데이터.
     vworld shp 데이터 기반.
-    geometry는 raw_data JSONB에 GeoJSON 형태로 저장.
-    추후 PostGIS 확장 시 geometry 컬럼으로 마이그레이션 가능.
+    geometry는 PostGIS Geometry 컬럼으로 저장 (SRID=4326).
     """
 
     __tablename__ = "road_center_lines"
@@ -34,11 +33,7 @@ class RoadCenterLine(PublicDataBase, table=True):
         index=True,
         description="관할 행정구역코드",
     )
-    geometry: dict | None = Field(
-        default=None,
-        sa_column=Column(JSONB),
-        description="GeoJSON geometry",
-    )
+    geometry: Any = geometry_column(description="도로중심선 (LineString/MultiLineString)")
 
 
 class UseRegionDistrict(PublicDataBase, table=True):
@@ -46,7 +41,7 @@ class UseRegionDistrict(PublicDataBase, table=True):
 
     코어 데이터.
     vworld shp 데이터 기반.
-    geometry는 raw_data JSONB에 GeoJSON 형태로 저장.
+    geometry는 PostGIS Geometry 컬럼으로 저장 (SRID=4326).
     """
 
     __tablename__ = "use_region_districts"
@@ -72,8 +67,4 @@ class UseRegionDistrict(PublicDataBase, table=True):
         index=True,
         description="관할 행정구역코드",
     )
-    geometry: dict | None = Field(
-        default=None,
-        sa_column=Column(JSONB),
-        description="GeoJSON geometry",
-    )
+    geometry: Any = geometry_column(description="용도지역지구 경계 (Polygon/MultiPolygon)")

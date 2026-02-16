@@ -15,6 +15,7 @@ from pipeline.file_utils import (
     extract_zip,
     find_shp_in_dir,
     find_zip_files_by_province_name,
+    geojson_to_wkt,
     read_shp_features,
 )
 from pipeline.processors.base import BaseProcessor, ProcessResult
@@ -86,7 +87,6 @@ class CadastralProcessor(BaseProcessor):
 
             pnu = pnu[:19]
             jibun = str(row.get("JIBUN", row.get("ADDR", ""))).strip() or None
-            geometry = row.pop("__geometry__", None)
 
             records.append({
                 "pnu": pnu,
@@ -94,7 +94,7 @@ class CadastralProcessor(BaseProcessor):
                 "sgg_code": pnu[:5],
                 "emd_code": pnu[:8],
                 "jibun_address": jibun,
-                "geometry": geometry,
+                "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
             })
 
         console.print(f"  변환 완료: {len(records)}건")

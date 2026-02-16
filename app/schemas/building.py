@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any
 
-from app.schemas.base import BaseSchema
+from app.schemas.base import BaseSchema, GeoJSON
 
 
 class BuildingRegisterHeaderCreate(BaseSchema):
@@ -75,7 +75,7 @@ class GisBuildingIntegratedRead(BaseSchema):
     building_name: str | None
     above_ground_floors: int | None
     underground_floors: int | None
-    geometry: dict[str, Any] | None
+    geometry: GeoJSON = None
     raw_data: dict[str, Any] | None
     collected_at: datetime
     created_at: datetime | None

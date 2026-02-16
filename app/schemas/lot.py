@@ -5,7 +5,7 @@ from typing import Any
 
 from pydantic import field_validator
 
-from app.schemas.base import BaseSchema
+from app.schemas.base import BaseSchema, GeoJSON
 
 
 class LotCreate(BaseSchema):
@@ -16,6 +16,7 @@ class LotCreate(BaseSchema):
     sgg_code: str
     emd_code: str
     jibun_address: str | None = None
+    geometry: dict[str, Any] | None = None
 
     @field_validator("pnu")
     @classmethod
@@ -33,6 +34,7 @@ class LotRead(BaseSchema):
     sgg_code: str
     emd_code: str
     jibun_address: str | None
+    geometry: GeoJSON = None
     collected_at: datetime
     created_at: datetime | None
     updated_at: datetime | None

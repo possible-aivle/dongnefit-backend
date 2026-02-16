@@ -5,12 +5,12 @@ PNU(19자리): 시도(2) + 시군구(3) + 읍면동(3) + 리(2) + 산구분(1) +
 """
 
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import Column, String
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
 
-from app.models.base import PublicDataBase, get_utc_now
+from app.models.base import PublicDataBase, geometry_column, get_utc_now
 
 
 # pnu 가 primary_key 여서 SQLModel 상속
@@ -48,11 +48,7 @@ class Lot(SQLModel, table=True):
         sa_column=Column(String(500)),
         description="지번주소",
     )
-    geometry: dict | None = Field(
-        default=None,
-        sa_column=Column(JSONB),
-        description="GeoJSON geometry (Polygon/MultiPolygon)",
-    )
+    geometry: Any = geometry_column(description="필지 경계 (Polygon/MultiPolygon)")
     collected_at: datetime = Field(default_factory=get_utc_now)
     created_at: datetime | None = Field(default_factory=get_utc_now)
     updated_at: datetime | None = Field(default_factory=get_utc_now)

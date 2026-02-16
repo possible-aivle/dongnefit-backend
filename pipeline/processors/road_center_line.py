@@ -14,6 +14,7 @@ from pipeline.file_utils import (
     extract_zip,
     find_shp_in_dir,
     find_zip_files_by_province_name,
+    geojson_to_wkt,
     read_shp_features,
 )
 from pipeline.processors.base import BaseProcessor, ProcessResult
@@ -91,13 +92,11 @@ class RoadCenterLineProcessor(BaseProcessor):
             if not source_id:
                 continue
 
-            geometry = row.pop("__geometry__", None)
-
             records.append({
                 "source_id": source_id[:200],
                 "road_name": road_name[:200] if road_name else None,
                 "admin_code": admin_code[:10] if admin_code else None,
-                "geometry": geometry,
+                "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
                 "raw_data": {k: v for k, v in row.items() if k != "__geometry__"},
             })
 

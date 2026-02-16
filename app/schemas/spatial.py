@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any
 
-from app.schemas.base import BaseSchema
+from app.schemas.base import BaseSchema, GeoJSON
 
 
 class RoadCenterLineCreate(BaseSchema):
@@ -23,7 +23,7 @@ class RoadCenterLineRead(BaseSchema):
     source_id: str
     road_name: str | None
     admin_code: str | None
-    geometry: dict[str, Any] | None
+    geometry: GeoJSON = None
     raw_data: dict[str, Any] | None
     collected_at: datetime
     created_at: datetime | None
@@ -49,7 +49,7 @@ class UseRegionDistrictRead(BaseSchema):
     district_name: str | None
     district_code: str | None
     admin_code: str | None
-    geometry: dict[str, Any] | None
+    geometry: GeoJSON = None
     raw_data: dict[str, Any] | None
     collected_at: datetime
     created_at: datetime | None

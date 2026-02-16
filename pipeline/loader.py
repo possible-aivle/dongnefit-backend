@@ -97,6 +97,16 @@ def get_all_public_tables() -> dict[str, PublicDataType]:
 # ── Bulk Insert ──
 
 
+def _build_val_expr(col: str) -> str:
+    """컬럼에 맞는 SQL 값 표현식을 반환합니다.
+
+    geometry 컬럼은 WKT 문자열을 PostGIS Geometry로 변환합니다.
+    """
+    if col == "geometry":
+        return f"ST_GeomFromText(:{col}, 4326)"
+    return f":{col}"
+
+
 async def bulk_insert(
     session: AsyncSession,
     table_name: str,
@@ -112,7 +122,7 @@ async def bulk_insert(
         batch = records[i : i + batch_size]
         columns = list(batch[0].keys())
         col_str = ", ".join(columns)
-        val_str = ", ".join(f":{col}" for col in columns)
+        val_str = ", ".join(_build_val_expr(col) for col in columns)
 
         await session.execute(
             text(f"INSERT INTO {table_name} ({col_str}) VALUES ({val_str})"),  # noqa: S608
@@ -157,7 +167,7 @@ async def bulk_upsert(
         batch = records[i : i + batch_size]
         columns = list(batch[0].keys())
         col_str = ", ".join(columns)
-        val_str = ", ".join(f":{col}" for col in columns)
+        val_str = ", ".join(_build_val_expr(col) for col in columns)
         conflict_str = ", ".join(upsert_keys)
 
         # 업데이트할 컬럼 (키 제외)
