@@ -76,7 +76,9 @@ class UseRegionDistrictProcessor(BaseProcessor):
                     continue
 
                 # admin_code(A4) 필드로 필터링
-                features = read_shp_features(shp_path, sgg_prefixes, code_field="A4")
+                features = read_shp_features(
+                    shp_path, sgg_prefixes, code_field="A4", encoding="cp949"
+                )
                 rows.extend(features)
                 console.print(f"    {len(features)}건 읽기 완료")
             finally:
@@ -94,13 +96,7 @@ class UseRegionDistrictProcessor(BaseProcessor):
 
             geojson = row.pop("__geometry__", None)
 
-            # cp949 디코딩이 필요한 경우 처리
             district_name = mapped.get("district_name")
-            if district_name and isinstance(district_name, bytes):
-                try:
-                    district_name = district_name.decode("cp949")
-                except (UnicodeDecodeError, AttributeError):
-                    pass
             if isinstance(district_name, str):
                 district_name = district_name.strip()
 

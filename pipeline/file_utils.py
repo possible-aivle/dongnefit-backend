@@ -115,6 +115,7 @@ def read_shp_features(
     shp_path: Path,
     sgg_prefixes: list[str] | None = None,
     code_field: str = "PNU",
+    encoding: str | None = None,
 ) -> list[dict[str, Any]]:
     """SHP 파일을 읽어 feature dict 리스트를 반환합니다.
 
@@ -122,6 +123,7 @@ def read_shp_features(
         shp_path: SHP 파일 경로
         sgg_prefixes: 필터링할 시군구 prefix 목록 (None이면 전체)
         code_field: 필터링에 사용할 속성 필드명
+        encoding: DBF 파일 인코딩 (.cpg 없을 때 명시, 예: "cp949")
 
     Returns:
         [{properties..., __geometry__: geojson_dict}, ...]
@@ -129,7 +131,10 @@ def read_shp_features(
     import fiona
 
     rows: list[dict[str, Any]] = []
-    with fiona.open(shp_path) as src:
+    open_kwargs: dict[str, Any] = {}
+    if encoding:
+        open_kwargs["encoding"] = encoding
+    with fiona.open(shp_path, **open_kwargs) as src:
         # CRS 자동 감지 및 WGS84 변환 준비
         transformer, needs_transform = _make_crs_transformer(src.crs)
 
