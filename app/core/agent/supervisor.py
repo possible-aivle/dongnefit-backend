@@ -244,59 +244,41 @@ class SupervisorAgent:
             user_query = state["user_query"]
 
             # 검색 전략 결정 (재시도 횟수에 따른 Fallback)
-            if collection_retries == 0:
-                # 1차 시도: 정석대로 (지역 + 유형)
-                if intent_result and intent_result.region:
-                    search_region = intent_result.region
-                    real_estate_type = intent_result.real_estate_type
+            strategies = []
 
-                    if real_estate_type:
-                        query = f"{search_region} {real_estate_type}"
-                    else:
-                        query = search_region
+            # 1. Intent Analyzer가 제안한 키워드 사용 (1순위)
+            if collection_retries == 0 and intent_result and hasattr(intent_result, "search_keywords") and intent_result.search_keywords:
+                strategies.append("의도 기반 키워드")
+                keywords = intent_result.search_keywords
+            # 2. 제안된 키워드가 없거나 부족하면 보완 (Geocoding 기반)
+            elif collection_retries <= 1:
+                strategies.append("지역 기반 키워드")
+                # 쿼리에서 주소/지역 정보 추출 (Geocoding)
+                admin_region = self._extract_region_from_query(user_query)
+                if admin_region:
+                    keywords = self.geocoding.generate_search_keywords(admin_region)
+                    # 부동산 유형이 있으면 조합
+                    if intent_result and intent_result.real_estate_type:
+                        keywords = [f"{k} {intent_result.real_estate_type}" for k in keywords]
                 else:
-                    query = user_query
-                strategy_name = "기본 검색"
-
-            elif collection_retries == 1:
-                # 2차 시도: 유형 제외하고 지역만 검색
-                if intent_result and intent_result.region:
-                    query = intent_result.region
-                    strategy_name = "지역명 검색 (Fallback #1)"
-                else:
-                    query = user_query
-                    strategy_name = "원본 쿼리 검색 (Fallback #1)"
-
+                    keywords = [user_query]
+            # 3. 3차 시도 이상: 원본 쿼리 또는 더 광범위한 검색
             else:
-                # 3차 시도 이상: 원본 쿼리 또는 더 광범위한 검색
-                query = user_query
-                strategy_name = "원본 쿼리 검색 (Fallback #2)"
+                strategies.append("원본 쿼리 (Fallback)")
+                keywords = [user_query]
 
-            print(f"  [Collector] 전략: {strategy_name} | 검색어: '{query}'")
-            steps_log.append(f"[Collector] 전략: {strategy_name} -> '{query}'")
+            strategy_name = " + ".join(strategies)
+            print(f"  [Collector] 전략: {strategy_name} | 키워드 수: {len(keywords)}")
+            steps_log.append(f"[Collector] 전략: {strategy_name}")
 
-            # 쿼리에서 주소/지역 정보 추출 (Geocoding)
-            admin_region = self._extract_region_from_query(query)
+            # 키워드로 뉴스 검색
+            articles = await self.news_search.search_multiple_keywords(
+                keywords, display_per_keyword=10
+            )
 
-            if not admin_region:
-                # 주소 파싱 실패 시 키워드 직접 검색
-                steps_log.append(f"[Collector] 주소 파싱 실패, 키워드 '{query}' 직접 검색")
-                articles = await self.news_search.search_news(query, display=30)
-            else:
-                # 키워드 생성 + 뉴스 검색
-                keywords = self.geocoding.generate_search_keywords(admin_region)
-
-                # 1차 시도이고, 부동산 유형이 있는 경우에만 키워드 조합
-                if collection_retries == 0 and intent_result and intent_result.real_estate_type:
-                    new_keywords = []
-                    for k in keywords:
-                        new_keywords.append(f"{k} {intent_result.real_estate_type}")
-                    keywords = new_keywords
-
-                print(f"  검색 키워드 {len(keywords)}개 생성: {keywords[:3]}...")
-                articles = await self.news_search.search_multiple_keywords(
-                    keywords, display_per_keyword=10
-                )
+            # 주소 정보는 컨텍스트 유지를 위해 필요하므로 추출 시도 (검색에는 안 써도)
+            if not locals().get("admin_region"):
+                 admin_region = self._extract_region_from_query(user_query)
 
             log = f"[Collector] {len(articles)}개 기사 수집 완료"
             print(f"  [OK] {log}")

@@ -32,7 +32,35 @@ class IntentAnalysisResult(BaseModel):
     )
     region: str = Field(..., description="추출된 지역명 (예: 강남역, 역삼동)")
     real_estate_type: Optional[str] = Field(None, description="부동산 유형 (예: 오피스텔, 아파트)")
+    search_keywords: list[str] = Field(
+        default_factory=list, description="검색 확장을 위한 관련 키워드 목록"
+    )
     original_query: str = Field(..., description="원래 사용자 쿼리")
+
+
+class ContentIntentAnalysisResult(BaseModel):
+    """부동산 임장 콘텐츠 의도 분석 결과."""
+
+    intent_main: str = Field(
+        ..., description="콘텐츠의 핵심 의도 (예: 투자 가치 분석, 임장 루트 소개, 교통 입지 평가)"
+    )
+    intent_detail: str = Field(
+        ..., description="텍스트에 내포된 보조 의도나 감정적 방향 (예: 기대감, 우려, 비교분석)"
+    )
+    target_audience: str = Field(
+        ..., description="예상 독자 (예: 실거주자, 투자자, 프리미엄 분양 관심자, 임대사업자)"
+    )
+    data_needed: list[str] = Field(
+        default_factory=list,
+        description="콘텐츠 목적 달성을 위해 필요한 주요 데이터 (예: 호가 변동, 입주 물량, 유동인구)",
+    )
+    recommended_field_checklist: list[str] = Field(
+        default_factory=list,
+        description="실제 임장 시 체크해야 할 핵심 포인트 (예: 주차 공간, 주변 학군, 공실 상태)",
+    )
+    tone: str = Field(
+        ..., description="콘텐츠 전반의 어조 (중립/홍보성/비판적/리뷰형/분석적 등)"
+    )
 
 
 
@@ -56,6 +84,10 @@ class PolicyIssue(BaseModel):
         "policy",  # 정책 및 규제
         "economy",  # 경제 환경
         "environment",  # 환경 및 안전
+        "market_trend",  # 시장 동향 (시세, 거래량)
+        "living_environment",  # 생활 환경 (학군, 상권)
+        "investment",  # 투자 포인트
+        "other",  # 기타
     ] = Field(..., description="이슈 카테고리")
     title: str = Field(..., description="이슈 제목")
     sentiment: Literal["positive", "negative", "neutral"] = Field(
