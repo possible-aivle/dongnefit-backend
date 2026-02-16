@@ -24,6 +24,18 @@ class AdminRegion(BaseModel):
     full_address: str = Field(..., description="전체 행정구역명")
 
 
+class IntentAnalysisResult(BaseModel):
+    """사용자 의도 및 개체 추출 결과."""
+
+    intent: Literal["INFO_RETRIEVAL", "CONTENT_CREATION", "MARKET_ANALYSIS"] = Field(
+        "INFO_RETRIEVAL", description="분석된 사용자 의도"
+    )
+    region: str = Field(..., description="추출된 지역명 (예: 강남역, 역삼동)")
+    real_estate_type: Optional[str] = Field(None, description="부동산 유형 (예: 오피스텔, 아파트)")
+    original_query: str = Field(..., description="원래 사용자 쿼리")
+
+
+
 class NewsArticle(BaseModel):
     """수집된 뉴스 기사 모델."""
 
@@ -99,6 +111,9 @@ class SupervisorState(TypedDict):
     # Geocoding 결과
     admin_region: Optional[AdminRegion]
 
+    # Intent Analysis 결과
+    intent_analysis: Optional["IntentAnalysisResult"]
+
     # Data Collector 결과
     raw_articles: list[NewsArticle]
 
@@ -116,5 +131,6 @@ class SupervisorState(TypedDict):
     # Supervisor 메타데이터
     next_action: str  # Supervisor가 결정한 다음 액션
     retry_count: int  # SEO 개선 반복 횟수
+    collection_retries: int  # 데이터 수집 재시도 횟수
     steps_log: list[str]  # 실행 이력
     error: Optional[str]  # 에러 메시지

@@ -19,6 +19,7 @@ except ImportError:
 from app.config import settings
 from app.core.agent.sub_agents.data_classifier import ArticleAnalyzer
 from app.core.agent.sub_agents.data_collector import NewsSearchService
+from app.core.agent.sub_agents.intent_analyzer import IntentAnalyzer
 from app.core.agent.sub_agents.content_generator import ContentGenerator
 from app.core.agent.tools.geocoding import GeocodingService
 from app.core.agent.models import (
@@ -74,6 +75,7 @@ class SupervisorAgent:
         # Worker 서비스 초기화
         self.geocoding = GeocodingService()
         self.news_search = NewsSearchService()
+        self.intent_analyzer = IntentAnalyzer(llm_provider=llm_provider)
         self.analyzer = ArticleAnalyzer(llm_provider=llm_provider)
         self.content_generator = ContentGenerator(llm_provider=llm_provider)
         self.seo_workflow = build_seo_workflow(llm_provider=llm_provider)
@@ -91,6 +93,7 @@ class SupervisorAgent:
 
         # 노드 등록
         workflow.add_node("supervisor", self._supervisor_node)
+        workflow.add_node("analyze_intent", self._analyze_intent_node)
         workflow.add_node(COLLECT_DATA, self._collect_data_node)
         workflow.add_node(ANALYZE_DATA, self._analyze_data_node)
         workflow.add_node(GENERATE_CONTENT, self._generate_content_node)
@@ -105,6 +108,7 @@ class SupervisorAgent:
             "supervisor",
             self._route_next_action,
             {
+                "analyze_intent": "analyze_intent",
                 COLLECT_DATA: COLLECT_DATA,
                 ANALYZE_DATA: ANALYZE_DATA,
                 GENERATE_CONTENT: GENERATE_CONTENT,
@@ -115,6 +119,7 @@ class SupervisorAgent:
         )
 
         # 각 Worker → Supervisor로 복귀
+        workflow.add_edge("analyze_intent", "supervisor")
         workflow.add_edge(COLLECT_DATA, "supervisor")
         workflow.add_edge(ANALYZE_DATA, "supervisor")
         workflow.add_edge(GENERATE_CONTENT, "supervisor")
@@ -140,11 +145,19 @@ class SupervisorAgent:
         seo_score = state.get("seo_score")
         post_url = state.get("post_url")
         retry_count = state.get("retry_count", 0)
+        collection_retries = state.get("collection_retries", 0)
 
         # 결정 로직 (규칙 기반 + LLM 보조)
-        if not has_articles:
-            next_action = COLLECT_DATA
-            reason = "데이터가 없으므로 수집이 필요합니다."
+        if state.get("intent_analysis") is None:
+            next_action = "analyze_intent"
+            reason = "사용자 의도 및 개체 분석이 필요합니다."
+        elif not has_articles:
+            if collection_retries >= 3:
+                next_action = FINISH
+                reason = f"데이터 수집 {collection_retries}회 재시도 실패. 수집된 기사가 없어 종료합니다."
+            else:
+                next_action = COLLECT_DATA
+                reason = f"데이터가 없으므로 수집이 필요합니다. (재시도 {collection_retries + 1}/3)"
         elif state.get("policy_issues") is None:
             next_action = ANALYZE_DATA
             reason = "수집된 데이터의 분석이 필요합니다."
@@ -165,7 +178,7 @@ class SupervisorAgent:
                 reason = f"최대 시도 횟수({self.MAX_SEO_RETRIES}) 도달. 현재 점수: {seo_score}점."
 
         # 발행 단계 확인
-        if next_action == FINISH and not post_url:
+        if next_action == FINISH and not post_url and has_content: # has_content 체크 추가 (데이터 수집 실패 시 content 없음)
             # 콘텐츠가 있고 SEO가 완료되었는데 발행되지 않았다면 발행 시도
             if has_content and settings.tistory_id and settings.tistory_password:
                 # 사용자 요청으로 자동 발행 일시 중지
@@ -192,50 +205,123 @@ class SupervisorAgent:
     # Worker Nodes
     # ========================================================
 
-    async def _collect_data_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """Data Collector: 뉴스 데이터를 수집합니다."""
-        print("\n[Data Collector] 데이터 수집 시작...")
+    async def _analyze_intent_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """Intent Analyzer: 사용자 의도 및 개체를 분석합니다."""
+        print("\n[Intent Analyzer] 의도 분석 시작...")
         steps_log = state.get("steps_log", [])
 
         try:
             user_query = state["user_query"]
+            result = await self.intent_analyzer.analyze_intent(user_query)
 
-            # 쿼리에서 주소/지역 정보 추출
-            admin_region = self._extract_region_from_query(user_query)
-            if not admin_region:
-                steps_log.append("[Collector] 주소 파싱 실패, 키워드 기반 검색으로 전환")
-                # 키워드 기반 직접 검색
-                articles = await self.news_search.search_news(user_query, display=30)
-                return {
-                    **state,
-                    "raw_articles": articles,
-                    "steps_log": steps_log,
-                }
-
-            # 키워드 생성 + 뉴스 검색
-            keywords = self.geocoding.generate_search_keywords(admin_region)
-            print(f"  검색 키워드 {len(keywords)}개 생성")
-
-            articles = await self.news_search.search_multiple_keywords(
-                keywords, display_per_keyword=10
-            )
-
-            log = f"[Collector] {admin_region.full_address} -> {len(articles)}개 기사 수집"
+            log = f"[Intent] {result.intent} | 지역: {result.region} | 유형: {result.real_estate_type}"
             print(f"  [OK] {log}")
             steps_log.append(log)
 
             return {
                 **state,
-                "admin_region": admin_region,
+                "intent_analysis": result,
+                "steps_log": steps_log
+            }
+
+        except Exception as e:
+            error_msg = f"의도 분석 실패: {e}"
+            steps_log.append(f"[Intent] [ERROR] {error_msg}")
+            print(f"  [FAIL] {error_msg}")
+
+            # 실패 시에도 진행은 가능하도록 None 설정 (이후 단계에서 처리)
+            return {**state, "error": error_msg, "intent_analysis": None, "steps_log": steps_log}
+
+    async def _collect_data_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """Data Collector: 뉴스 데이터를 수집합니다. (재시도 및 폴백 로직 포함)"""
+        print("\n[Data Collector] 데이터 수집 시작...")
+        steps_log = state.get("steps_log", [])
+        collection_retries = state.get("collection_retries", 0)
+
+        try:
+            # 의도 분석 결과 활용
+            intent_result = state.get("intent_analysis")
+            user_query = state["user_query"]
+
+            # 검색 전략 결정 (재시도 횟수에 따른 Fallback)
+            if collection_retries == 0:
+                # 1차 시도: 정석대로 (지역 + 유형)
+                if intent_result and intent_result.region:
+                    search_region = intent_result.region
+                    real_estate_type = intent_result.real_estate_type
+
+                    if real_estate_type:
+                        query = f"{search_region} {real_estate_type}"
+                    else:
+                        query = search_region
+                else:
+                    query = user_query
+                strategy_name = "기본 검색"
+
+            elif collection_retries == 1:
+                # 2차 시도: 유형 제외하고 지역만 검색
+                if intent_result and intent_result.region:
+                    query = intent_result.region
+                    strategy_name = "지역명 검색 (Fallback #1)"
+                else:
+                    query = user_query
+                    strategy_name = "원본 쿼리 검색 (Fallback #1)"
+
+            else:
+                # 3차 시도 이상: 원본 쿼리 또는 더 광범위한 검색
+                query = user_query
+                strategy_name = "원본 쿼리 검색 (Fallback #2)"
+
+            print(f"  [Collector] 전략: {strategy_name} | 검색어: '{query}'")
+            steps_log.append(f"[Collector] 전략: {strategy_name} -> '{query}'")
+
+            # 쿼리에서 주소/지역 정보 추출 (Geocoding)
+            admin_region = self._extract_region_from_query(query)
+
+            if not admin_region:
+                # 주소 파싱 실패 시 키워드 직접 검색
+                steps_log.append(f"[Collector] 주소 파싱 실패, 키워드 '{query}' 직접 검색")
+                articles = await self.news_search.search_news(query, display=30)
+            else:
+                # 키워드 생성 + 뉴스 검색
+                keywords = self.geocoding.generate_search_keywords(admin_region)
+
+                # 1차 시도이고, 부동산 유형이 있는 경우에만 키워드 조합
+                if collection_retries == 0 and intent_result and intent_result.real_estate_type:
+                    new_keywords = []
+                    for k in keywords:
+                        new_keywords.append(f"{k} {intent_result.real_estate_type}")
+                    keywords = new_keywords
+
+                print(f"  검색 키워드 {len(keywords)}개 생성: {keywords[:3]}...")
+                articles = await self.news_search.search_multiple_keywords(
+                    keywords, display_per_keyword=10
+                )
+
+            log = f"[Collector] {len(articles)}개 기사 수집 완료"
+            print(f"  [OK] {log}")
+            steps_log.append(log)
+
+            return {
+                **state,
+                "admin_region": admin_region, # 마지막으로 성공한 지역 정보 업데이트
                 "raw_articles": articles,
                 "steps_log": steps_log,
+                "collection_retries": collection_retries + 1 # 재시도 횟수 증가
             }
 
         except Exception as e:
             error_msg = f"데이터 수집 실패: {e}"
             steps_log.append(f"[Collector] [ERROR] {error_msg}")
             print(f"  [FAIL] {error_msg}")
-            return {**state, "error": error_msg, "raw_articles": [], "steps_log": steps_log}
+            # 에러 발생 시에도 재시도 횟수는 증가시켜야 무한 루프 방지 가능
+            return {
+                **state,
+                "error": error_msg,
+                "raw_articles": [],
+                "steps_log": steps_log,
+                "collection_retries": collection_retries + 1
+            }
 
     async def _analyze_data_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Data Analyzer: 기사를 분류하고 이슈를 추출합니다."""
@@ -519,6 +605,8 @@ class SupervisorAgent:
         initial_state: SupervisorState = {
             "user_query": user_query,
             "admin_region": None,
+            "intent_analysis": None,
+            "collection_retries": 0,
             "raw_articles": [],
             "classified_articles": [],
             "policy_issues": None,
