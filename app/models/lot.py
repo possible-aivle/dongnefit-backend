@@ -28,21 +28,6 @@ class Lot(SQLModel, table=True):
         primary_key=True,
         description="필지고유번호 (19자리)",
     )
-    sido_code: str = Field(
-        max_length=2,
-        index=True,
-        description="시도코드 (2자리)",
-    )
-    sgg_code: str = Field(
-        max_length=5,
-        index=True,
-        description="시군구코드 (5자리: 시도+시군구)",
-    )
-    emd_code: str = Field(
-        max_length=8,
-        index=True,
-        description="읍면동코드 (8자리: 시도+시군구+읍면동)",
-    )
     jibun_address: str | None = Field(
         default=None,
         sa_column=Column(String(500)),

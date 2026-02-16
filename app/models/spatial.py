@@ -27,12 +27,6 @@ class RoadCenterLine(PublicDataBase, table=True):
         max_length=200,
         description="도로명",
     )
-    admin_code: str | None = Field(
-        default=None,
-        max_length=10,
-        index=True,
-        description="관할 행정구역코드",
-    )
     geometry: Any = geometry_column(description="도로중심선 (LineString/MultiLineString)")
 
 

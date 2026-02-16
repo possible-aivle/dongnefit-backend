@@ -85,9 +85,6 @@ class RoadCenterLineProcessor(BaseProcessor):
             road_name = str(
                 row.get("NAME", row.get("RDNM", row.get("RN", row.get("A1", ""))))
             ).strip() or None
-            admin_code = str(
-                row.get("ADMCD", row.get("ADM_CD", row.get("A2", "")))
-            ).strip() or None
 
             if not source_id:
                 continue
@@ -95,7 +92,6 @@ class RoadCenterLineProcessor(BaseProcessor):
             records.append({
                 "source_id": source_id[:200],
                 "road_name": road_name[:200] if road_name else None,
-                "admin_code": admin_code[:10] if admin_code else None,
                 "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
             })
 

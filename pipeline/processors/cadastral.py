@@ -31,7 +31,6 @@ class CadastralProcessor(BaseProcessor):
     """연속지적도 SHP 프로세서.
 
     PNU → pnu, JIBUN → jibun_address, geometry → geometry.
-    PNU에서 sido_code, sgg_code, emd_code 파생.
     """
 
     name = "cadastral"
@@ -90,9 +89,6 @@ class CadastralProcessor(BaseProcessor):
 
             records.append({
                 "pnu": pnu,
-                "sido_code": pnu[:2],
-                "sgg_code": pnu[:5],
-                "emd_code": pnu[:8],
                 "jibun_address": jibun,
                 "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
             })

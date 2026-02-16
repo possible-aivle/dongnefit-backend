@@ -11,7 +11,6 @@ class RoadCenterLineCreate(BaseSchema):
 
     source_id: str
     road_name: str | None = None
-    admin_code: str | None = None
     geometry: dict[str, Any] | None = None
 
 
@@ -22,7 +21,6 @@ class RoadCenterLineRead(BaseSchema):
     id: int
     source_id: str
     road_name: str | None
-    admin_code: str | None
     geometry: GeoJSON = None
 
 

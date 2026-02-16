@@ -52,14 +52,10 @@ SALE_COLUMN_MAP: dict[str, str] = {
     "대지면적(㎡)": "land_area",
     "대지권면적(㎡)": "land_area",
     "연면적(㎡)": "floor_area",
-    "계약면적(㎡)": "contract_area",
     "층": "floor",
     "건축년도": "build_year",
     "거래금액(만원)": "transaction_amount",
     "거래유형": "deal_type",
-    # 토지 전용
-    "지목": "land_category",
-    "용도지역": "use_area",
 }
 
 # ── 전월세 전용 컬럼 매핑 ──
@@ -86,7 +82,7 @@ SALE_AMOUNT_FIELDS = {"transaction_amount"}
 RENTAL_AMOUNT_FIELDS = {"deposit", "monthly_rent_amount"}
 
 # float 필드
-FLOAT_FIELDS = {"exclusive_area", "land_area", "floor_area", "contract_area"}
+FLOAT_FIELDS = {"exclusive_area", "land_area", "floor_area"}
 
 
 # ── 유틸리티 함수 ──

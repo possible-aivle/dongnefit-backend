@@ -7,14 +7,10 @@ erDiagram
     %% ============================================
     Lot {
         string pnu PK "필지고유번호 (19자리)"
-        string sido_code "시도코드 (2자리)"
-        string sgg_code "시군구코드 (5자리)"
-        string emd_code "읍면동코드 (8자리)"
         string jibun_address "지번주소 (nullable)"
         geometry geometry "PostGIS Polygon/MultiPolygon"
 
         datetime created_at
-        datetime updated_at
     }
 
     %% ============================================
@@ -97,25 +93,19 @@ erDiagram
     %% ============================================
     RealEstateSale {
         int id PK
-        string pnu "필지고유번호 (nullable)"
         enum property_type "부동산유형 (NOT NULL)"
         string sigungu "시군구"
         string building_name "건물명"
         float exclusive_area "전용면적(m2)"
         float land_area "대지면적(m2)"
         float floor_area "연면적(m2)"
-        float contract_area "계약면적(m2)"
         string floor "층"
         int build_year "건축년도"
         date transaction_date "거래일"
         int transaction_amount "거래금액(만원)"
         string deal_type "거래유형"
-        string land_category "지목"
-        string use_area "용도지역"
-
 
         datetime created_at
-        datetime updated_at
     }
 
     %% ============================================
@@ -123,7 +113,6 @@ erDiagram
     %% ============================================
     RealEstateRental {
         int id PK
-        string pnu "필지고유번호 (nullable)"
         enum property_type "부동산유형 (NOT NULL)"
         enum transaction_type "전세/월세 (NOT NULL)"
         string sigungu "시군구"
@@ -140,9 +129,7 @@ erDiagram
         string contract_type "계약구분"
         string deal_type "거래유형"
 
-
         datetime created_at
-        datetime updated_at
     }
 
     %% ============================================
@@ -299,12 +286,9 @@ erDiagram
         int id PK
         string source_id "원본 피처 ID"
         string road_name "도로명"
-        string admin_code "관할 행정구역코드"
         geometry geometry "PostGIS LineString/MultiLineString"
 
-
         datetime created_at
-        datetime updated_at
     }
 
     UseRegionDistrict {
@@ -338,10 +322,6 @@ erDiagram
     Lot ||--o{ GisBuildingIntegrated : "pnu -> lots.pnu"
     Lot ||--o{ AncillaryLand : "pnu -> lots.pnu"
 
-    %% 실거래 (pnu nullable, FK 없음)
-    Lot ||--o{ RealEstateSale : "pnu (nullable, no FK)"
-    Lot ||--o{ RealEstateRental : "pnu (nullable, no FK)"
-
     %% 행정구역 계층 관계
     AdministrativeDivision ||--o{ AdministrativeEmd : "code -> division_code"
 ```
@@ -356,8 +336,8 @@ erDiagram
 | 토지 | `land_and_forest_infos`             | 토지임야정보 (AL_D003)           | O            | pnu + data_year          |
 | 소유 | `land_ownerships`                   | 토지소유정보                     | O            | pnu + co_owner_seq       |
 | 가격 | `official_land_prices`              | 개별공시지가 (AL_D151)           | O            | pnu + base_year          |
-| 매매 | `real_estate_sales`                 | 부동산 매매 실거래               | X (nullable) | -                        |
-| 전월세 | `real_estate_rentals`             | 부동산 전월세 실거래             | X (nullable) | -                        |
+| 매매 | `real_estate_sales`                 | 부동산 매매 실거래               | X            | -                        |
+| 전월세 | `real_estate_rentals`             | 부동산 전월세 실거래             | X            | -                        |
 | 건물 | `building_register_headers`         | 건축물대장 표제부                | O            | mgm_bldrgst_pk           |
 | 건물 | `building_register_generals`        | 건축물대장 총괄표제부            | O            | mgm_bldrgst_pk           |
 | 건물 | `building_register_floor_details`   | 건축물대장 층별개요              | O            | -                        |
@@ -372,11 +352,12 @@ erDiagram
 
 ### 핵심 관계
 
-- **Lot**이 PNU 기반 중심 테이블로, 12개 테이블이 FK로 직접 참조
-- **RealEstateSale, RealEstateRental**: pnu nullable, FK 없이 간접 연결
+- **Lot**이 PNU 기반 중심 테이블로, 12개 테이블이 pnu로 연결 (FK 없이 인덱스 기반)
+- **RealEstateSale, RealEstateRental**: sigungu 기반 위치 연결 (pnu 없음)
 - **AdministrativeDivision -> AdministrativeEmd**: 시군구 -> 읍면동 계층 관계
-- **RoadCenterLine, UseRegionDistrict**: 공간 데이터로 Lot과 직접 FK 없음 (admin_code로 간접 연결)
-- 모든 PublicDataBase 상속 테이블은 `id`, `created_at`, `updated_at` 공통 필드 보유
+- **RoadCenterLine, UseRegionDistrict**: 공간 데이터 (Lot과 직접 연결 없음)
+- 모든 PublicDataBase 상속 테이블은 `id`, `created_at` 공통 필드 보유
+- PNU에서 시도/시군구/읍면동 코드 추출: `app.utils.pnu` 유틸 사용
 - PostGIS geometry 지원: Lot, AdministrativeDivision, AdministrativeEmd, GisBuildingIntegrated, RoadCenterLine, UseRegionDistrict
 
 ### Enum 타입

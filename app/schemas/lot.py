@@ -12,9 +12,6 @@ class LotCreate(BaseSchema):
     """필지 생성 스키마."""
 
     pnu: str
-    sido_code: str
-    sgg_code: str
-    emd_code: str
     jibun_address: str | None = None
     geometry: dict[str, Any] | None = None
 
@@ -30,9 +27,6 @@ class LotRead(BaseSchema):
     """필지 조회 스키마."""
 
     pnu: str
-    sido_code: str
-    sgg_code: str
-    emd_code: str
     jibun_address: str | None
     geometry: GeoJSON = None
     created_at: datetime | None

@@ -39,12 +39,6 @@ class RealEstateSale(PublicDataBase, table=True):
     __tablename__ = "real_estate_sales"
 
     # ── 핵심 식별 필드 ──
-    pnu: str | None = Field(
-        default=None,
-        max_length=19,
-        index=True,
-        description="필지고유번호 (매칭 가능한 경우)",
-    )
     property_type: PropertyType = Field(
         sa_column=Column(
             Enum(PropertyType, name="property_type_enum", create_constraint=False),
@@ -71,9 +65,6 @@ class RealEstateSale(PublicDataBase, table=True):
     floor_area: float | None = Field(
         default=None, description="연면적 (㎡, 단독다가구)"
     )
-    contract_area: float | None = Field(
-        default=None, description="계약면적 (㎡, 토지)"
-    )
     floor: str | None = Field(default=None, max_length=10, description="층")
     build_year: int | None = Field(default=None, description="건축년도")
 
@@ -84,13 +75,6 @@ class RealEstateSale(PublicDataBase, table=True):
         default=None, max_length=30, description="거래유형 (중개거래/직거래 등)"
     )
 
-    # ── 토지 전용 필드 ──
-    land_category: str | None = Field(
-        default=None, max_length=20, description="지목 (토지)"
-    )
-    use_area: str | None = Field(
-        default=None, max_length=50, description="용도지역 (토지)"
-    )
 
 
 class RealEstateRental(PublicDataBase, table=True):
@@ -103,12 +87,6 @@ class RealEstateRental(PublicDataBase, table=True):
     __tablename__ = "real_estate_rentals"
 
     # ── 핵심 식별 필드 ──
-    pnu: str | None = Field(
-        default=None,
-        max_length=19,
-        index=True,
-        description="필지고유번호 (매칭 가능한 경우)",
-    )
     property_type: PropertyType = Field(
         sa_column=Column(
             Enum(PropertyType, name="property_type_enum", create_constraint=False),
