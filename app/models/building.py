@@ -23,7 +23,7 @@ class BuildingRegisterHeader(PublicDataBase, table=True):
     mgm_bldrgst_pk: str = Field(max_length=33, index=True, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        foreign_key="lots.pnu",
+        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호",
     )
@@ -57,7 +57,7 @@ class BuildingRegisterGeneral(PublicDataBase, table=True):
     mgm_bldrgst_pk: str = Field(max_length=33, index=True, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        foreign_key="lots.pnu",
+        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호",
     )
@@ -85,7 +85,7 @@ class BuildingRegisterFloorDetail(PublicDataBase, table=True):
     mgm_bldrgst_pk: str = Field(max_length=33, index=True, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        foreign_key="lots.pnu",
+        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호",
     )
@@ -107,7 +107,7 @@ class BuildingRegisterArea(PublicDataBase, table=True):
     mgm_bldrgst_pk: str = Field(max_length=33, index=True, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        foreign_key="lots.pnu",
+        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호",
     )
@@ -132,7 +132,7 @@ class BuildingRegisterAncillaryLot(PublicDataBase, table=True):
     mgm_bldrgst_pk: str = Field(max_length=33, index=True, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        foreign_key="lots.pnu",
+        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호 (본 건물)",
     )
@@ -155,7 +155,7 @@ class GisBuildingIntegrated(PublicDataBase, table=True):
 
     pnu: str = Field(
         max_length=19,
-        foreign_key="lots.pnu",
+        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호 (고유번호)",
     )

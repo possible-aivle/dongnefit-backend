@@ -20,7 +20,7 @@ class LandOwnership(PublicDataBase, table=True):
 
     pnu: str = Field(
         max_length=19,
-        foreign_key="lots.pnu",
+        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호",
     )

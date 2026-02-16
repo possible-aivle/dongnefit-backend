@@ -18,7 +18,7 @@ class LandCharacteristic(PublicDataBase, table=True):
 
     pnu: str = Field(
         max_length=19,
-        foreign_key="lots.pnu",
+        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호",
     )
@@ -35,7 +35,7 @@ class LandUsePlan(PublicDataBase, table=True):
     """토지이용계획정보 테이블.
 
     코어 데이터 - 최신성 중요.
-    vworld csv 데이터 기반 (AL_D154, 15개 CSV 컬럼).
+    vworld csv 데이터 기반 (AL_D155, 15개 CSV 컬럼).
     """
 
     __tablename__ = "land_use_plans"
@@ -43,7 +43,7 @@ class LandUsePlan(PublicDataBase, table=True):
 
     pnu: str = Field(
         max_length=19,
-        foreign_key="lots.pnu",
+        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호",
     )
@@ -65,7 +65,7 @@ class LandAndForestInfo(PublicDataBase, table=True):
 
     pnu: str = Field(
         max_length=19,
-        foreign_key="lots.pnu",
+        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호",
     )
