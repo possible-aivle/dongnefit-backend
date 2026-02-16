@@ -1,4 +1,4 @@
-"""토지이용계획정보 프로세서 (AL_D154)."""
+"""토지이용계획정보 프로세서 (AL_D155)."""
 
 from typing import Any
 
@@ -11,7 +11,7 @@ class LandUsePlanProcessor(VworldCsvProcessor):
     """토지이용계획정보 CSV 프로세서."""
 
     name = "land_use_plan"
-    description = "토지이용계획정보 (AL_D154)"
+    description = "토지이용계획정보 (AL_D155)"
     data_type = PublicDataType.LAND_USE_PLAN
 
     COLUMN_MAP: dict[str, str] = {

@@ -17,8 +17,14 @@ from app.schemas.base import (
     wkb_to_shapely,
 )
 from app.schemas.building import (
+    BuildingRegisterAncillaryLotCreate,
+    BuildingRegisterAncillaryLotRead,
+    BuildingRegisterAreaCreate,
+    BuildingRegisterAreaRead,
     BuildingRegisterFloorDetailCreate,
     BuildingRegisterFloorDetailRead,
+    BuildingRegisterGeneralCreate,
+    BuildingRegisterGeneralRead,
     BuildingRegisterHeaderCreate,
     BuildingRegisterHeaderRead,
     GisBuildingIntegratedCreate,
@@ -90,8 +96,14 @@ __all__ = [
     # Building
     "BuildingRegisterHeaderCreate",
     "BuildingRegisterHeaderRead",
+    "BuildingRegisterGeneralCreate",
+    "BuildingRegisterGeneralRead",
     "BuildingRegisterFloorDetailCreate",
     "BuildingRegisterFloorDetailRead",
+    "BuildingRegisterAreaCreate",
+    "BuildingRegisterAreaRead",
+    "BuildingRegisterAncillaryLotCreate",
+    "BuildingRegisterAncillaryLotRead",
     "GisBuildingIntegratedCreate",
     "GisBuildingIntegratedRead",
     # Transaction

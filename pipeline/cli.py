@@ -197,7 +197,8 @@ DATA_SOURCES: dict[str, dict] = {
         "category": "토지",
         "dir": "토지특성정보",
         "processor": "land_characteristic",
-        "file_type": "sgg_code",  # 파일명에 시군구코드 포함
+        "file_type": "sido_code",
+        "file_prefix": "AL_D195",  # AL_D194(SHP)와 혼재 → CSV만 선택
     },
     "land_use_plan": {
         "name": "토지이용계획정보",
@@ -446,6 +447,8 @@ def action_load_public(db: DbManager) -> None:
             continue
 
         file_type = src["file_type"]
+        file_prefix = src.get("file_prefix", "")
+        zip_glob = f"{file_prefix}*.zip" if file_prefix else "*.zip"
         data_dir = Path(__file__).parent / "public_data" / src["dir"]
 
         if not data_dir.exists():
@@ -459,9 +462,11 @@ def action_load_public(db: DbManager) -> None:
                 # 시도코드 기반 ZIP 파일
                 from pipeline.file_utils import find_zip_files_by_sido_code
                 if sido_codes:
-                    zip_files = find_zip_files_by_sido_code(data_dir, sido_codes)
+                    zip_files = find_zip_files_by_sido_code(
+                        data_dir, sido_codes, pattern=zip_glob,
+                    )
                 else:
-                    zip_files = sorted(data_dir.glob("*.zip"))
+                    zip_files = sorted(data_dir.glob(zip_glob))
                 params["zip_files"] = zip_files
                 params["sgg_prefixes"] = sgg_prefixes
 
@@ -469,9 +474,11 @@ def action_load_public(db: DbManager) -> None:
                 # 시군구코드 기반 ZIP 파일
                 from pipeline.file_utils import find_zip_files_by_sgg_code
                 if sgg_prefixes:
-                    zip_files = find_zip_files_by_sgg_code(data_dir, sgg_prefixes)
+                    zip_files = find_zip_files_by_sgg_code(
+                        data_dir, sgg_prefixes, pattern=zip_glob,
+                    )
                 else:
-                    zip_files = sorted(data_dir.glob("*.zip"))
+                    zip_files = sorted(data_dir.glob(zip_glob))
                 params["zip_files"] = zip_files
                 params["sgg_prefixes"] = sgg_prefixes
 

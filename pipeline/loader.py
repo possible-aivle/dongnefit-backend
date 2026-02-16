@@ -4,6 +4,7 @@
 공공데이터 모델 타입에 따라 적절한 테이블에 삽입/업데이트합니다.
 """
 
+import json
 from typing import Any
 
 from sqlalchemy import text
@@ -101,10 +102,41 @@ def _build_val_expr(col: str) -> str:
     """컬럼에 맞는 SQL 값 표현식을 반환합니다.
 
     geometry 컬럼은 WKT 문자열을 PostGIS Geometry로 변환합니다.
+    raw_data(JSONB) 컬럼은 text → jsonb 캐스팅합니다.
     """
     if col == "geometry":
         return f"ST_GeomFromText(:{col}, 4326)"
+    if col == "raw_data":
+        return f"CAST(:{col} AS jsonb)"
     return f":{col}"
+
+
+def _serialize_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """레코드를 DB 삽입에 맞게 전처리합니다.
+
+    - dict/list 값 → JSON 문자열 직렬화 (asyncpg JSONB 호환)
+    - collected_at, created_at, updated_at 자동 추가 (NOT NULL 보장)
+    """
+    from app.models.base import get_utc_now
+
+    now = get_utc_now()
+    serialized = []
+    for record in records:
+        new_record = {}
+        for key, value in record.items():
+            if isinstance(value, (dict, list)):
+                new_record[key] = json.dumps(value, ensure_ascii=False, default=str)
+            else:
+                new_record[key] = value
+        # 타임스탬프 자동 추가 (raw SQL에서는 모델 default가 적용되지 않음)
+        if "collected_at" not in new_record:
+            new_record["collected_at"] = now
+        if "created_at" not in new_record:
+            new_record["created_at"] = now
+        if "updated_at" not in new_record:
+            new_record["updated_at"] = now
+        serialized.append(new_record)
+    return serialized
 
 
 async def bulk_insert(
@@ -117,6 +149,7 @@ async def bulk_insert(
     if not records:
         return 0
 
+    records = _serialize_records(records)
     total = 0
     for i in range(0, len(records), batch_size):
         batch = records[i : i + batch_size]
@@ -160,6 +193,7 @@ async def bulk_upsert(
         return ProcessResult(inserted=count)
 
     # UPSERT (ON CONFLICT DO UPDATE)
+    records = _serialize_records(records)
     inserted = 0
     updated = 0
 
@@ -185,7 +219,7 @@ async def bulk_upsert(
             )
 
         result = await session.execute(text(sql), batch)  # noqa: S608
-        row_count = result.rowcount if result.rowcount else 0
+        row_count = result.rowcount if result.rowcount and result.rowcount > 0 else 0
         inserted += row_count
 
     await session.commit()

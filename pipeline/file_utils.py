@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import csv
 import tempfile
+import unicodedata
 import zipfile
 from pathlib import Path
 from typing import Any
@@ -246,6 +247,15 @@ def find_zip_files_by_sido_code(
     return matched
 
 
+def _nfc(s: str) -> str:
+    """Unicode NFC 정규화.
+
+    macOS(APFS/HFS+)는 파일명에 NFD를 사용하므로
+    Python 문자열(NFC)과 비교 시 정규화가 필요합니다.
+    """
+    return unicodedata.normalize("NFC", s)
+
+
 def find_zip_files_by_province_name(
     data_dir: Path,
     province_names: set[str],
@@ -257,9 +267,9 @@ def find_zip_files_by_province_name(
     """
     matched: list[Path] = []
     for zip_path in sorted(data_dir.glob(pattern)):
-        name = zip_path.stem
+        name = _nfc(zip_path.stem)
         for pname in province_names:
-            if pname in name:
+            if _nfc(pname) in name:
                 matched.append(zip_path)
                 break
     return matched

@@ -42,6 +42,60 @@ class BuildingRegisterFloorDetailRead(BaseSchema):
     updated_at: datetime | None
 
 
+class BuildingRegisterGeneralCreate(BaseSchema):
+    """건축물대장 총괄표제부 생성 스키마."""
+
+    pnu: str
+    raw_data: dict[str, Any] | None = None
+
+
+class BuildingRegisterGeneralRead(BaseSchema):
+    """건축물대장 총괄표제부 조회 스키마."""
+
+    id: int
+    pnu: str
+    raw_data: dict[str, Any] | None
+    collected_at: datetime
+    created_at: datetime | None
+    updated_at: datetime | None
+
+
+class BuildingRegisterAreaCreate(BaseSchema):
+    """건축물대장 전유공용면적 생성 스키마."""
+
+    pnu: str
+    raw_data: dict[str, Any] | None = None
+
+
+class BuildingRegisterAreaRead(BaseSchema):
+    """건축물대장 전유공용면적 조회 스키마."""
+
+    id: int
+    pnu: str
+    raw_data: dict[str, Any] | None
+    collected_at: datetime
+    created_at: datetime | None
+    updated_at: datetime | None
+
+
+class BuildingRegisterAncillaryLotCreate(BaseSchema):
+    """건축물대장 부속지번 생성 스키마."""
+
+    pnu: str
+    raw_data: dict[str, Any] | None = None
+
+
+class BuildingRegisterAncillaryLotRead(BaseSchema):
+    """건축물대장 부속지번 조회 스키마."""
+
+    id: int
+    pnu: str
+    raw_data: dict[str, Any] | None
+    collected_at: datetime
+    created_at: datetime | None
+    updated_at: datetime | None
+
+
 class GisBuildingIntegratedCreate(BaseSchema):
     """GIS건물통합정보 생성 스키마."""
 
