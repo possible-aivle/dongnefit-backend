@@ -62,9 +62,5 @@ class PublicDataBase(SQLModel):
         sa_type=JSONB,
         description="원본 데이터 (전처리 전 원본 보관)",
     )
-    collected_at: datetime = Field(
-        default_factory=get_utc_now,
-        description="데이터 수집 일시",
-    )
     created_at: datetime | None = Field(default_factory=get_utc_now)
     updated_at: datetime | None = Field(default_factory=get_utc_now)

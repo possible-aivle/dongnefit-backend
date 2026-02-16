@@ -31,7 +31,7 @@ class LandCharacteristicRead(BaseSchema):
     land_use_name: str | None
     official_price: int | None
     raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -53,7 +53,7 @@ class LandUsePlanRead(BaseSchema):
     data_year: int
     use_district_name: str | None
     raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -81,6 +81,6 @@ class LandAndForestInfoRead(BaseSchema):
     ownership_name: str | None
     owner_count: int | None
     raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None

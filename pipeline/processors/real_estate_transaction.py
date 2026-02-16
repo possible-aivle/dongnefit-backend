@@ -188,7 +188,6 @@ def transform_sale_row(
     """매매 엑셀 행 하나를 DB 레코드 dict로 변환."""
     record: dict[str, Any] = {
         "property_type": property_type.name,
-        "collected_at": now,
         "created_at": now,
         "updated_at": now,
     }
@@ -227,7 +226,6 @@ def transform_rental_row(
     """전월세 엑셀 행 하나를 DB 레코드 dict로 변환."""
     record: dict[str, Any] = {
         "property_type": property_type.name,
-        "collected_at": now,
         "created_at": now,
         "updated_at": now,
     }

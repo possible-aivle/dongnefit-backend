@@ -25,7 +25,7 @@ class RoadCenterLineRead(BaseSchema):
     admin_code: str | None
     geometry: GeoJSON = None
     raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -51,6 +51,6 @@ class UseRegionDistrictRead(BaseSchema):
     admin_code: str | None
     geometry: GeoJSON = None
     raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None

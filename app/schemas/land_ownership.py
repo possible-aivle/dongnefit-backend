@@ -31,6 +31,5 @@ class LandOwnershipRead(BaseSchema):
     ownership_change_date: str | None
     owner_count: int | None
     raw_data: dict[str, Any] | None
-    collected_at: datetime
     created_at: datetime | None
     updated_at: datetime | None

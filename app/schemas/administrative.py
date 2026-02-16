@@ -26,7 +26,7 @@ class AdministrativeDivisionRead(BaseSchema):
     level: int
     parent_code: str | None
     geometry: GeoJSON = None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -49,6 +49,6 @@ class AdministrativeEmdRead(BaseSchema):
     name: str
     division_code: str
     geometry: GeoJSON = None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None

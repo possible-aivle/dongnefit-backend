@@ -35,7 +35,6 @@ class LotRead(BaseSchema):
     emd_code: str
     jibun_address: str | None
     geometry: GeoJSON = None
-    collected_at: datetime
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -53,6 +52,5 @@ class AncillaryLandRead(BaseSchema):
     id: int
     pnu: str
     raw_data: dict[str, Any] | None
-    collected_at: datetime
     created_at: datetime | None
     updated_at: datetime | None

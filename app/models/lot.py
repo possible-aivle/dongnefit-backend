@@ -49,7 +49,6 @@ class Lot(SQLModel, table=True):
         description="지번주소",
     )
     geometry: Any = geometry_column(description="필지 경계 (Polygon/MultiPolygon)")
-    collected_at: datetime = Field(default_factory=get_utc_now)
     created_at: datetime | None = Field(default_factory=get_utc_now)
     updated_at: datetime | None = Field(default_factory=get_utc_now)
 

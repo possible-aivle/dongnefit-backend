@@ -24,7 +24,7 @@ class OfficialLandPriceRead(BaseSchema):
     base_year: int
     price_per_sqm: int | None
     raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -48,7 +48,7 @@ class RealEstateSaleRead(BaseSchema):
     transaction_date: date | None
     transaction_amount: int | None
     raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -76,6 +76,6 @@ class RealEstateRentalRead(BaseSchema):
     deposit: int | None
     monthly_rent_amount: int | None
     raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None

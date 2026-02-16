@@ -19,7 +19,7 @@ class BuildingRegisterHeaderRead(BaseSchema):
     id: int
     pnu: str
     raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -37,7 +37,7 @@ class BuildingRegisterFloorDetailRead(BaseSchema):
     id: int
     pnu: str
     raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -55,7 +55,7 @@ class BuildingRegisterGeneralRead(BaseSchema):
     id: int
     pnu: str
     raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -73,7 +73,7 @@ class BuildingRegisterAreaRead(BaseSchema):
     id: int
     pnu: str
     raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -91,7 +91,7 @@ class BuildingRegisterAncillaryLotRead(BaseSchema):
     id: int
     pnu: str
     raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -131,6 +131,6 @@ class GisBuildingIntegratedRead(BaseSchema):
     underground_floors: int | None
     geometry: GeoJSON = None
     raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
     updated_at: datetime | None
