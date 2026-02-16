@@ -13,7 +13,7 @@ class RoadCenterLineCreate(BaseSchema):
     road_name: str | None = None
     admin_code: str | None = None
     geometry: dict[str, Any] | None = None
-    raw_data: dict[str, Any] | None = None
+
 
 
 class RoadCenterLineRead(BaseSchema):
@@ -24,7 +24,7 @@ class RoadCenterLineRead(BaseSchema):
     road_name: str | None
     admin_code: str | None
     geometry: GeoJSON = None
-    raw_data: dict[str, Any] | None
+
 
     created_at: datetime | None
     updated_at: datetime | None
@@ -38,7 +38,7 @@ class UseRegionDistrictCreate(BaseSchema):
     district_code: str | None = None
     admin_code: str | None = None
     geometry: dict[str, Any] | None = None
-    raw_data: dict[str, Any] | None = None
+
 
 
 class UseRegionDistrictRead(BaseSchema):
@@ -50,7 +50,7 @@ class UseRegionDistrictRead(BaseSchema):
     district_code: str | None
     admin_code: str | None
     geometry: GeoJSON = None
-    raw_data: dict[str, Any] | None
+
 
     created_at: datetime | None
     updated_at: datetime | None

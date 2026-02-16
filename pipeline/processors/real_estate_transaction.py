@@ -16,7 +16,6 @@ Usage:
     uv run python -m pipeline.processors.real_estate_transaction
 """
 
-import json
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
@@ -169,16 +168,6 @@ def parse_filename(filename: str) -> PropertyType | None:
     return PROPERTY_TYPE_MAP.get(prop_name)
 
 
-def _build_raw_data(row: dict[str, Any], columns: list[str]) -> str:
-    """원본 행을 JSON string으로 변환."""
-    raw: dict[str, str] = {}
-    for col in columns:
-        v = row.get(col)
-        if v is not None and not (isinstance(v, float) and pd.isna(v)):
-            raw[col] = str(v)
-    return json.dumps(raw, ensure_ascii=False)
-
-
 def transform_sale_row(
     row: dict[str, Any],
     columns: list[str],
@@ -213,7 +202,6 @@ def transform_sale_row(
     if "floor" in record and record["floor"] is not None:
         record["floor"] = str(record["floor"])
 
-    record["raw_data"] = _build_raw_data(row, columns)
     return record
 
 
@@ -258,7 +246,6 @@ def transform_rental_row(
     if "floor" in record and record["floor"] is not None:
         record["floor"] = str(record["floor"])
 
-    record["raw_data"] = _build_raw_data(row, columns)
     return record
 
 

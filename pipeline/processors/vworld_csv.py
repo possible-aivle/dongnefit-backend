@@ -156,8 +156,6 @@ class VworldCsvProcessor(BaseProcessor):
         Returns:
             변환된 딕셔너리 또는 스킵할 경우 None
         """
-        # raw_data 보존
-        mapped["raw_data"] = raw_row
         return mapped
 
     def get_params_interactive(self) -> dict[str, Any]:

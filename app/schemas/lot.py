@@ -43,7 +43,7 @@ class AncillaryLandCreate(BaseSchema):
     """부속필지 생성 스키마."""
 
     pnu: str
-    raw_data: dict[str, Any] | None = None
+
 
 
 class AncillaryLandRead(BaseSchema):
@@ -51,6 +51,6 @@ class AncillaryLandRead(BaseSchema):
 
     id: int
     pnu: str
-    raw_data: dict[str, Any] | None
+
     created_at: datetime | None
     updated_at: datetime | None

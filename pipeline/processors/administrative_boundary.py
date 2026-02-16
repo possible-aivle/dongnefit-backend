@@ -33,6 +33,7 @@ class AdministrativeSidoProcessor(BaseProcessor):
     name = "admin_boundary_sido"
     description = "행정경계 시도"
     data_type = PublicDataType.ADMINISTRATIVE_DIVISION
+    simplify_tolerance = 0.001
 
     async def collect(self, params: dict[str, Any]) -> list[dict]:
         data_dir = PUBLIC_DATA_DIR / "행정경계_시도"
@@ -72,7 +73,7 @@ class AdministrativeSidoProcessor(BaseProcessor):
                 "level": 1,
                 "parent_code": None,
                 "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
-                "raw_data": {k: v for k, v in row.items() if k != "__geometry__"},
+
             })
 
         console.print(f"  변환 완료: {len(records)}건")
@@ -91,6 +92,7 @@ class AdministrativeSigunguProcessor(BaseProcessor):
     name = "admin_boundary_sigungu"
     description = "행정경계 시군구"
     data_type = PublicDataType.ADMINISTRATIVE_DIVISION
+    simplify_tolerance = 0.001
 
     async def collect(self, params: dict[str, Any]) -> list[dict]:
         sgg_prefixes = params.get("sgg_prefixes")
@@ -150,7 +152,7 @@ class AdministrativeSigunguProcessor(BaseProcessor):
                 "level": 2,
                 "parent_code": parent_code,
                 "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
-                "raw_data": {k: v for k, v in row.items() if k != "__geometry__"},
+
             })
 
         console.print(f"  변환 완료: {len(records)}건")
@@ -169,6 +171,7 @@ class AdministrativeEmdProcessor(BaseProcessor):
     name = "admin_boundary_emd"
     description = "행정경계 읍면동"
     data_type = PublicDataType.ADMINISTRATIVE_EMD
+    simplify_tolerance = 0.001
 
     async def collect(self, params: dict[str, Any]) -> list[dict]:
         sgg_prefixes = params.get("sgg_prefixes")
@@ -225,7 +228,7 @@ class AdministrativeEmdProcessor(BaseProcessor):
                 "name": name.strip(),
                 "division_code": division_code,
                 "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
-                "raw_data": {k: v for k, v in row.items() if k != "__geometry__"},
+
             })
 
         console.print(f"  변환 완료: {len(records)}건")

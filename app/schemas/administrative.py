@@ -14,7 +14,7 @@ class AdministrativeDivisionCreate(BaseSchema):
     level: int
     parent_code: str | None = None
     geometry: dict[str, Any] | None = None
-    raw_data: dict[str, Any] | None = None
+
 
 
 class AdministrativeDivisionRead(BaseSchema):
@@ -38,7 +38,7 @@ class AdministrativeEmdCreate(BaseSchema):
     name: str
     division_code: str
     geometry: dict[str, Any] | None = None
-    raw_data: dict[str, Any] | None = None
+
 
 
 class AdministrativeEmdRead(BaseSchema):

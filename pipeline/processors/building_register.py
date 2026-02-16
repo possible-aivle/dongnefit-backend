@@ -232,7 +232,7 @@ class BuildingRegisterHeaderProcessor(BuildingRegisterTxtProcessor):
         mapped["household_count"] = self._safe_int(mapped.get("household_count"))
         mapped["above_ground_floors"] = self._safe_int(mapped.get("above_ground_floors"))
         mapped["underground_floors"] = self._safe_int(mapped.get("underground_floors"))
-        mapped["raw_data"] = {str(i): v for i, v in enumerate(fields)}
+
         return mapped
 
 
@@ -278,7 +278,7 @@ class BuildingRegisterGeneralProcessor(BuildingRegisterTxtProcessor):
         mapped["far"] = self._safe_float(mapped.get("far"))
         mapped["household_count"] = self._safe_int(mapped.get("household_count"))
         mapped["total_parking"] = self._safe_int(mapped.get("total_parking"))
-        mapped["raw_data"] = {str(i): v for i, v in enumerate(fields)}
+
         return mapped
 
 
@@ -313,7 +313,7 @@ class BuildingRegisterFloorDetailProcessor(BuildingRegisterTxtProcessor):
         mapped["pnu"] = pnu
         mapped["floor_no"] = self._safe_int(mapped.get("floor_no"))
         mapped["area"] = self._safe_float(mapped.get("area"))
-        mapped["raw_data"] = {str(i): v for i, v in enumerate(fields)}
+
         return mapped
 
 
@@ -353,7 +353,7 @@ class BuildingRegisterAreaProcessor(BuildingRegisterTxtProcessor):
         mapped["pnu"] = pnu
         mapped["floor_no"] = self._safe_int(mapped.get("floor_no"))
         mapped["area"] = self._safe_float(mapped.get("area"))
-        mapped["raw_data"] = {str(i): v for i, v in enumerate(fields)}
+
         return mapped
 
 
@@ -389,7 +389,7 @@ class BuildingRegisterAncillaryLotProcessor(BuildingRegisterTxtProcessor):
 
         mapped["pnu"] = pnu
         mapped["atch_pnu"] = atch_pnu
-        mapped["raw_data"] = {str(i): v for i, v in enumerate(fields)}
+
         return mapped
 
     def _build_atch_pnu(self, fields: list[str]) -> str | None:

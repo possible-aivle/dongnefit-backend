@@ -35,7 +35,6 @@ class OfficialLandPriceProcessor(VworldCsvProcessor):
         mapped["base_year"] = self._safe_int(mapped.get("base_year")) or 0
         mapped["price_per_sqm"] = self._safe_int(mapped.get("price_per_sqm"))
 
-        mapped["raw_data"] = raw_row
         return mapped
 
 

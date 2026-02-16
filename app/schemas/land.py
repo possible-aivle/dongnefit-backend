@@ -1,7 +1,6 @@
 """토지 관련 스키마."""
 
 from datetime import datetime
-from typing import Any
 
 from app.schemas.base import BaseSchema
 
@@ -16,7 +15,7 @@ class LandCharacteristicCreate(BaseSchema):
     use_zone_name: str | None = None
     land_use_name: str | None = None
     official_price: int | None = None
-    raw_data: dict[str, Any] | None = None
+
 
 
 class LandCharacteristicRead(BaseSchema):
@@ -30,7 +29,7 @@ class LandCharacteristicRead(BaseSchema):
     use_zone_name: str | None
     land_use_name: str | None
     official_price: int | None
-    raw_data: dict[str, Any] | None
+
 
     created_at: datetime | None
     updated_at: datetime | None
@@ -42,7 +41,7 @@ class LandUsePlanCreate(BaseSchema):
     pnu: str
     data_year: int
     use_district_name: str | None = None
-    raw_data: dict[str, Any] | None = None
+
 
 
 class LandUsePlanRead(BaseSchema):
@@ -52,7 +51,7 @@ class LandUsePlanRead(BaseSchema):
     pnu: str
     data_year: int
     use_district_name: str | None
-    raw_data: dict[str, Any] | None
+
 
     created_at: datetime | None
     updated_at: datetime | None
@@ -67,7 +66,7 @@ class LandAndForestInfoCreate(BaseSchema):
     area: float | None = None
     ownership_name: str | None = None
     owner_count: int | None = None
-    raw_data: dict[str, Any] | None = None
+
 
 
 class LandAndForestInfoRead(BaseSchema):
@@ -80,7 +79,7 @@ class LandAndForestInfoRead(BaseSchema):
     area: float | None
     ownership_name: str | None
     owner_count: int | None
-    raw_data: dict[str, Any] | None
+
 
     created_at: datetime | None
     updated_at: datetime | None

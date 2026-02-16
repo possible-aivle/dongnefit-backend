@@ -33,7 +33,6 @@ class LandOwnershipProcessor(VworldCsvProcessor):
         mapped["co_owner_seq"] = mapped.get("co_owner_seq") or "000001"
         mapped["owner_count"] = self._safe_int(mapped.get("owner_count"))
 
-        mapped["raw_data"] = raw_row
         return mapped
 
 

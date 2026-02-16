@@ -36,7 +36,6 @@ class LandForestProcessor(VworldCsvProcessor):
         data_base_date = mapped.pop("data_base_date", "") or ""
         mapped["data_year"] = self._safe_int(data_base_date[:4]) or 0
 
-        mapped["raw_data"] = raw_row
         return mapped
 
 

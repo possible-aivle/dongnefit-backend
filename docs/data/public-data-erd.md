@@ -29,7 +29,7 @@ erDiagram
         string use_zone_name "용도지역명"
         string land_use_name "토지이용상황"
         int official_price "공시지가(원)"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -40,7 +40,7 @@ erDiagram
         string pnu FK "필지고유번호"
         int data_year "기준년도"
         string use_district_name "용도지역지구명"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -54,7 +54,7 @@ erDiagram
         float area "면적(m2)"
         string ownership_name "소유구분명"
         int owner_count "소유(공유)인수"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -72,7 +72,7 @@ erDiagram
         string ownership_change_reason "소유권변동원인"
         string ownership_change_date "소유권변동일자"
         int owner_count "공유인수"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -86,7 +86,7 @@ erDiagram
         string pnu FK "필지고유번호"
         int base_year "기준연도"
         int price_per_sqm "공시지가(원/m2)"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -112,7 +112,7 @@ erDiagram
         string deal_type "거래유형"
         string land_category "지목"
         string use_area "용도지역"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -139,7 +139,7 @@ erDiagram
         string contract_period "계약기간"
         string contract_type "계약구분"
         string deal_type "거래유형"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -165,7 +165,7 @@ erDiagram
         int above_ground_floors "지상층수"
         int underground_floors "지하층수"
         string approval_date "사용승인일"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -185,7 +185,7 @@ erDiagram
         int household_count "세대수"
         int total_parking "총주차수"
         string approval_date "사용승인일"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -199,7 +199,7 @@ erDiagram
         int floor_no "층번호"
         string main_use_name "주용도코드명"
         float area "면적(m2)"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -214,7 +214,7 @@ erDiagram
         int floor_no "층번호"
         string exclu_common_type "전유공용구분 (1:전유, 2:공용)"
         float area "면적(m2)"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -226,7 +226,7 @@ erDiagram
         string pnu FK "필지고유번호 (본 건물)"
         string atch_pnu "부속 필지고유번호"
         string created_date "생성일자"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -246,7 +246,7 @@ erDiagram
         int above_ground_floors "지상층수"
         int underground_floors "지하층수"
         geometry geometry "PostGIS Polygon/MultiPolygon"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -258,7 +258,7 @@ erDiagram
     AncillaryLand {
         int id PK
         string pnu FK "필지고유번호"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -274,7 +274,7 @@ erDiagram
         int level "레벨 (1=시도, 2=시군구)"
         string parent_code "상위 행정구역코드"
         geometry geometry "PostGIS Polygon/MultiPolygon"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -286,7 +286,7 @@ erDiagram
         string name "읍면동명"
         string division_code FK "소속 시군구코드"
         geometry geometry "PostGIS Polygon/MultiPolygon"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -301,7 +301,7 @@ erDiagram
         string road_name "도로명"
         string admin_code "관할 행정구역코드"
         geometry geometry "PostGIS LineString/MultiLineString"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -314,7 +314,7 @@ erDiagram
         string district_code "용도지역/지구/구역코드"
         string admin_code "관할 행정구역코드"
         geometry geometry "PostGIS Polygon/MultiPolygon"
-        jsonb raw_data
+
 
         datetime created_at
         datetime updated_at
@@ -376,7 +376,7 @@ erDiagram
 - **RealEstateSale, RealEstateRental**: pnu nullable, FK 없이 간접 연결
 - **AdministrativeDivision -> AdministrativeEmd**: 시군구 -> 읍면동 계층 관계
 - **RoadCenterLine, UseRegionDistrict**: 공간 데이터로 Lot과 직접 FK 없음 (admin_code로 간접 연결)
-- 모든 PublicDataBase 상속 테이블은 `id`, `raw_data`, `created_at`, `updated_at` 공통 필드 보유
+- 모든 PublicDataBase 상속 테이블은 `id`, `created_at`, `updated_at` 공통 필드 보유
 - PostGIS geometry 지원: Lot, AdministrativeDivision, AdministrativeEmd, GisBuildingIntegrated, RoadCenterLine, UseRegionDistrict
 
 ### Enum 타입

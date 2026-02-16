@@ -10,7 +10,7 @@ class BuildingRegisterHeaderCreate(BaseSchema):
     """건축물대장 표제부 생성 스키마."""
 
     pnu: str
-    raw_data: dict[str, Any] | None = None
+
 
 
 class BuildingRegisterHeaderRead(BaseSchema):
@@ -18,7 +18,7 @@ class BuildingRegisterHeaderRead(BaseSchema):
 
     id: int
     pnu: str
-    raw_data: dict[str, Any] | None
+
 
     created_at: datetime | None
     updated_at: datetime | None
@@ -28,7 +28,7 @@ class BuildingRegisterFloorDetailCreate(BaseSchema):
     """건축물대장 층별개요 생성 스키마."""
 
     pnu: str
-    raw_data: dict[str, Any] | None = None
+
 
 
 class BuildingRegisterFloorDetailRead(BaseSchema):
@@ -36,7 +36,7 @@ class BuildingRegisterFloorDetailRead(BaseSchema):
 
     id: int
     pnu: str
-    raw_data: dict[str, Any] | None
+
 
     created_at: datetime | None
     updated_at: datetime | None
@@ -46,7 +46,7 @@ class BuildingRegisterGeneralCreate(BaseSchema):
     """건축물대장 총괄표제부 생성 스키마."""
 
     pnu: str
-    raw_data: dict[str, Any] | None = None
+
 
 
 class BuildingRegisterGeneralRead(BaseSchema):
@@ -54,7 +54,7 @@ class BuildingRegisterGeneralRead(BaseSchema):
 
     id: int
     pnu: str
-    raw_data: dict[str, Any] | None
+
 
     created_at: datetime | None
     updated_at: datetime | None
@@ -64,7 +64,7 @@ class BuildingRegisterAreaCreate(BaseSchema):
     """건축물대장 전유공용면적 생성 스키마."""
 
     pnu: str
-    raw_data: dict[str, Any] | None = None
+
 
 
 class BuildingRegisterAreaRead(BaseSchema):
@@ -72,7 +72,7 @@ class BuildingRegisterAreaRead(BaseSchema):
 
     id: int
     pnu: str
-    raw_data: dict[str, Any] | None
+
 
     created_at: datetime | None
     updated_at: datetime | None
@@ -82,7 +82,7 @@ class BuildingRegisterAncillaryLotCreate(BaseSchema):
     """건축물대장 부속지번 생성 스키마."""
 
     pnu: str
-    raw_data: dict[str, Any] | None = None
+
 
 
 class BuildingRegisterAncillaryLotRead(BaseSchema):
@@ -90,7 +90,7 @@ class BuildingRegisterAncillaryLotRead(BaseSchema):
 
     id: int
     pnu: str
-    raw_data: dict[str, Any] | None
+
 
     created_at: datetime | None
     updated_at: datetime | None
@@ -111,7 +111,7 @@ class GisBuildingIntegratedCreate(BaseSchema):
     above_ground_floors: int | None = None
     underground_floors: int | None = None
     geometry: dict[str, Any] | None = None
-    raw_data: dict[str, Any] | None = None
+
 
 
 class GisBuildingIntegratedRead(BaseSchema):
@@ -130,7 +130,7 @@ class GisBuildingIntegratedRead(BaseSchema):
     above_ground_floors: int | None
     underground_floors: int | None
     geometry: GeoJSON = None
-    raw_data: dict[str, Any] | None
+
 
     created_at: datetime | None
     updated_at: datetime | None

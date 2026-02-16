@@ -1,7 +1,6 @@
 """토지소유정보 스키마."""
 
 from datetime import datetime
-from typing import Any
 
 from app.schemas.base import BaseSchema
 
@@ -16,7 +15,7 @@ class LandOwnershipCreate(BaseSchema):
     ownership_change_reason: str | None = None
     ownership_change_date: str | None = None
     owner_count: int | None = None
-    raw_data: dict[str, Any] | None = None
+
 
 
 class LandOwnershipRead(BaseSchema):
@@ -30,6 +29,6 @@ class LandOwnershipRead(BaseSchema):
     ownership_change_reason: str | None
     ownership_change_date: str | None
     owner_count: int | None
-    raw_data: dict[str, Any] | None
+
     created_at: datetime | None
     updated_at: datetime | None

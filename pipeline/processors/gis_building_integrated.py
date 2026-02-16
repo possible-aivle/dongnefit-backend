@@ -170,9 +170,6 @@ class GisBuildingIntegratedProcessor(BaseProcessor):
             # geometry (GeoJSON → WKT)
             mapped["geometry"] = geojson_to_wkt(row.pop("__geometry__", None))
 
-            # raw_data 보존 (geometry 제외)
-            mapped["raw_data"] = {k: v for k, v in row.items() if k != "__geometry__"}
-
             records.append(mapped)
 
         console.print(f"  변환 완료: {len(records)}건")

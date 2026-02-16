@@ -43,6 +43,7 @@ class BaseProcessor(ABC):
     name: str  # 예: "cadastral"
     description: str  # 예: "연속지적도 (vworld)"
     data_type: PublicDataType  # 예: PublicDataType.CONTINUOUS_CADASTRAL
+    simplify_tolerance: float | None = None  # geometry 단순화 허용 오차 (도 단위)
 
     @abstractmethod
     async def collect(self, params: dict[str, Any]) -> list[dict]:
@@ -83,7 +84,10 @@ class BaseProcessor(ABC):
         from pipeline.loader import bulk_upsert
 
         async with async_session_maker() as session:
-            result = await bulk_upsert(session, self.data_type, records)
+            result = await bulk_upsert(
+                session, self.data_type, records,
+                simplify_tolerance=self.simplify_tolerance,
+            )
 
         return result
 

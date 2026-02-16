@@ -97,7 +97,6 @@ class RoadCenterLineProcessor(BaseProcessor):
                 "road_name": road_name[:200] if road_name else None,
                 "admin_code": admin_code[:10] if admin_code else None,
                 "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
-                "raw_data": {k: v for k, v in row.items() if k != "__geometry__"},
             })
 
         console.print(f"  변환 완료: {len(records)}건")

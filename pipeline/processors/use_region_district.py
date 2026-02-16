@@ -35,6 +35,7 @@ class UseRegionDistrictProcessor(BaseProcessor):
     name = "use_region_district"
     description = "용도지역지구정보 (SHP)"
     data_type = PublicDataType.USE_REGION_DISTRICT
+    simplify_tolerance = 0.001
 
     # SHP 필드명 매핑 (속성명이 A0~A5 형태)
     FIELD_MAP: dict[str, str] = {
@@ -106,7 +107,6 @@ class UseRegionDistrictProcessor(BaseProcessor):
                 "district_code": str(mapped.get("district_code", ""))[:50] or None,
                 "admin_code": str(mapped.get("admin_code", ""))[:10] or None,
                 "geometry": geojson_to_wkt(geojson),
-                "raw_data": {k: v for k, v in row.items() if k != "__geometry__"},
             })
 
         console.print(f"  변환 완료: {len(records)}건")
@@ -145,7 +145,8 @@ class UseRegionDistrictProcessor(BaseProcessor):
 
         async with async_session_maker() as session:
             count = await bulk_insert(
-                session, "use_region_districts", records, batch_size=2000
+                session, "use_region_districts", records, batch_size=2000,
+                simplify_tolerance=self.simplify_tolerance,
             )
 
         return ProcessResult(inserted=count)
