@@ -183,8 +183,16 @@ uv run uvicorn app.main:app --reload --port 8000
 ### 6. 공공데이터 파이프라인 실행
 
 ```bash
+# CLI 실행 (인터랙티브 메뉴)
 uv run python -m pipeline
+
+# "공공데이터 적재 (파일 → DB)" 선택
+# → 데이터 소스 복수 선택 (토지/건물/공간/거래 19종)
+# → 지역 선택 (시도/시군구 단위 필터링)
+# → UPSERT/TRUNCATE 옵션 → 적재 실행
 ```
+
+`pipeline/public_data/` 디렉토리에 ZIP/CSV/TXT/XLSX 원본 파일이 필요합니다.
 
 ### 7. 실거래가 크롤러
 
