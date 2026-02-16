@@ -366,48 +366,69 @@ class ContentGenerator:
     ) -> str:
         """블로그 제목 생성 (사용자 의도 반영)."""
         try:
+            # 주요 이슈 키워드 추출 (제목에 포함하기 위해)
+            keywords = []
+            if policy_issues:
+                 # 중요도 높은 이슈 2개 정도 추출
+                 top_issues = sorted(policy_issues, key=lambda x: x.importance, reverse=True)[:2]
+                 keywords = [issue.title for issue in top_issues]
+
+            keywords_str = ", ".join(keywords)
+
+            system_prompt = "당신은 전문 카피라이터입니다. 독자의 호기심을 자극하고 클릭을 유도하는 매력적인 블로그 제목을 지어주세요."
+
             if needs_classification:
                 positive_count = len([i for i in policy_issues if i.sentiment == "positive"])
                 negative_count = len([i for i in policy_issues if i.sentiment == "negative"])
 
-                prompt = f"""'{region}' 지역의 부동산 정책 분석 블로그 제목을 생성하세요.
+                prompt = f"""'{region}' 부동산 분석 글의 제목을 작성해주세요.
 
-주요 이슈:
-- 호재 {positive_count}개
-- 악재 {negative_count}개
+[분석 내용]
+- 호재 {positive_count}건, 악재 {negative_count}건
+- 주요 키워드: {keywords_str}
 
-제목 조건:
-- 25-60자 길이
-- 클릭 유도성 있는 표현 사용
-- 숫자 포함
-- SEO 고려
+[작성 수칙]
+1. **기계적인 나열 금지**: "호재 7개와 악재 2개" 같은 제목은 절대 쓰지 마세요.
+2. **Hook(훅) 활용**: "지금 들어가도 될까?", "OOO의 진실", "절대 놓치지 마세요" 등 감성적/자극적 문구 활용.
+3. **구체성**: 막연한 "분석"보다는 구체적인 이득이나 상황을 암시하세요.
+4. **자연스러움**: 친구에게 말하듯 자연스러운 한국어 문장으로 작성하세요.
 
-제목만 반환하세요 (다른 설명 없이)."""
+[예시]
+- (Bad) 강남역 호재 5개, 악재 2개 완벽 분석
+- (Good) 강남역, 지금이 기회일까? {keywords[0] if keywords else 'GTX'} 호재와 숨겨진 리스크
+- (Good) "역시 {region} 불패?" 신고가 갱신 속 불안 요소는?
+- (Good) 실거주 관점에서 본 {region}, 딱 이것만 조심하세요
+
+제목 1개만 출력하세요 (따옴표 없이)."""
             else:
-                prompt = f"""사용자 요청: "{user_query}"
+                prompt = f"""'{region}' 관련 글의 제목을 작성해주세요.
+주제: {user_query}
+관련 키워드: {keywords_str}
 
-'{region}' 지역에 대한 블로그 제목을 생성하세요.
+[작성 수칙]
+1. 독자의 호기심을 자극하는 매력적인 카피라이팅.
+2. 검색(SEO)을 고려하여 '{region}'과 핵심 키워드를 반드시 포함.
+3. "~에 대한 분석" 같은 딱딱한 표현 지양.
 
-제목 조건:
-- 25-60자 길이
-- 클릭 유도성 있는 표현 사용
-- 사용자 요청 내용 반영
-- SEO 고려
+[예시]
+- (Good) {region} 맛집, 여기 모르면 간첩! 현지인 추천 Best 5
+- (Good) {region} 임장 가기 전 필독! A부터 Z까지 총정리
 
-제목만 반환하세요 (다른 설명 없이)."""
+제목 1개만 출력하세요 (따옴표 없이)."""
 
-            messages = [HumanMessage(content=prompt)]
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=prompt)
+            ]
             response = await self.llm.ainvoke(messages)
             return response.content.strip().strip('"')
 
         except Exception as e:
             print(f"[제목 생성 오류]: {e}")
             if needs_classification:
-                positive_count = len([i for i in policy_issues if i.sentiment == "positive"])
-                negative_count = len([i for i in policy_issues if i.sentiment == "negative"])
-                return f"{region} 부동산 분석: {positive_count}가지 호재와 {negative_count}가지 악재"
+                return f"{region} 부동산 분석: 투자 전 꼭 알아야 할 핵심 포인트" # Fallback도 자연스럽게 수정
             else:
-                return f"{region} {user_query}"
+                return f"{region} {user_query} - 총정리"
 
     async def _generate_meta_description(
         self,
