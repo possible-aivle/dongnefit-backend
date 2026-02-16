@@ -15,6 +15,58 @@ from rich.console import Console
 
 console = Console()
 
+# WGS84 (EPSG:4326) - 네이버지도, 카카오맵, Google Maps 공통 좌표계
+TARGET_CRS = "EPSG:4326"
+
+
+def _make_crs_transformer(
+    src_crs: Any,
+) -> tuple[Any, bool]:
+    """SHP 원본 CRS를 확인하고 WGS84 변환 함수를 생성합니다.
+
+    Args:
+        src_crs: fiona에서 읽은 source CRS (dict 또는 CRS 객체)
+
+    Returns:
+        (transformer, needs_transform) 튜플.
+        needs_transform=False이면 이미 WGS84이므로 변환 불필요.
+    """
+    from pyproj import CRS, Transformer
+
+    try:
+        source = CRS(src_crs)
+    except Exception:
+        # CRS 파싱 실패 시 변환 없이 통과
+        console.print("[yellow]  CRS 파싱 실패 → 좌표 변환 없이 진행[/]")
+        return None, False
+
+    target = CRS(TARGET_CRS)
+
+    if source.equals(target):
+        return None, False
+
+    console.print(f"  [cyan]CRS 변환: {source.to_epsg() or source.name} → EPSG:4326[/]")
+    transformer = Transformer.from_crs(source, target, always_xy=True)
+    return transformer, True
+
+
+def _transform_geojson(geojson: dict[str, Any], transformer: Any) -> dict[str, Any]:
+    """GeoJSON geometry의 좌표를 변환합니다.
+
+    Args:
+        geojson: GeoJSON geometry dict (fiona feature["geometry"])
+        transformer: pyproj Transformer
+
+    Returns:
+        좌표가 변환된 새 GeoJSON dict
+    """
+    from shapely.geometry import mapping, shape
+    from shapely.ops import transform
+
+    geom = shape(geojson)
+    transformed = transform(transformer.transform, geom)
+    return dict(mapping(transformed))
+
 
 def geojson_to_wkt(geojson: dict[str, Any] | None) -> str | None:
     """GeoJSON dict를 WKT 문자열로 변환합니다.
@@ -77,6 +129,9 @@ def read_shp_features(
 
     rows: list[dict[str, Any]] = []
     with fiona.open(shp_path) as src:
+        # CRS 자동 감지 및 WGS84 변환 준비
+        transformer, needs_transform = _make_crs_transformer(src.crs)
+
         for feature in src:
             props: dict[str, Any] = dict(feature.get("properties", {}))
 
@@ -88,7 +143,10 @@ def read_shp_features(
 
             geom = feature.get("geometry")
             if geom:
-                props["__geometry__"] = dict(geom)
+                geom_dict = dict(geom)
+                if needs_transform and transformer is not None:
+                    geom_dict = _transform_geojson(geom_dict, transformer)
+                props["__geometry__"] = geom_dict
 
             rows.append(props)
 

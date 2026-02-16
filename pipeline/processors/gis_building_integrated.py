@@ -10,7 +10,7 @@ from InquirerPy import inquirer
 from rich.console import Console
 
 from app.models.enums import PublicDataType
-from pipeline.file_utils import geojson_to_wkt
+from pipeline.file_utils import _make_crs_transformer, _transform_geojson, geojson_to_wkt
 from pipeline.processors.base import BaseProcessor
 from pipeline.registry import Registry
 
@@ -121,6 +121,9 @@ class GisBuildingIntegratedProcessor(BaseProcessor):
 
         rows: list[dict] = []
         with fiona.open(shp_path) as src:
+            # CRS 자동 감지 및 WGS84 변환 준비
+            transformer, needs_transform = _make_crs_transformer(src.crs)
+
             for feature in src:
                 row: dict[str, Any] = dict(feature.get("properties", {}))
 
@@ -132,7 +135,10 @@ class GisBuildingIntegratedProcessor(BaseProcessor):
 
                 geom = feature.get("geometry")
                 if geom:
-                    row["__geometry__"] = dict(geom)
+                    geom_dict = dict(geom)
+                    if needs_transform and transformer is not None:
+                        geom_dict = _transform_geojson(geom_dict, transformer)
+                    row["__geometry__"] = geom_dict
                 rows.append(row)
 
         return rows
