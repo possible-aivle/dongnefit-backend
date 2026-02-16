@@ -72,6 +72,7 @@ UPSERT_KEYS: dict[PublicDataType, list[str]] = {
     PublicDataType.BUILDING_REGISTER_GENERAL: ["mgm_bldrgst_pk"],
     PublicDataType.GIS_BUILDING_INTEGRATED: ["pnu", "building_id"],
     PublicDataType.LAND_OWNERSHIP: ["pnu", "co_owner_seq"],
+    #* ROAD_CENTER_LINE, USE_REGION_DISTRICT: 단순 INSERT (UPSERT_KEYS에 없음)
 }
 
 

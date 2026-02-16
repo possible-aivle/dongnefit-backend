@@ -32,12 +32,21 @@ class BuildingRegisterTxtProcessor(BaseProcessor):
     COLUMN_INDICES: dict[int, str] = {}
     PNU_INDICES: tuple[int, int, int, int, int] = (0, 0, 0, 0, 0)
 
+    # 시군구코드 필드 인덱스 (PNU_INDICES의 첫 번째: 시군구)
+    SGG_FIELD_INDEX: int = 0
+
     async def collect(self, params: dict[str, Any]) -> list[dict]:
-        """txt 파일을 읽어 raw 필드 리스트를 반환합니다."""
+        """txt 파일을 읽어 raw 필드 리스트를 반환합니다.
+
+        sgg_prefixes가 params에 포함되면 시군구코드로 필터링합니다.
+        """
         file_path = Path(params["file_path"])
         if not file_path.exists():
             console.print(f"[red]파일을 찾을 수 없습니다: {file_path}[/]")
             return []
+
+        sgg_prefixes: list[str] | None = params.get("sgg_prefixes")
+        sgg_idx = self.PNU_INDICES[0]  # 시군구 코드 필드 인덱스
 
         rows: list[dict] = []
         for encoding in ("cp949", "utf-8", "utf-8-sig"):
@@ -48,6 +57,13 @@ class BuildingRegisterTxtProcessor(BaseProcessor):
                         if not line:
                             continue
                         fields = line.split("|")
+
+                        # 시군구 필터링
+                        if sgg_prefixes and sgg_idx < len(fields):
+                            sgg_val = fields[sgg_idx].strip()
+                            if not any(sgg_val.startswith(p) for p in sgg_prefixes):
+                                continue
+
                         rows.append({"__fields__": fields})
                 break
             except (UnicodeDecodeError, UnicodeError):

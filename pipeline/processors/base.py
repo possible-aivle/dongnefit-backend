@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from app.models.enums import PublicDataType
@@ -37,24 +38,6 @@ class BaseProcessor(ABC):
 
     각 공공데이터 소스별로 이 클래스를 상속하여 구현합니다.
     수집(collect) → 변환(transform) → 적재(load)를 하나의 클래스에서 관리합니다.
-
-    구현 예시:
-        class CadastralProcessor(BaseProcessor):
-            name = "cadastral"
-            description = "연속지적도"
-            data_type = PublicDataType.CONTINUOUS_CADASTRAL
-
-            async def collect(self, params):
-                # shp 파일 읽기 또는 API 호출
-                ...
-
-            def transform(self, raw_data):
-                # raw → dict 리스트 (DB 컬럼에 맞게)
-                ...
-
-            def get_params_interactive(self):
-                # CLI에서 사용자 입력
-                ...
     """
 
     name: str  # 예: "cadastral"
@@ -63,29 +46,17 @@ class BaseProcessor(ABC):
 
     @abstractmethod
     async def collect(self, params: dict[str, Any]) -> list[dict]:
-        """외부 소스에서 원본 데이터를 수집합니다.
-
-        Returns:
-            raw dict 리스트
-        """
+        """외부 소스에서 원본 데이터를 수집합니다."""
         ...
 
     @abstractmethod
     def transform(self, raw_data: list[dict]) -> list[dict[str, Any]]:
-        """수집된 원본 데이터를 DB 컬럼에 맞게 변환합니다.
-
-        Returns:
-            DB insert/upsert용 dict 리스트
-        """
+        """수집된 원본 데이터를 DB 컬럼에 맞게 변환합니다."""
         ...
 
     @abstractmethod
     def get_params_interactive(self) -> dict[str, Any]:
-        """CLI에서 사용자에게 파라미터를 입력받습니다.
-
-        Returns:
-            수집에 필요한 파라미터 dict (지역, 기간 등)
-        """
+        """CLI에서 사용자에게 파라미터를 입력받습니다."""
         ...
 
     async def run(self, params: dict[str, Any] | None = None) -> ProcessResult:
@@ -115,3 +86,51 @@ class BaseProcessor(ABC):
             result = await bulk_upsert(session, self.data_type, records)
 
         return result
+
+
+# ── 공공데이터 파일 기반 프로세서 ──
+
+PUBLIC_DATA_DIR = Path(__file__).parent.parent / "public_data"
+
+
+class BaseFileProcessor(BaseProcessor):
+    """파일 기반 공공데이터 프로세서 베이스 클래스.
+
+    public_data/ 디렉토리의 ZIP/CSV/TXT/SHP 파일을 직접 적재하는
+    프로세서의 공통 베이스입니다.
+
+    서브클래스에서 정의:
+        - data_dir_name: str - public_data 하위 디렉토리명
+        - file_pattern: str - ZIP 파일 패턴 (기본 "*.zip")
+    """
+
+    data_dir_name: str = ""
+    file_pattern: str = "*.zip"
+
+    @property
+    def data_dir(self) -> Path:
+        return PUBLIC_DATA_DIR / self.data_dir_name
+
+    async def run_batch(
+        self,
+        sgg_prefixes: list[str] | None = None,
+        sido_codes: set[str] | None = None,
+        province_names: set[str] | None = None,
+        truncate: bool = False,
+    ) -> ProcessResult:
+        """배치 적재 메서드.
+
+        CLI 공공데이터 적재 플로우에서 호출됩니다.
+        기본 구현은 sgg_prefixes를 params에 넣어 run()을 호출합니다.
+        """
+        params: dict[str, Any] = {}
+        if sgg_prefixes:
+            params["sgg_prefixes"] = sgg_prefixes
+        if sido_codes:
+            params["sido_codes"] = sido_codes
+        if province_names:
+            params["province_names"] = list(province_names)
+        if truncate:
+            params["truncate"] = truncate
+
+        return await self.run(params)

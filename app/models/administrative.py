@@ -1,5 +1,7 @@
 """행정구역 모델."""
 
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field
 
 from app.models.base import PublicDataBase
@@ -26,6 +28,11 @@ class AdministrativeDivision(PublicDataBase, table=True):
         max_length=5,
         description="상위 행정구역코드 (시군구의 경우 시도코드)",
     )
+    geometry: dict | None = Field(
+        default=None,
+        sa_column=Column(JSONB),
+        description="GeoJSON geometry (Polygon/MultiPolygon)",
+    )
 
 
 class AdministrativeEmd(PublicDataBase, table=True):
@@ -49,4 +56,9 @@ class AdministrativeEmd(PublicDataBase, table=True):
         foreign_key="administrative_divisions.code",
         index=True,
         description="소속 시군구코드",
+    )
+    geometry: dict | None = Field(
+        default=None,
+        sa_column=Column(JSONB),
+        description="GeoJSON geometry (Polygon/MultiPolygon)",
     )

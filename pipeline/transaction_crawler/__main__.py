@@ -27,7 +27,7 @@
 
 import argparse
 import sys
-from datetime import date, timedelta
+from datetime import date
 
 from pipeline.transaction_crawler.crawler import PROPERTY_TYPES, run_crawler
 

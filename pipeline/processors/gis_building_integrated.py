@@ -57,28 +57,83 @@ class GisBuildingIntegratedProcessor(BaseProcessor):
     }
 
     async def collect(self, params: dict[str, Any]) -> list[dict]:
-        """SHP 파일을 읽어 raw dict 리스트를 반환합니다."""
+        """SHP 파일을 읽어 raw dict 리스트를 반환합니다.
+
+        zip_files가 params에 있으면 ZIP 배치 처리,
+        아니면 단일 file_path 처리.
+        """
         try:
-            import fiona
+            import fiona  # noqa: F401
         except ImportError:
             console.print("[red]fiona 패키지가 필요합니다: uv add fiona[/]")
             return []
 
-        file_path = Path(params["file_path"])
+        sgg_prefixes: list[str] | None = params.get("sgg_prefixes")
+        zip_files: list[Path] = params.get("zip_files", [])
+
+        if zip_files:
+            return self._collect_from_zips(zip_files, sgg_prefixes)
+
+        file_path_str = params.get("file_path")
+        if not file_path_str:
+            return []
+
+        file_path = Path(file_path_str)
         if not file_path.exists():
             console.print(f"[red]파일을 찾을 수 없습니다: {file_path}[/]")
             return []
 
+        if file_path.suffix == ".zip":
+            return self._collect_from_zips([file_path], sgg_prefixes)
+
+        return self._read_shp(file_path, sgg_prefixes)
+
+    def _collect_from_zips(
+        self, zip_files: list[Path], sgg_prefixes: list[str] | None = None
+    ) -> list[dict]:
+        """ZIP 파일 목록에서 SHP를 추출하여 읽습니다."""
+        from pipeline.file_utils import cleanup_temp_dir, extract_zip, find_shp_in_dir
+
+        all_rows: list[dict] = []
+        for zip_path in zip_files:
+            console.print(f"  처리 중: {zip_path.name}")
+            tmp_dir = extract_zip(zip_path)
+            try:
+                shp_path = find_shp_in_dir(tmp_dir)
+                if not shp_path:
+                    console.print("    [yellow]SHP 파일 없음[/]")
+                    continue
+                rows = self._read_shp(shp_path, sgg_prefixes)
+                all_rows.extend(rows)
+                console.print(f"    {len(rows)}건 읽기 완료")
+            finally:
+                cleanup_temp_dir(tmp_dir)
+
+        console.print(f"  총 SHP 읽기 완료: {len(all_rows)}건")
+        return all_rows
+
+    def _read_shp(
+        self, shp_path: Path, sgg_prefixes: list[str] | None = None
+    ) -> list[dict]:
+        """SHP 파일을 읽어 raw dict 리스트를 반환합니다."""
+        import fiona
+
         rows: list[dict] = []
-        with fiona.open(file_path) as src:
+        with fiona.open(shp_path) as src:
             for feature in src:
                 row: dict[str, Any] = dict(feature.get("properties", {}))
+
+                # PNU 기반 필터링
+                if sgg_prefixes:
+                    pnu = str(row.get("A2", row.get("고유번호", ""))).strip()
+                    if not any(pnu.startswith(p) for p in sgg_prefixes):
+                        continue
+
                 geom = feature.get("geometry")
                 if geom:
                     row["__geometry__"] = dict(geom)
                 rows.append(row)
 
-        console.print(f"  SHP 읽기 완료: {len(rows)}건")
         return rows
 
     def transform(self, raw_data: list[dict]) -> list[dict[str, Any]]:
