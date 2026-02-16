@@ -28,7 +28,6 @@ class AdministrativeDivisionRead(BaseSchema):
     geometry: GeoJSON = None
 
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class AdministrativeEmdCreate(BaseSchema):
@@ -51,4 +50,3 @@ class AdministrativeEmdRead(BaseSchema):
     geometry: GeoJSON = None
 
     created_at: datetime | None
-    updated_at: datetime | None

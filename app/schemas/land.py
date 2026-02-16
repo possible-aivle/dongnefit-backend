@@ -32,7 +32,6 @@ class LandCharacteristicRead(BaseSchema):
 
 
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class LandUsePlanCreate(BaseSchema):
@@ -54,7 +53,6 @@ class LandUsePlanRead(BaseSchema):
 
 
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class LandAndForestInfoCreate(BaseSchema):
@@ -82,4 +80,3 @@ class LandAndForestInfoRead(BaseSchema):
 
 
     created_at: datetime | None
-    updated_at: datetime | None

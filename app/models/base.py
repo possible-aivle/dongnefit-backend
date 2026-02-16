@@ -56,4 +56,3 @@ class PublicDataBase(SQLModel):
 
     id: int | None = Field(default=None, primary_key=True)
     created_at: datetime | None = Field(default_factory=get_utc_now)
-    updated_at: datetime | None = Field(default_factory=get_utc_now)

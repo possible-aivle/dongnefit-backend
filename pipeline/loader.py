@@ -114,7 +114,7 @@ def _build_val_expr(col: str, *, simplify_tolerance: float | None = None) -> str
 def _serialize_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """레코드를 DB 삽입에 맞게 전처리합니다.
 
-    - created_at, updated_at 자동 추가 (NOT NULL 보장)
+    - created_at 자동 추가 (NOT NULL 보장)
     """
     from app.models.base import get_utc_now
 
@@ -125,8 +125,7 @@ def _serialize_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         # 타임스탬프 자동 추가 (raw SQL에서는 모델 default가 적용되지 않음)
         if "created_at" not in new_record:
             new_record["created_at"] = now
-        if "updated_at" not in new_record:
-            new_record["updated_at"] = now
+        new_record.pop("updated_at", None)
         serialized.append(new_record)
     return serialized
 

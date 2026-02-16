@@ -73,7 +73,6 @@ class TimestampSchema(BaseSchema):
     """Schema with timestamp fields."""
 
     created_at: datetime
-    updated_at: datetime
 
 
 class PaginationParams(BaseSchema):

@@ -36,7 +36,6 @@ class LotRead(BaseSchema):
     jibun_address: str | None
     geometry: GeoJSON = None
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class AncillaryLandCreate(BaseSchema):
@@ -53,4 +52,3 @@ class AncillaryLandRead(BaseSchema):
     pnu: str
 
     created_at: datetime | None
-    updated_at: datetime | None

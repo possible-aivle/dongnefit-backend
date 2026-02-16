@@ -25,7 +25,6 @@ class OfficialLandPriceRead(BaseSchema):
 
 
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class RealEstateSaleCreate(BaseSchema):
@@ -49,7 +48,6 @@ class RealEstateSaleRead(BaseSchema):
 
 
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class RealEstateRentalCreate(BaseSchema):
@@ -77,4 +75,3 @@ class RealEstateRentalRead(BaseSchema):
 
 
     created_at: datetime | None
-    updated_at: datetime | None

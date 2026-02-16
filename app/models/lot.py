@@ -50,7 +50,6 @@ class Lot(SQLModel, table=True):
     )
     geometry: Any = geometry_column(description="필지 경계 (Polygon/MultiPolygon)")
     created_at: datetime | None = Field(default_factory=get_utc_now)
-    updated_at: datetime | None = Field(default_factory=get_utc_now)
 
 
 class AncillaryLand(PublicDataBase, table=True):

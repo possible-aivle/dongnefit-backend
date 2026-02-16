@@ -31,4 +31,3 @@ class LandOwnershipRead(BaseSchema):
     owner_count: int | None
 
     created_at: datetime | None
-    updated_at: datetime | None

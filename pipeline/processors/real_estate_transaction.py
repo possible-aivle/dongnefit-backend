@@ -178,7 +178,6 @@ def transform_sale_row(
     record: dict[str, Any] = {
         "property_type": property_type.name,
         "created_at": now,
-        "updated_at": now,
     }
 
     for col in columns:
@@ -215,7 +214,6 @@ def transform_rental_row(
     record: dict[str, Any] = {
         "property_type": property_type.name,
         "created_at": now,
-        "updated_at": now,
     }
 
     for col in columns:

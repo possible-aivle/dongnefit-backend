@@ -21,7 +21,6 @@ class BuildingRegisterHeaderRead(BaseSchema):
 
 
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class BuildingRegisterFloorDetailCreate(BaseSchema):
@@ -39,7 +38,6 @@ class BuildingRegisterFloorDetailRead(BaseSchema):
 
 
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class BuildingRegisterGeneralCreate(BaseSchema):
@@ -57,7 +55,6 @@ class BuildingRegisterGeneralRead(BaseSchema):
 
 
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class BuildingRegisterAreaCreate(BaseSchema):
@@ -75,7 +72,6 @@ class BuildingRegisterAreaRead(BaseSchema):
 
 
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class BuildingRegisterAncillaryLotCreate(BaseSchema):
@@ -93,7 +89,6 @@ class BuildingRegisterAncillaryLotRead(BaseSchema):
 
 
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class GisBuildingIntegratedCreate(BaseSchema):
@@ -133,4 +128,3 @@ class GisBuildingIntegratedRead(BaseSchema):
 
 
     created_at: datetime | None
-    updated_at: datetime | None
