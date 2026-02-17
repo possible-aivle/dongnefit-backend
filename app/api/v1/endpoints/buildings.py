@@ -1,5 +1,8 @@
 """건축물 엔드포인트 - 종합 조회."""
 
+import asyncio
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +19,8 @@ from app.schemas.public_data import (
 
 router = APIRouter()
 
+PNU_PATTERN = re.compile(r"^\d{19}$")
+
 
 @router.get(
     "/{pnu}",
@@ -27,19 +32,26 @@ async def get_building_detail(
     pnu: str,
     db: AsyncSession = Depends(get_db),
 ) -> BuildingDetailResponse:
-    # 최소 하나의 건축물 데이터가 있는지 확인
-    general = await crud.get_building_general(db, pnu)
-    headers = await crud.get_building_headers(db, pnu)
-    gis_buildings = await crud.get_gis_buildings(db, pnu)
+    if not PNU_PATTERN.match(pnu):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="PNU는 19자리 숫자여야 합니다.",
+        )
+
+    # 모든 건축물 데이터를 병렬 조회
+    general, headers, gis_buildings, floor_details, areas = await asyncio.gather(
+        crud.get_building_general(db, pnu),
+        crud.get_building_headers(db, pnu),
+        crud.get_gis_buildings(db, pnu),
+        crud.get_building_floor_details(db, pnu),
+        crud.get_building_areas(db, pnu),
+    )
 
     if not general and not headers and not gis_buildings:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="해당 필지의 건축물 정보를 찾을 수 없습니다.",
         )
-
-    floor_details = await crud.get_building_floor_details(db, pnu)
-    areas = await crud.get_building_areas(db, pnu)
 
     return BuildingDetailResponse(
         pnu=pnu,

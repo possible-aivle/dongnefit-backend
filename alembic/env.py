@@ -12,8 +12,9 @@ from sqlmodel import SQLModel
 from alembic import context
 from app.config import settings
 from app.models import (  # noqa: F401 - Import all models for autogenerate
-    AdministrativeDivision,
     AdministrativeEmd,
+    AdministrativeSgg,
+    AdministrativeSido,
     AncillaryLand,
     BlogPost,
     BuildingRegisterAncillaryLot,

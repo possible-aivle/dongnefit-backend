@@ -2,20 +2,20 @@
 
 사용법:
     # 전체 다운로드 (기본: 최근 1년, 모든 부동산 유형)
-    uv --directory backend run python -m pipeline.transaction_crawler
+    uv --directory backend run python -m app.pipeline.transaction_crawler
 
     # 기간 지정
-    uv --directory backend run python -m pipeline.transaction_crawler \
+    uv --directory backend run python -m app.pipeline.transaction_crawler \
         --start 2025-01-01 --end 2025-12-31
 
     # 특정 부동산 유형만
-    uv --directory backend run python -m pipeline.transaction_crawler --types A B
+    uv --directory backend run python -m app.pipeline.transaction_crawler --types A B
 
     # 매매만 (전월세 제외)
-    uv --directory backend run python -m pipeline.transaction_crawler --no-rent
+    uv --directory backend run python -m app.pipeline.transaction_crawler --no-rent
 
     # 테스트 모드 (아파트 매매 1개월만)
-    uv --directory backend run python -m pipeline.transaction_crawler --test
+    uv --directory backend run python -m app.pipeline.transaction_crawler --test
 
 부동산 유형 코드:
     A = 아파트
@@ -29,7 +29,7 @@ import argparse
 import sys
 from datetime import date
 
-from pipeline.transaction_crawler.crawler import PROPERTY_TYPES, run_crawler
+from app.pipeline.transaction_crawler.crawler import PROPERTY_TYPES, run_crawler
 
 
 def parse_date(s: str) -> date:

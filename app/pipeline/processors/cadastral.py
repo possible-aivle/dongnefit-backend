@@ -1,6 +1,7 @@
-"""도로중심선 프로세서.
+"""연속지적도 프로세서.
 
-(연속수치지형도)도로중심선 SHP → road_center_lines 테이블.
+연속지적도 SHP → lots 테이블.
+파일: LSMD_CONT_LDREG_{province_name}.zip (시도 이름 기반 파일명).
 """
 
 from pathlib import Path
@@ -9,7 +10,7 @@ from typing import Any
 from rich.console import Console
 
 from app.models.enums import PublicDataType
-from pipeline.file_utils import (
+from app.pipeline.file_utils import (
     cleanup_temp_dir,
     extract_zip,
     find_shp_in_dir,
@@ -17,33 +18,35 @@ from pipeline.file_utils import (
     geojson_to_wkt,
     read_shp_features,
 )
-from pipeline.processors.base import BaseProcessor, ProcessResult
-from pipeline.regions import PROVINCE_FILE_NAME_MAP
-from pipeline.registry import Registry
+from app.pipeline.processors.base import BaseProcessor, ProcessResult
+from app.pipeline.regions import PROVINCE_FILE_NAME_MAP
+from app.pipeline.registry import Registry
 
 console = Console()
 
 PUBLIC_DATA_DIR = Path(__file__).parent.parent / "public_data"
 
 
-class RoadCenterLineProcessor(BaseProcessor):
-    """도로중심선 SHP 프로세서.
+class CadastralProcessor(BaseProcessor):
+    """연속지적도 SHP 프로세서.
 
-    UFID → source_id, NAME/RDNM → road_name, geometry → geometry.
+    PNU → pnu, JIBUN → jibun_address, geometry → geometry.
     """
 
-    name = "road_center_line"
-    description = "도로중심선 (연속수치지형도)"
-    data_type = PublicDataType.ROAD_CENTER_LINE
+    name = "cadastral"
+    description = "연속지적도 (LSMD_CONT_LDREG)"
+    data_type = PublicDataType.CONTINUOUS_CADASTRAL
 
     async def collect(self, params: dict[str, Any]) -> list[dict]:
-        data_dir = PUBLIC_DATA_DIR / "도로중심선"
+        data_dir = PUBLIC_DATA_DIR / "연속지적도"
         if not data_dir.exists():
             console.print(f"[red]디렉토리 없음: {data_dir}[/]")
             return []
 
+        sgg_prefixes = params.get("sgg_prefixes")
         province_names = params.get("province_names")
 
+        # 대상 ZIP 파일 선정
         if province_names:
             zip_files = find_zip_files_by_province_name(
                 data_dir, set(province_names)
@@ -52,7 +55,7 @@ class RoadCenterLineProcessor(BaseProcessor):
             zip_files = sorted(data_dir.glob("*.zip"))
 
         if not zip_files:
-            console.print("[yellow]대상 도로중심선 ZIP 파일이 없습니다.[/]")
+            console.print("[yellow]대상 연속지적도 ZIP 파일이 없습니다.[/]")
             return []
 
         rows: list[dict] = []
@@ -65,33 +68,28 @@ class RoadCenterLineProcessor(BaseProcessor):
                     console.print("    [yellow]SHP 파일 없음[/]")
                     continue
 
-                # 도로중심선은 행정구역 코드 필터가 어려움 (PNU 없음)
-                # sgg_prefixes가 있으면 전체 읽고 후처리에서 필터링
-                features = read_shp_features(shp_path)
+                features = read_shp_features(shp_path, sgg_prefixes, code_field="PNU")
                 rows.extend(features)
                 console.print(f"    {len(features)}건 읽기 완료")
             finally:
                 cleanup_temp_dir(tmp_dir)
 
-        console.print(f"  도로중심선 총 읽기 완료: {len(rows)}건")
+        console.print(f"  연속지적도 총 읽기 완료: {len(rows)}건")
         return rows
 
     def transform(self, raw_data: list[dict]) -> list[dict[str, Any]]:
         records: list[dict[str, Any]] = []
         for row in raw_data:
-            source_id = str(
-                row.get("UFID", row.get("A0", row.get("ID", "")))
-            ).strip()
-            road_name = str(
-                row.get("NAME", row.get("RDNM", row.get("RN", row.get("A1", ""))))
-            ).strip() or None
-
-            if not source_id:
+            pnu = str(row.get("PNU", "")).strip()
+            if not pnu or len(pnu) < 19:
                 continue
 
+            pnu = pnu[:19]
+            jibun = str(row.get("JIBUN", row.get("ADDR", ""))).strip() or None
+
             records.append({
-                "source_id": source_id[:200],
-                "road_name": road_name[:200] if road_name else None,
+                "pnu": pnu,
+                "jibun_address": jibun,
                 "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
             })
 
@@ -101,12 +99,13 @@ class RoadCenterLineProcessor(BaseProcessor):
     def get_params_interactive(self) -> dict[str, Any]:
         from InquirerPy import inquirer
 
-        data_dir = PUBLIC_DATA_DIR / "도로중심선"
+        # 파일 목록에서 시도 선택
+        data_dir = PUBLIC_DATA_DIR / "연속지적도"
         files = sorted(data_dir.glob("*.zip"))
         choices = [{"name": f.name, "value": f.name} for f in files]
 
         if not choices:
-            console.print("[yellow]도로중심선 ZIP 파일이 없습니다.[/]")
+            console.print("[yellow]연속지적도 ZIP 파일이 없습니다.[/]")
             return {}
 
         selected = inquirer.checkbox(
@@ -115,6 +114,7 @@ class RoadCenterLineProcessor(BaseProcessor):
         ).execute()
 
         if selected:
+            # 파일명에서 시도 이름 추출
             province_names = set()
             for fname in selected:
                 for pname in PROVINCE_FILE_NAME_MAP:
@@ -126,16 +126,14 @@ class RoadCenterLineProcessor(BaseProcessor):
         return {}
 
     async def load(self, records: list[dict[str, Any]]) -> ProcessResult:
-        """도로중심선은 중복키 없이 INSERT."""
+        """연속지적도 대용량 데이터 적재 (배치 사이즈 증가)."""
         from app.database import async_session_maker
-        from pipeline.loader import bulk_insert
+        from app.pipeline.loader import bulk_upsert
 
         async with async_session_maker() as session:
-            count = await bulk_insert(
-                session, "road_center_lines", records, batch_size=2000
-            )
+            result = await bulk_upsert(session, self.data_type, records, batch_size=2000)
 
-        return ProcessResult(inserted=count)
+        return result
 
 
-Registry.register(RoadCenterLineProcessor())
+Registry.register(CadastralProcessor())

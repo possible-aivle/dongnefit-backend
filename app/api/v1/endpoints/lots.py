@@ -1,5 +1,8 @@
 """필지(Lot) 엔드포인트 - 검색 + 종합 조회."""
 
+import asyncio
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +20,17 @@ from app.schemas.public_data import (
 )
 
 router = APIRouter()
+
+PNU_PATTERN = re.compile(r"^\d{19}$")
+
+
+def _validate_pnu(pnu: str) -> None:
+    """PNU 형식 검증 (19자리 숫자)."""
+    if not PNU_PATTERN.match(pnu):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="PNU는 19자리 숫자여야 합니다.",
+        )
 
 
 @router.get(
@@ -78,6 +92,8 @@ async def get_lot_detail(
     pnu: str,
     db: AsyncSession = Depends(get_db),
 ) -> LotDetailResponse:
+    _validate_pnu(pnu)
+
     lot = await crud.get_lot_by_pnu(db, pnu)
     if not lot:
         raise HTTPException(
@@ -85,12 +101,12 @@ async def get_lot_detail(
             detail="필지를 찾을 수 없습니다.",
         )
 
-    land, land_use, forest, price, ownerships = (
-        await crud.get_land_characteristic(db, pnu),
-        await crud.get_land_use_plan(db, pnu),
-        await crud.get_land_forest_info(db, pnu),
-        await crud.get_official_land_price(db, pnu),
-        await crud.get_land_ownerships(db, pnu),
+    land, land_use, forest, price, ownerships = await asyncio.gather(
+        crud.get_land_characteristic(db, pnu),
+        crud.get_land_use_plan(db, pnu),
+        crud.get_land_forest_info(db, pnu),
+        crud.get_official_land_price(db, pnu),
+        crud.get_land_ownerships(db, pnu),
     )
 
     return LotDetailResponse(

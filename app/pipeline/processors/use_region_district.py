@@ -10,15 +10,15 @@ from typing import Any
 from rich.console import Console
 
 from app.models.enums import PublicDataType
-from pipeline.file_utils import (
+from app.pipeline.file_utils import (
     cleanup_temp_dir,
     extract_zip,
     find_shp_in_dir,
     geojson_to_wkt,
     read_shp_features,
 )
-from pipeline.processors.base import BaseProcessor, ProcessResult
-from pipeline.registry import Registry
+from app.pipeline.processors.base import BaseProcessor, ProcessResult
+from app.pipeline.registry import Registry
 
 console = Console()
 
@@ -49,7 +49,7 @@ class UseRegionDistrictProcessor(BaseProcessor):
     FIELD_MAP_KR: dict[str, str] = {
         "관리번호": "source_id",
         "용도지역지구명": "district_name",
-        "행정구역코드": "admin_code",
+        "행정경계코드": "admin_code",
         "용도코드": "district_code",
     }
 
@@ -141,7 +141,7 @@ class UseRegionDistrictProcessor(BaseProcessor):
     async def load(self, records: list[dict[str, Any]]) -> ProcessResult:
         """용도지역지구는 중복키 없이 INSERT."""
         from app.database import async_session_maker
-        from pipeline.loader import bulk_insert
+        from app.pipeline.loader import bulk_insert
 
         async with async_session_maker() as session:
             count = await bulk_insert(

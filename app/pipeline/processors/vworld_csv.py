@@ -13,13 +13,14 @@ from typing import Any
 from InquirerPy import inquirer
 from rich.console import Console
 
-from pipeline.file_utils import (
+from app.pipeline.file_utils import (
     cleanup_temp_dir,
     extract_zip,
     find_csv_in_dir,
     read_csv_filtered,
 )
-from pipeline.processors.base import BaseProcessor
+from app.pipeline.parsing import safe_float, safe_int
+from app.pipeline.processors.base import BaseProcessor
 
 console = Console()
 
@@ -168,25 +169,8 @@ class VworldCsvProcessor(BaseProcessor):
 
         return {"file_path": file_path}
 
-    @staticmethod
-    def _safe_int(value: Any) -> int | None:
-        """안전한 int 변환."""
-        if value is None or value == "":
-            return None
-        try:
-            return int(float(str(value).replace(",", "")))
-        except (ValueError, TypeError):
-            return None
-
-    @staticmethod
-    def _safe_float(value: Any) -> float | None:
-        """안전한 float 변환."""
-        if value is None or value == "":
-            return None
-        try:
-            return float(str(value).replace(",", ""))
-        except (ValueError, TypeError):
-            return None
+    _safe_int = staticmethod(safe_int)
+    _safe_float = staticmethod(safe_float)
 
     @staticmethod
     def _extract_pnu(row: dict) -> str | None:

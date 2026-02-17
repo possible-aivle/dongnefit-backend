@@ -10,9 +10,10 @@ from InquirerPy import inquirer
 from rich.console import Console
 
 from app.models.enums import PublicDataType
-from pipeline.file_utils import _make_crs_transformer, _transform_geojson, geojson_to_wkt
-from pipeline.processors.base import BaseProcessor
-from pipeline.registry import Registry
+from app.pipeline.file_utils import _make_crs_transformer, _transform_geojson, geojson_to_wkt
+from app.pipeline.parsing import safe_float, safe_int
+from app.pipeline.processors.base import BaseProcessor
+from app.pipeline.registry import Registry
 
 console = Console()
 
@@ -93,7 +94,7 @@ class GisBuildingIntegratedProcessor(BaseProcessor):
         self, zip_files: list[Path], sgg_prefixes: list[str] | None = None
     ) -> list[dict]:
         """ZIP 파일 목록에서 SHP를 추출하여 읽습니다."""
-        from pipeline.file_utils import cleanup_temp_dir, extract_zip, find_shp_in_dir
+        from app.pipeline.file_utils import cleanup_temp_dir, extract_zip, find_shp_in_dir
 
         all_rows: list[dict] = []
         for zip_path in zip_files:
@@ -207,23 +208,8 @@ class GisBuildingIntegratedProcessor(BaseProcessor):
 
         return {"file_path": file_path}
 
-    @staticmethod
-    def _safe_int(value: Any) -> int | None:
-        if value is None or value == "":
-            return None
-        try:
-            return int(float(str(value).replace(",", "")))
-        except (ValueError, TypeError):
-            return None
-
-    @staticmethod
-    def _safe_float(value: Any) -> float | None:
-        if value is None or value == "":
-            return None
-        try:
-            return float(str(value).replace(",", ""))
-        except (ValueError, TypeError):
-            return None
+    _safe_int = staticmethod(safe_int)
+    _safe_float = staticmethod(safe_float)
 
 
 Registry.register(GisBuildingIntegratedProcessor())

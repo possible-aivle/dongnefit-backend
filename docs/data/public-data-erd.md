@@ -6,7 +6,7 @@ erDiagram
     %% 중심 테이블: Lot (필지)
     %% ============================================
     Lot {
-        string pnu PK "필지고유번호 (19자리)"
+        string pnu PK "필지고유번호"
         string jibun_address "지번주소 (nullable)"
         geometry geometry "PostGIS Polygon/MultiPolygon"
 
@@ -252,14 +252,14 @@ erDiagram
     }
 
     %% ============================================
-    %% 행정구역 (administrative.py)
+    %% 행정경계 (administrative.py)
     %% ============================================
     AdministrativeDivision {
         int id PK
-        string code UK "행정구역코드 (2~5자리)"
-        string name "행정구역명"
+        string code UK "행정경계코드 (2~5자리)"
+        string name "행정경계명"
         int level "레벨 (1=시도, 2=시군구)"
-        string parent_code "상위 행정구역코드"
+        string parent_code "상위 행정경계코드"
         geometry geometry "PostGIS Polygon/MultiPolygon"
 
 
@@ -296,7 +296,7 @@ erDiagram
         string source_id "원본 피처 ID"
         string district_name "용도지역/지구/구역명"
         string district_code "용도지역/지구/구역코드"
-        string admin_code "관할 행정구역코드"
+        string admin_code "관할 행정경계코드"
         geometry geometry "PostGIS Polygon/MultiPolygon"
 
 
@@ -322,33 +322,33 @@ erDiagram
     Lot ||--o{ GisBuildingIntegrated : "pnu -> lots.pnu"
     Lot ||--o{ AncillaryLand : "pnu -> lots.pnu"
 
-    %% 행정구역 계층 관계
+    %% 행정경계 계층 관계
     AdministrativeDivision ||--o{ AdministrativeEmd : "code -> division_code"
 ```
 
 ## 요약
 
-| 구분 | 테이블                              | 설명                             | Lot FK       | UQ 제약                  |
-| ---- | ----------------------------------- | -------------------------------- | ------------ | ------------------------ |
-| 중심 | `lots`                              | 필지 (PNU 기준)                  | -            | pnu (PK)                 |
-| 토지 | `land_characteristics`              | 토지특성정보 (AL_D195)           | O            | pnu + data_year          |
-| 토지 | `land_use_plans`                    | 토지이용계획정보 (AL_D154)       | O            | pnu + data_year          |
-| 토지 | `land_and_forest_infos`             | 토지임야정보 (AL_D003)           | O            | pnu + data_year          |
-| 소유 | `land_ownerships`                   | 토지소유정보                     | O            | pnu + co_owner_seq       |
-| 가격 | `official_land_prices`              | 개별공시지가 (AL_D151)           | O            | pnu + base_year          |
-| 매매 | `real_estate_sales`                 | 부동산 매매 실거래               | X            | -                        |
-| 전월세 | `real_estate_rentals`             | 부동산 전월세 실거래             | X            | -                        |
-| 건물 | `building_register_headers`         | 건축물대장 표제부                | O            | mgm_bldrgst_pk           |
-| 건물 | `building_register_generals`        | 건축물대장 총괄표제부            | O            | mgm_bldrgst_pk           |
-| 건물 | `building_register_floor_details`   | 건축물대장 층별개요              | O            | -                        |
-| 건물 | `building_register_areas`           | 건축물대장 전유공용면적          | O            | -                        |
-| 건물 | `building_register_ancillary_lots`  | 건축물대장 부속지번              | O            | -                        |
-| 건물 | `gis_building_integrated`           | GIS건물통합정보 (AL_D010, SHP)   | O            | pnu + building_id        |
-| 필지 | `ancillary_lands`                   | 부속필지                         | O            | -                        |
-| 행정 | `administrative_divisions`          | 행정구역 (시도/시군구)           | X            | code                     |
-| 행정 | `administrative_emds`               | 읍면동                           | X            | code                     |
-| 공간 | `road_center_lines`                 | 도로중심선                       | X            | -                        |
-| 공간 | `use_region_districts`              | 용도지역지구                     | X            | -                        |
+| 구분   | 테이블                             | 설명                           | Lot FK | UQ 제약            |
+| ------ | ---------------------------------- | ------------------------------ | ------ | ------------------ |
+| 중심   | `lots`                             | 필지 (PNU 기준)                | -      | pnu (PK)           |
+| 토지   | `land_characteristics`             | 토지특성정보 (AL_D195)         | O      | pnu + data_year    |
+| 토지   | `land_use_plans`                   | 토지이용계획정보 (AL_D154)     | O      | pnu + data_year    |
+| 토지   | `land_and_forest_infos`            | 토지임야정보 (AL_D003)         | O      | pnu + data_year    |
+| 소유   | `land_ownerships`                  | 토지소유정보                   | O      | pnu + co_owner_seq |
+| 가격   | `official_land_prices`             | 개별공시지가 (AL_D151)         | O      | pnu + base_year    |
+| 매매   | `real_estate_sales`                | 부동산 매매 실거래             | X      | -                  |
+| 전월세 | `real_estate_rentals`              | 부동산 전월세 실거래           | X      | -                  |
+| 건물   | `building_register_headers`        | 건축물대장 표제부              | O      | mgm_bldrgst_pk     |
+| 건물   | `building_register_generals`       | 건축물대장 총괄표제부          | O      | mgm_bldrgst_pk     |
+| 건물   | `building_register_floor_details`  | 건축물대장 층별개요            | O      | -                  |
+| 건물   | `building_register_areas`          | 건축물대장 전유공용면적        | O      | -                  |
+| 건물   | `building_register_ancillary_lots` | 건축물대장 부속지번            | O      | -                  |
+| 건물   | `gis_building_integrated`          | GIS건물통합정보 (AL_D010, SHP) | O      | pnu + building_id  |
+| 필지   | `ancillary_lands`                  | 부속필지                       | O      | -                  |
+| 행정   | `administrative_divisions`         | 행정경계 (시도/시군구)         | X      | code               |
+| 행정   | `administrative_emds`              | 읍면동                         | X      | code               |
+| 공간   | `road_center_lines`                | 도로중심선                     | X      | -                  |
+| 공간   | `use_region_districts`             | 용도지역지구                   | X      | -                  |
 
 ### 핵심 관계
 
@@ -362,18 +362,18 @@ erDiagram
 
 ### Enum 타입
 
-| Enum            | 값                                                             |
-| --------------- | -------------------------------------------------------------- |
+| Enum            | 값                                                                |
+| --------------- | ----------------------------------------------------------------- |
 | PropertyType    | land, commercial, detached_house, row_house, apartment, officetel |
-| TransactionType | jeonse, monthly_rent                                           |
+| TransactionType | jeonse, monthly_rent                                              |
 
 ### 데이터 소스
 
-| 소스           | 포맷        | 테이블                                                                |
-| -------------- | ----------- | --------------------------------------------------------------------- |
-| vworld CSV     | csv (cp949) | LandCharacteristic, LandUsePlan, LandAndForestInfo, OfficialLandPrice |
-| vworld SHP     | shp         | GisBuildingIntegrated, RoadCenterLine, UseRegionDistrict, AdministrativeDivision, AdministrativeEmd |
+| 소스           | 포맷        | 테이블                                                                                                                           |
+| -------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| vworld CSV     | csv (cp949) | LandCharacteristic, LandUsePlan, LandAndForestInfo, OfficialLandPrice                                                            |
+| vworld SHP     | shp         | GisBuildingIntegrated, RoadCenterLine, UseRegionDistrict, AdministrativeDivision, AdministrativeEmd                              |
 | 공공데이터포털 | API/txt     | BuildingRegisterHeader, BuildingRegisterGeneral, BuildingRegisterFloorDetail, BuildingRegisterArea, BuildingRegisterAncillaryLot |
-| rt.molit.go.kr | csv/api     | RealEstateSale, RealEstateRental                                      |
-| 연속지적도     | shp         | Lot, AncillaryLand                                                    |
-| 공공데이터포털 | API         | LandOwnership                                                         |
+| rt.molit.go.kr | csv/api     | RealEstateSale, RealEstateRental                                                                                                 |
+| 연속지적도     | shp         | Lot, AncillaryLand                                                                                                               |
+| 공공데이터포털 | API         | LandOwnership                                                                                                                    |

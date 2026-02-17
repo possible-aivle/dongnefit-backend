@@ -1,10 +1,12 @@
 """Pydantic schemas for request/response validation."""
 
 from app.schemas.administrative import (
-    AdministrativeDivisionCreate,
-    AdministrativeDivisionRead,
     AdministrativeEmdCreate,
     AdministrativeEmdRead,
+    AdministrativeSggCreate,
+    AdministrativeSggRead,
+    AdministrativeSidoCreate,
+    AdministrativeSidoRead,
 )
 from app.schemas.base import (
     BaseSchema,
@@ -80,8 +82,10 @@ __all__ = [
     "AncillaryLandCreate",
     "AncillaryLandRead",
     # Administrative
-    "AdministrativeDivisionCreate",
-    "AdministrativeDivisionRead",
+    "AdministrativeSidoCreate",
+    "AdministrativeSidoRead",
+    "AdministrativeSggCreate",
+    "AdministrativeSggRead",
     "AdministrativeEmdCreate",
     "AdministrativeEmdRead",
     # Land

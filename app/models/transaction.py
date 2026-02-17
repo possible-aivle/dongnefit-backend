@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from sqlalchemy import Column, Enum, UniqueConstraint
+from sqlalchemy import BigInteger, Column, Enum, Index, UniqueConstraint
 from sqlmodel import Field
 
 from app.models.base import PublicDataBase
@@ -21,12 +21,13 @@ class OfficialLandPrice(PublicDataBase, table=True):
 
     pnu: str = Field(
         max_length=19,
-        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
-        index=True,
         description="필지고유번호",
+        index=True
     )
     base_year: int = Field(description="기준연도")
-    price_per_sqm: int | None = Field(default=None, description="공시지가(원/㎡)")
+    price_per_sqm: int | None = Field(
+        default=None, sa_column=Column(BigInteger, nullable=True), description="공시지가(원/㎡)"
+    )
 
 
 class RealEstateSale(PublicDataBase, table=True):
@@ -37,6 +38,9 @@ class RealEstateSale(PublicDataBase, table=True):
     """
 
     __tablename__ = "real_estate_sales"
+    __table_args__ = (
+        Index("ix_sales_sgg_txdate", "sgg_code", "transaction_date"),
+    )
 
     # ── 핵심 식별 필드 ──
     property_type: PropertyType = Field(
@@ -52,12 +56,12 @@ class RealEstateSale(PublicDataBase, table=True):
         default=None, max_length=200, index=True, description="주소 (시군구 + 번지)"
     )
     sgg_code: str | None = Field(
-        default=None, max_length=5, index=True, description="시군구코드 (5자리, 시군구 텍스트에서 추출)"
+        default=None, max_length=5, description="시군구코드 (5자리, 시군구 텍스트에서 추출)"
     )
 
     # ── 건물 정보 ──
     building_name: str | None = Field(
-        default=None, max_length=200, index=True, description="단지명/건물명",
+        default=None, max_length=200, description="단지명/건물명",
     )
     exclusive_area: float | None = Field(
         default=None, description="전용면적 (㎡)"
@@ -72,8 +76,10 @@ class RealEstateSale(PublicDataBase, table=True):
     build_year: int | None = Field(default=None, description="건축년도")
 
     # ── 매매 거래 정보 ──
-    transaction_date: date | None = Field(default=None, index=True, description="계약일")
-    transaction_amount: int | None = Field(default=None, description="거래금액 (만원)")
+    transaction_date: date | None = Field(default=None, description="계약일")
+    transaction_amount: int | None = Field(
+        default=None, sa_column=Column(BigInteger, nullable=True), description="거래금액 (만원)"
+    )
     deal_type: str | None = Field(
         default=None, max_length=30, description="거래유형 (중개거래/직거래 등)"
     )
@@ -88,6 +94,9 @@ class RealEstateRental(PublicDataBase, table=True):
     """
 
     __tablename__ = "real_estate_rentals"
+    __table_args__ = (
+        Index("ix_rentals_sgg_txdate", "sgg_code", "transaction_date"),
+    )
 
     # ── 핵심 식별 필드 ──
     property_type: PropertyType = Field(
@@ -110,12 +119,12 @@ class RealEstateRental(PublicDataBase, table=True):
         default=None, max_length=200, index=True, description="주소 (시군구 + 번지)"
     )
     sgg_code: str | None = Field(
-        default=None, max_length=5, index=True, description="시군구코드 (5자리, 시군구 텍스트에서 추출)"
+        default=None, max_length=5, description="시군구코드 (5자리, 시군구 텍스트에서 추출)"
     )
 
     # ── 건물 정보 ──
     building_name: str | None = Field(
-        default=None, max_length=200, index=True, description="단지명/건물명",
+        default=None, max_length=200, description="단지명/건물명",
     )
     exclusive_area: float | None = Field(
         default=None, description="전용면적 (㎡)"
@@ -130,9 +139,13 @@ class RealEstateRental(PublicDataBase, table=True):
     build_year: int | None = Field(default=None, description="건축년도")
 
     # ── 전월세 거래 정보 ──
-    transaction_date: date | None = Field(default=None, index=True, description="계약일")
-    deposit: int | None = Field(default=None, description="보증금 (만원)")
-    monthly_rent_amount: int | None = Field(default=None, description="월세금 (만원)")
+    transaction_date: date | None = Field(default=None, description="계약일")
+    deposit: int | None = Field(
+        default=None, sa_column=Column(BigInteger, nullable=True), description="보증금 (만원)"
+    )
+    monthly_rent_amount: int | None = Field(
+        default=None, sa_column=Column(BigInteger, nullable=True), description="월세금 (만원)"
+    )
     contract_period: str | None = Field(
         default=None, max_length=30, description="계약기간 (예: 202604~202804)"
     )

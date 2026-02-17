@@ -3,8 +3,8 @@
 from typing import Any
 
 from app.models.enums import PublicDataType
-from pipeline.processors.vworld_csv import VworldCsvProcessor
-from pipeline.registry import Registry
+from app.pipeline.processors.vworld_csv import VworldCsvProcessor
+from app.pipeline.registry import Registry
 
 
 class OfficialLandPriceProcessor(VworldCsvProcessor):

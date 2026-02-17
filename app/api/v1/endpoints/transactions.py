@@ -1,8 +1,9 @@
 """실거래가 엔드포인트 - 매매/전월세 조회."""
 
+import asyncio
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud import public_data as crud
@@ -35,27 +36,36 @@ async def get_transactions(
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
 ) -> TransactionListResponse:
+    # 날짜 범위 검증
+    if from_date and to_date and from_date > to_date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="시작일(from_date)은 종료일(to_date)보다 이전이어야 합니다.",
+        )
+
     offset = (page - 1) * limit
 
-    sales, total_sales = await crud.get_sales(
-        db,
-        sgg_code,
-        property_type=property_type,
-        from_date=from_date,
-        to_date=to_date,
-        offset=offset,
-        limit=limit,
-    )
-
-    rentals, total_rentals = await crud.get_rentals(
-        db,
-        sgg_code,
-        property_type=property_type,
-        transaction_type=transaction_type,
-        from_date=from_date,
-        to_date=to_date,
-        offset=offset,
-        limit=limit,
+    # 매매/전월세 쿼리를 병렬 실행
+    (sales, total_sales), (rentals, total_rentals) = await asyncio.gather(
+        crud.get_sales(
+            db,
+            sgg_code,
+            property_type=property_type,
+            from_date=from_date,
+            to_date=to_date,
+            offset=offset,
+            limit=limit,
+        ),
+        crud.get_rentals(
+            db,
+            sgg_code,
+            property_type=property_type,
+            transaction_type=transaction_type,
+            from_date=from_date,
+            to_date=to_date,
+            offset=offset,
+            limit=limit,
+        ),
     )
 
     return TransactionListResponse(

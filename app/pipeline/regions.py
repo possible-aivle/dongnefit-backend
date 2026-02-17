@@ -127,93 +127,108 @@ def load_regions() -> list[Region]:
 
 def _load_regions_from_shp() -> list[Region]:
     """행정경계 SHP에서 시도/시군구를 읽어 Region 목록을 생성합니다."""
+    import shutil
+
     import fiona
 
     regions: list[Region] = []
+    tmp_dirs: list[Path] = []
 
-    # 시도 SHP
-    sido_dir = PUBLIC_DATA_DIR / "행정경계_시도"
-    sido_shp = _find_shp_in_zip_dir(sido_dir)
-    if not sido_shp:
-        return _get_default_regions()
+    try:
+        # 시도 SHP
+        sido_dir = PUBLIC_DATA_DIR / "행정경계_시도"
+        sido_shp, sido_tmp = _find_shp_in_zip_dir(sido_dir)
+        if sido_tmp:
+            tmp_dirs.append(sido_tmp)
+        if not sido_shp:
+            return _get_default_regions()
 
-    sido_names: dict[str, str] = {}  # code -> name
-    with fiona.open(sido_shp) as src:
-        for feat in src:
-            props = feat.get("properties", {})
-            bjcd = str(props.get("BJCD", props.get("ADM_CD", props.get("CTPRVN_CD", ""))))
-            name = str(props.get("NAME", props.get("CTP_KOR_NM", props.get("CTPRVN_NM", ""))))
-            if bjcd and name:
-                code = bjcd[:2]
-                sido_names[code] = name
-
-    # 시군구 SHP
-    sgg_dir = PUBLIC_DATA_DIR / "행정경계_시군구"
-    sgg_shp = _find_shp_in_zip_dir(sgg_dir)
-
-    sgg_by_sido: dict[str, list[tuple[str, str]]] = {}  # sido_code -> [(sgg_code, sgg_name)]
-    if sgg_shp:
-        with fiona.open(sgg_shp) as src:
+        sido_names: dict[str, str] = {}  # code -> name
+        with fiona.open(sido_shp) as src:
             for feat in src:
                 props = feat.get("properties", {})
-                bjcd = str(
-                    props.get("BJCD", props.get("ADM_CD", props.get("SIG_CD", "")))
-                )
-                name = str(
-                    props.get("NAME", props.get("SIG_KOR_NM", props.get("SIGUNGU_NM", "")))
-                )
-                if bjcd and name and len(bjcd) >= 5:
-                    sido_code = bjcd[:2]
-                    sgg_code = bjcd[:5]
-                    sgg_by_sido.setdefault(sido_code, []).append((sgg_code, name))
+                bjcd = str(props.get("BJCD", props.get("ADM_CD", props.get("CTPRVN_CD", ""))))
+                name = str(props.get("NAME", props.get("CTP_KOR_NM", props.get("CTPRVN_NM", ""))))
+                if bjcd and name:
+                    code = bjcd[:2]
+                    sido_names[code] = name
 
-    # 특별시/광역시 → 시 단위 Region
-    for code in sorted(sido_names):
-        name = sido_names[code]
-        is_metro = code in METRO_CODES
+        # 시군구 SHP
+        sgg_dir = PUBLIC_DATA_DIR / "행정경계_시군구"
+        sgg_shp, sgg_tmp = _find_shp_in_zip_dir(sgg_dir)
+        if sgg_tmp:
+            tmp_dirs.append(sgg_tmp)
 
-        if is_metro:
-            regions.append(Region(
-                name=name,
-                sido_code=code,
-                sgg_prefixes=[code],
-                parent=None,
-                is_metro=True,
-            ))
-        else:
-            # 도 내 시/군 → 개별 Region
-            sgus = sgg_by_sido.get(code, [])
-            if sgus:
-                # 시 단위로 그룹핑 (같은 시 이름의 구가 여러 개 있을 수 있음)
-                city_groups: dict[str, list[str]] = {}
-                for sgg_code, sgg_name in sgus:
-                    # "수원시 장안구" → "수원시"
-                    base_name = sgg_name.split()[0] if " " in sgg_name else sgg_name
-                    city_groups.setdefault(base_name, []).append(sgg_code)
+        sgg_by_sido: dict[str, list[tuple[str, str]]] = {}
+        if sgg_shp:
+            with fiona.open(sgg_shp) as src:
+                for feat in src:
+                    props = feat.get("properties", {})
+                    bjcd = str(
+                        props.get("BJCD", props.get("ADM_CD", props.get("SIG_CD", "")))
+                    )
+                    name = str(
+                        props.get("NAME", props.get("SIG_KOR_NM", props.get("SIGUNGU_NM", "")))
+                    )
+                    if bjcd and name and len(bjcd) >= 5:
+                        sido_code = bjcd[:2]
+                        sgg_code = bjcd[:5]
+                        sgg_by_sido.setdefault(sido_code, []).append((sgg_code, name))
 
-                for city_name, sgg_codes in sorted(city_groups.items()):
-                    regions.append(Region(
-                        name=city_name,
-                        sido_code=code,
-                        sgg_prefixes=sorted(sgg_codes),
-                        parent=name,
-                        is_metro=False,
-                    ))
-            else:
-                # 시군구 SHP 없으면 시도 단위
+        # 특별시/광역시 → 시 단위 Region
+        for code in sorted(sido_names):
+            name = sido_names[code]
+            is_metro = code in METRO_CODES
+
+            if is_metro:
                 regions.append(Region(
                     name=name,
                     sido_code=code,
                     sgg_prefixes=[code],
                     parent=None,
-                    is_metro=False,
+                    is_metro=True,
                 ))
+            else:
+                # 도 내 시/군 → 개별 Region
+                sgus = sgg_by_sido.get(code, [])
+                if sgus:
+                    # 시 단위로 그룹핑 (같은 시 이름의 구가 여러 개 있을 수 있음)
+                    city_groups: dict[str, list[str]] = {}
+                    for sgg_code, sgg_name in sgus:
+                        # "수원시 장안구" → "수원시"
+                        base_name = sgg_name.split()[0] if " " in sgg_name else sgg_name
+                        city_groups.setdefault(base_name, []).append(sgg_code)
 
-    return regions if regions else _get_default_regions()
+                    for city_name, sgg_codes in sorted(city_groups.items()):
+                        regions.append(Region(
+                            name=city_name,
+                            sido_code=code,
+                            sgg_prefixes=sorted(sgg_codes),
+                            parent=name,
+                            is_metro=False,
+                        ))
+                else:
+                    # 시군구 SHP 없으면 시도 단위
+                    regions.append(Region(
+                        name=name,
+                        sido_code=code,
+                        sgg_prefixes=[code],
+                        parent=None,
+                        is_metro=False,
+                    ))
+
+        return regions if regions else _get_default_regions()
+    finally:
+        for tmp_dir in tmp_dirs:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-def _find_shp_in_zip_dir(dir_path: Path) -> Path | None:
-    """디렉토리에서 ZIP 안의 SHP 파일을 찾습니다."""
+def _find_shp_in_zip_dir(dir_path: Path) -> tuple[Path | None, Path | None]:
+    """디렉토리에서 ZIP 안의 SHP 파일을 찾습니다.
+
+    Returns:
+        (shp_path, tmp_dir) 튜플. 사용 후 tmp_dir을 정리해야 합니다.
+    """
     import tempfile
     import zipfile
 
@@ -223,10 +238,13 @@ def _find_shp_in_zip_dir(dir_path: Path) -> Path | None:
             with zipfile.ZipFile(zip_path) as zf:
                 zf.extractall(tmp_dir)
             for shp in tmp_dir.rglob("*.shp"):
-                return shp
+                return shp, tmp_dir
         except Exception:
+            import shutil
+
+            shutil.rmtree(tmp_dir, ignore_errors=True)
             continue
-    return None
+    return None, None
 
 
 def _get_default_regions() -> list[Region]:
@@ -289,85 +307,96 @@ def _build_sigungu_map_from_shp() -> dict[str, str]:
     실거래가 엑셀에서는 "서울특별시 종로구 ...", "경기도 성남시 분당구 ..." 형태입니다.
     따라서 "시도 시 구" 형태의 compound 키도 생성합니다.
     """
+    import shutil
+
     import fiona
 
     result: dict[str, str] = {}
+    tmp_dirs: list[Path] = []
 
-    # 시도 SHP → {sido_code: sido_name}
-    sido_dir = PUBLIC_DATA_DIR / "행정경계_시도"
-    sido_shp = _find_shp_in_zip_dir(sido_dir)
-    if not sido_shp:
-        return {}
+    try:
+        # 시도 SHP → {sido_code: sido_name}
+        sido_dir = PUBLIC_DATA_DIR / "행정경계_시도"
+        sido_shp, sido_tmp = _find_shp_in_zip_dir(sido_dir)
+        if sido_tmp:
+            tmp_dirs.append(sido_tmp)
+        if not sido_shp:
+            return {}
 
-    sido_names: dict[str, str] = {}
-    with fiona.open(sido_shp) as src:
-        for feat in src:
-            props = feat.get("properties", {})
-            bjcd = str(props.get("BJCD", props.get("ADM_CD", props.get("CTPRVN_CD", ""))))
-            name = str(props.get("NAME", props.get("CTP_KOR_NM", props.get("CTPRVN_NM", ""))))
-            if bjcd and name:
-                code = bjcd[:2]
-                sido_names[code] = name
+        sido_names: dict[str, str] = {}
+        with fiona.open(sido_shp) as src:
+            for feat in src:
+                props = feat.get("properties", {})
+                bjcd = str(props.get("BJCD", props.get("ADM_CD", props.get("CTPRVN_CD", ""))))
+                name = str(props.get("NAME", props.get("CTP_KOR_NM", props.get("CTPRVN_NM", ""))))
+                if bjcd and name:
+                    code = bjcd[:2]
+                    sido_names[code] = name
 
-    # 시군구 SHP → sgg_code: sgg_name (sido별 그룹핑)
-    sgg_dir = PUBLIC_DATA_DIR / "행정경계_시군구"
-    sgg_shp = _find_shp_in_zip_dir(sgg_dir)
-    if not sgg_shp:
-        return {}
+        # 시군구 SHP → sgg_code: sgg_name (sido별 그룹핑)
+        sgg_dir = PUBLIC_DATA_DIR / "행정경계_시군구"
+        sgg_shp, sgg_tmp = _find_shp_in_zip_dir(sgg_dir)
+        if sgg_tmp:
+            tmp_dirs.append(sgg_tmp)
+        if not sgg_shp:
+            return {}
 
-    # 1단계: SHP에서 모든 시군구 엔트리 수집
-    sgg_entries: dict[str, str] = {}  # sgg_code → sgg_name
-    sgg_by_sido: dict[str, list[tuple[str, str]]] = {}  # sido_code → [(sgg_code, sgg_name)]
+        # 1단계: SHP에서 모든 시군구 엔트리 수집
+        sgg_entries: dict[str, str] = {}  # sgg_code → sgg_name
+        sgg_by_sido: dict[str, list[tuple[str, str]]] = {}
 
-    with fiona.open(sgg_shp) as src:
-        for feat in src:
-            props = feat.get("properties", {})
-            bjcd = str(
-                props.get("BJCD", props.get("ADM_CD", props.get("SIG_CD", "")))
-            )
-            name = str(
-                props.get("NAME", props.get("SIG_KOR_NM", props.get("SIGUNGU_NM", "")))
-            )
-            if bjcd and name and len(bjcd) >= 5:
-                sido_code = bjcd[:2]
-                sgg_code = bjcd[:5]
-                sgg_entries[sgg_code] = name
-                sgg_by_sido.setdefault(sido_code, []).append((sgg_code, name))
+        with fiona.open(sgg_shp) as src:
+            for feat in src:
+                props = feat.get("properties", {})
+                bjcd = str(
+                    props.get("BJCD", props.get("ADM_CD", props.get("SIG_CD", "")))
+                )
+                name = str(
+                    props.get("NAME", props.get("SIG_KOR_NM", props.get("SIGUNGU_NM", "")))
+                )
+                if bjcd and name and len(bjcd) >= 5:
+                    sido_code = bjcd[:2]
+                    sgg_code = bjcd[:5]
+                    sgg_entries[sgg_code] = name
+                    sgg_by_sido.setdefault(sido_code, []).append((sgg_code, name))
 
-    # 2단계: 매핑 구축
-    for sido_code, entries in sgg_by_sido.items():
-        sido_name = sido_names.get(sido_code, "")
-        if not sido_name:
-            continue
+        # 2단계: 매핑 구축
+        for sido_code, entries in sgg_by_sido.items():
+            sido_name = sido_names.get(sido_code, "")
+            if not sido_name:
+                continue
 
-        # 시 → 구 관계 파악: 코드 앞 4자리가 같으면 같은 시 소속
-        # 예: 성남시(41130), 수정구(41131), 중원구(41133), 분당구(41135)
-        # 5번째 자리가 0인 것이 시 레벨, 나머지가 구 레벨
-        parent_cities: dict[str, str] = {}  # code_prefix(4자리) → city_name
-        child_gus: list[tuple[str, str, str]] = []  # (sgg_code, gu_name, code_prefix)
+            # 시 → 구 관계 파악: 코드 앞 4자리가 같으면 같은 시 소속
+            # 예: 성남시(41130), 수정구(41131), 중원구(41133), 분당구(41135)
+            # 5번째 자리가 0인 것이 시 레벨, 나머지가 구 레벨
+            parent_cities: dict[str, str] = {}  # code_prefix(4자리) → city_name
+            child_gus: list[tuple[str, str, str]] = []  # (sgg_code, gu_name, code_prefix)
 
-        for sgg_code, sgg_name in entries:
-            code_prefix = sgg_code[:4]
-            if sgg_code[4] == "0" and sgg_name.endswith("시"):
-                # 시 레벨 엔트리 (예: 성남시 41130)
-                parent_cities[code_prefix] = sgg_name
-            elif sgg_name.endswith("구") and code_prefix in parent_cities or sgg_code[4] != "0":
-                # 구 레벨일 수 있음 — 나중에 parent 체크
-                child_gus.append((sgg_code, sgg_name, code_prefix))
+            for sgg_code, sgg_name in entries:
+                code_prefix = sgg_code[:4]
+                if sgg_code[4] == "0" and sgg_name.endswith("시"):
+                    # 시 레벨 엔트리 (예: 성남시 41130)
+                    parent_cities[code_prefix] = sgg_name
+                elif sgg_name.endswith("구") and code_prefix in parent_cities or sgg_code[4] != "0":
+                    # 구 레벨일 수 있음 — 나중에 parent 체크
+                    child_gus.append((sgg_code, sgg_name, code_prefix))
 
-        # 모든 엔트리에 대해 기본 매핑 추가: "시도 시군구명" → code
-        for sgg_code, sgg_name in entries:
-            full_key = f"{sido_name} {sgg_name}"
-            result[full_key] = sgg_code
+            # 모든 엔트리에 대해 기본 매핑 추가: "시도 시군구명" → code
+            for sgg_code, sgg_name in entries:
+                full_key = f"{sido_name} {sgg_name}"
+                result[full_key] = sgg_code
 
-        # 구가 시 하위에 있는 경우 compound 키 추가: "시도 시이름 구이름" → 구code
-        for sgg_code, gu_name, code_prefix in child_gus:
-            city_name = parent_cities.get(code_prefix)
-            if city_name and gu_name.endswith("구"):
-                compound_key = f"{sido_name} {city_name} {gu_name}"
-                result[compound_key] = sgg_code
+            # 구가 시 하위에 있는 경우 compound 키 추가: "시도 시이름 구이름" → 구code
+            for sgg_code, gu_name, code_prefix in child_gus:
+                city_name = parent_cities.get(code_prefix)
+                if city_name and gu_name.endswith("구"):
+                    compound_key = f"{sido_name} {city_name} {gu_name}"
+                    result[compound_key] = sgg_code
 
-    return result
+        return result
+    finally:
+        for tmp_dir in tmp_dirs:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 def extract_sgg_code(sigungu_text: str, sigungu_map: dict[str, str] | None = None) -> str | None:

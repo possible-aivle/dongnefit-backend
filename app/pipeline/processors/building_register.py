@@ -7,12 +7,12 @@
 from pathlib import Path
 from typing import Any
 
-from InquirerPy import inquirer
 from rich.console import Console
 
 from app.models.enums import PublicDataType
-from pipeline.processors.base import BaseProcessor, ProcessResult
-from pipeline.registry import Registry
+from app.pipeline.parsing import safe_float, safe_int
+from app.pipeline.processors.base import BaseProcessor, ProcessResult
+from app.pipeline.registry import Registry
 
 console = Console()
 
@@ -144,6 +144,8 @@ class BuildingRegisterTxtProcessor(BaseProcessor):
 
     def get_params_interactive(self) -> dict[str, Any]:
         """CLI에서 txt 파일 경로를 입력받습니다."""
+        from InquirerPy import inquirer
+
         file_path = inquirer.filepath(
             message=f"{self.description} txt 파일 경로:",
             validate=lambda p: Path(p).exists() and Path(p).suffix == ".txt",
@@ -158,30 +160,15 @@ class BuildingRegisterTxtProcessor(BaseProcessor):
         대용량 txt 데이터는 배치 사이즈를 크게 설정합니다.
         """
         from app.database import async_session_maker
-        from pipeline.loader import bulk_upsert
+        from app.pipeline.loader import bulk_upsert
 
         async with async_session_maker() as session:
             result = await bulk_upsert(session, self.data_type, records, batch_size=2000)
 
         return result
 
-    @staticmethod
-    def _safe_int(value: Any) -> int | None:
-        if value is None or value == "":
-            return None
-        try:
-            return int(float(str(value).replace(",", "")))
-        except (ValueError, TypeError):
-            return None
-
-    @staticmethod
-    def _safe_float(value: Any) -> float | None:
-        if value is None or value == "":
-            return None
-        try:
-            return float(str(value).replace(",", ""))
-        except (ValueError, TypeError):
-            return None
+    _safe_int = staticmethod(safe_int)
+    _safe_float = staticmethod(safe_float)
 
 
 # ── 표제부 프로세서 ──

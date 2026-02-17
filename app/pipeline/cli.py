@@ -1,7 +1,7 @@
 """DongneFit 공공데이터 관리 CLI.
 
 사용법:
-    uv run python -m pipeline.cli
+    uv run python -m app.pipeline.cli
 """
 
 import sys
@@ -14,7 +14,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from pipeline.db_manager import DbManager
+from app.pipeline.db_manager import DbManager
 
 console = Console()
 
@@ -111,7 +111,7 @@ def main_menu() -> None:
                 {"name": "Bin 파일 목록", "value": "list_dumps"},
                 Separator(),
                 {"name": "테이블 데이터 초기화 (TRUNCATE)", "value": "truncate"},
-                {"name": "테이블 삭제 (DROP)", "value": "drop"},
+                {"name": "스왑용 임시 테이블 삭제 (DROP)", "value": "drop"},
                 Separator(),
                 {"name": "종료", "value": "exit"},
             ],
@@ -137,7 +137,7 @@ def main_menu() -> None:
 def action_collect(db: DbManager) -> None:
     """데이터 수집 메뉴."""
     from app.models.enums import PublicDataType
-    from pipeline.registry import Registry, auto_discover
+    from app.pipeline.registry import Registry, auto_discover
 
     auto_discover()
 
@@ -322,7 +322,7 @@ def action_load_public(db: DbManager) -> None:
     """공공데이터 적재 메뉴 (파일 → DB)."""
     import asyncio
 
-    from pipeline.registry import Registry, auto_discover
+    from app.pipeline.registry import Registry, auto_discover
 
     auto_discover()
 
@@ -365,7 +365,7 @@ def action_load_public(db: DbManager) -> None:
     province_names: set[str] | None = None
 
     if needs_region_filter:
-        from pipeline.regions import (
+        from app.pipeline.regions import (
             Region,
             get_province_file_names_for_regions,
             get_sgg_prefixes_for_regions,
@@ -460,7 +460,7 @@ def action_load_public(db: DbManager) -> None:
 
             if file_type == "sido_code":
                 # 시도코드 기반 ZIP 파일
-                from pipeline.file_utils import find_zip_files_by_sido_code
+                from app.pipeline.file_utils import find_zip_files_by_sido_code
                 if sido_codes:
                     zip_files = find_zip_files_by_sido_code(
                         data_dir, sido_codes, pattern=zip_glob,
@@ -472,7 +472,7 @@ def action_load_public(db: DbManager) -> None:
 
             elif file_type == "sgg_code":
                 # 시군구코드 기반 ZIP 파일
-                from pipeline.file_utils import find_zip_files_by_sgg_code
+                from app.pipeline.file_utils import find_zip_files_by_sgg_code
                 if sgg_prefixes:
                     zip_files = find_zip_files_by_sgg_code(
                         data_dir, sgg_prefixes, pattern=zip_glob,
@@ -505,23 +505,29 @@ def action_load_public(db: DbManager) -> None:
                 params["truncate"] = truncate
                 params["sgg_prefixes"] = sgg_prefixes
 
-            if truncate and file_type != "excel":
-                # TRUNCATE (excel은 자체 처리)
-                from pipeline.loader import get_table_name
-                table_name = get_table_name(processor.data_type)
-                from sqlalchemy import text
+            async def _run_pipeline(processor=processor, file_type=file_type, truncate=truncate, params=params):
+                from app.database import engine
 
-                from app.database import async_session_maker
+                try:
+                    if truncate and file_type != "excel":
+                        from sqlalchemy import text
 
-                async def do_truncate():
-                    async with async_session_maker() as session:
-                        await session.execute(text(f"TRUNCATE TABLE {table_name} CASCADE"))
-                        await session.commit()
+                        from app.database import async_session_maker
+                        from app.pipeline.loader import get_table_name
 
-                asyncio.run(do_truncate())
-                console.print(f"  [yellow]{table_name} TRUNCATE 완료[/]")
+                        table_name = get_table_name(processor.data_type)
+                        async with async_session_maker() as session:
+                            await session.execute(
+                                text(f"TRUNCATE TABLE {table_name} CASCADE")
+                            )
+                            await session.commit()
+                        console.print(f"  [yellow]{table_name} TRUNCATE 완료[/]")
 
-            result = asyncio.run(processor.run(params))
+                    return await processor.run(params)
+                finally:
+                    await engine.dispose()
+
+            result = asyncio.run(_run_pipeline())
             console.print(f"  [green]완료[/]: {result.summary()}\n")
 
         except Exception as e:
@@ -537,7 +543,7 @@ def action_load_public(db: DbManager) -> None:
 
 def action_stats(db: DbManager) -> None:
     """공공데이터 통계 조회."""
-    from pipeline.loader import get_all_public_tables
+    from app.pipeline.loader import get_all_public_tables
 
     env = select_env(db)
     config = db.get_config(env)
@@ -746,27 +752,33 @@ def action_truncate(db: DbManager) -> None:
         db.truncate_tables(env, tables)
 
 
-# ── 테이블 삭제 ──
+# ── 스왑용 임시 테이블 삭제 ──
 
 
 def action_drop(db: DbManager) -> None:
-    """테이블 삭제."""
+    """스왑용 임시 테이블 삭제 (_swap_tmp_, _old_, _new_ 접두어만 허용)."""
     env = select_env(db)
-    tables = select_tables(db, env)
-    if not tables:
+    swap_tables = db.get_swap_tables(env)
+
+    if not swap_tables:
+        console.print(f"  [yellow]{env} 환경에 삭제 가능한 스왑 테이블이 없습니다.[/]")
         return
 
-    if env == "prod":
-        console.print("[red bold]Production 환경에서 테이블 삭제는 허용되지 않습니다.[/]")
+    selected = inquirer.checkbox(
+        message="삭제할 스왑 테이블을 선택하세요 (Space로 선택, Enter로 확인):",
+        choices=swap_tables,
+    ).execute()
+
+    if not selected:
         return
 
     confirm = inquirer.confirm(
-        message=f"[경고] {', '.join(tables)} 테이블을 완전히 삭제합니다. 진행하시겠습니까?",
+        message=f"[경고] {', '.join(selected)} 테이블을 삭제합니다. 진행하시겠습니까?",
         default=False,
     ).execute()
 
     if confirm:
-        db.drop_tables(env, tables)
+        db.drop_tables(env, selected)
 
 
 # ── 액션 매핑 ──
