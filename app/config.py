@@ -60,8 +60,8 @@ class Settings(BaseSettings):
     # 한국부동산원 R-ONE 부동산통계정보 API (https://www.reb.or.kr/r-one/portal/openapi/openApiIntroPage.do)
     r_one_api_key: str = ''
 
-    # 데이터 저장 경로 (기본값: ./data)
-    data_dir: str = './pipeline/data'
+    # 데이터 저장 경로 (기본값: ./pipeline/public_data)
+    data_dir: str = './pipeline/public_data'
 
     # -----------------------------------------
     # 부동산(로컬 데이터/RTMS)

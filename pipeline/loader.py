@@ -12,8 +12,12 @@ from sqlmodel import SQLModel
 
 from app.models.administrative import AdministrativeDivision, AdministrativeEmd
 from app.models.building import (
+    BuildingRegisterAncillaryLot,
+    BuildingRegisterArea,
     BuildingRegisterFloorDetail,
+    BuildingRegisterGeneral,
     BuildingRegisterHeader,
+    GisBuildingIntegrated,
 )
 from app.models.enums import PublicDataType
 from app.models.land import (
@@ -21,9 +25,14 @@ from app.models.land import (
     LandCharacteristic,
     LandUsePlan,
 )
+from app.models.land_ownership import LandOwnership
 from app.models.lot import AncillaryLand, Lot
 from app.models.spatial import RoadCenterLine, UseRegionDistrict
-from app.models.transaction import OfficialLandPrice, RealEstateTransaction
+from app.models.transaction import (
+    OfficialLandPrice,
+    RealEstateRental,
+    RealEstateSale,
+)
 from pipeline.processors.base import ProcessResult
 
 # ── 데이터타입 ↔ 모델 매핑 ──
@@ -35,13 +44,19 @@ MODEL_MAP: dict[PublicDataType, type[SQLModel]] = {
     PublicDataType.LAND_USE_PLAN: LandUsePlan,
     PublicDataType.LAND_AND_FOREST_INFO: LandAndForestInfo,
     PublicDataType.OFFICIAL_LAND_PRICE: OfficialLandPrice,
-    PublicDataType.REAL_ESTATE_TRANSACTION: RealEstateTransaction,
+    PublicDataType.REAL_ESTATE_SALE: RealEstateSale,
+    PublicDataType.REAL_ESTATE_RENTAL: RealEstateRental,
     PublicDataType.BUILDING_REGISTER_HEADER: BuildingRegisterHeader,
+    PublicDataType.BUILDING_REGISTER_GENERAL: BuildingRegisterGeneral,
     PublicDataType.BUILDING_REGISTER_FLOOR_DETAIL: BuildingRegisterFloorDetail,
+    PublicDataType.BUILDING_REGISTER_AREA: BuildingRegisterArea,
+    PublicDataType.BUILDING_REGISTER_ANCILLARY_LOT: BuildingRegisterAncillaryLot,
     PublicDataType.ADMINISTRATIVE_DIVISION: AdministrativeDivision,
     PublicDataType.ADMINISTRATIVE_EMD: AdministrativeEmd,
     PublicDataType.ROAD_CENTER_LINE: RoadCenterLine,
     PublicDataType.USE_REGION_DISTRICT: UseRegionDistrict,
+    PublicDataType.GIS_BUILDING_INTEGRATED: GisBuildingIntegrated,
+    PublicDataType.LAND_OWNERSHIP: LandOwnership,
 }
 
 # PNU 기반 테이블의 upsert 키 (unique constraint 기준)
@@ -53,6 +68,11 @@ UPSERT_KEYS: dict[PublicDataType, list[str]] = {
     PublicDataType.OFFICIAL_LAND_PRICE: ["pnu", "base_year"],
     PublicDataType.ADMINISTRATIVE_DIVISION: ["code"],
     PublicDataType.ADMINISTRATIVE_EMD: ["code"],
+    PublicDataType.BUILDING_REGISTER_HEADER: ["mgm_bldrgst_pk"],
+    PublicDataType.BUILDING_REGISTER_GENERAL: ["mgm_bldrgst_pk"],
+    PublicDataType.GIS_BUILDING_INTEGRATED: ["pnu", "building_id"],
+    PublicDataType.LAND_OWNERSHIP: ["pnu", "co_owner_seq"],
+    #* ROAD_CENTER_LINE, USE_REGION_DISTRICT: 단순 INSERT (UPSERT_KEYS에 없음)
 }
 
 
@@ -71,13 +91,43 @@ def get_table_name(data_type: PublicDataType) -> str:
 
 def get_all_public_tables() -> dict[str, PublicDataType]:
     """모든 공공데이터 테이블명 → 데이터타입 매핑을 반환합니다."""
-    return {
-        get_table_name(dt): dt
-        for dt in MODEL_MAP
-    }
+    return {get_table_name(dt): dt for dt in MODEL_MAP}
 
 
 # ── Bulk Insert ──
+
+
+def _build_val_expr(col: str, *, simplify_tolerance: float | None = None) -> str:
+    """컬럼에 맞는 SQL 값 표현식을 반환합니다.
+
+    geometry 컬럼은 WKT 문자열을 PostGIS Geometry로 변환합니다.
+    simplify_tolerance가 지정되면 ST_Simplify로 좌표를 단순화합니다.
+    """
+    if col == "geometry":
+        expr = f"ST_GeomFromText(:{col}, 4326)"
+        if simplify_tolerance is not None:
+            expr = f"ST_Simplify({expr}, {simplify_tolerance})"
+        return expr
+    return f":{col}"
+
+
+def _serialize_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """레코드를 DB 삽입에 맞게 전처리합니다.
+
+    - created_at 자동 추가 (NOT NULL 보장)
+    """
+    from app.models.base import get_utc_now
+
+    now = get_utc_now()
+    serialized = []
+    for record in records:
+        new_record = dict(record)
+        # 타임스탬프 자동 추가 (raw SQL에서는 모델 default가 적용되지 않음)
+        if "created_at" not in new_record:
+            new_record["created_at"] = now
+        new_record.pop("updated_at", None)
+        serialized.append(new_record)
+    return serialized
 
 
 async def bulk_insert(
@@ -85,17 +135,22 @@ async def bulk_insert(
     table_name: str,
     records: list[dict[str, Any]],
     batch_size: int = 500,
+    *,
+    simplify_tolerance: float | None = None,
 ) -> int:
     """raw dict 리스트를 지정 테이블에 bulk insert합니다."""
     if not records:
         return 0
 
+    records = _serialize_records(records)
     total = 0
     for i in range(0, len(records), batch_size):
         batch = records[i : i + batch_size]
         columns = list(batch[0].keys())
         col_str = ", ".join(columns)
-        val_str = ", ".join(f":{col}" for col in columns)
+        val_str = ", ".join(
+            _build_val_expr(col, simplify_tolerance=simplify_tolerance) for col in columns
+        )
 
         await session.execute(
             text(f"INSERT INTO {table_name} ({col_str}) VALUES ({val_str})"),  # noqa: S608
@@ -115,6 +170,8 @@ async def bulk_upsert(
     data_type: PublicDataType,
     records: list[dict[str, Any]],
     batch_size: int = 500,
+    *,
+    simplify_tolerance: float | None = None,
 ) -> ProcessResult:
     """데이터를 bulk upsert합니다.
 
@@ -133,6 +190,7 @@ async def bulk_upsert(
         return ProcessResult(inserted=count)
 
     # UPSERT (ON CONFLICT DO UPDATE)
+    records = _serialize_records(records)
     inserted = 0
     updated = 0
 
@@ -140,7 +198,9 @@ async def bulk_upsert(
         batch = records[i : i + batch_size]
         columns = list(batch[0].keys())
         col_str = ", ".join(columns)
-        val_str = ", ".join(f":{col}" for col in columns)
+        val_str = ", ".join(
+            _build_val_expr(col, simplify_tolerance=simplify_tolerance) for col in columns
+        )
         conflict_str = ", ".join(upsert_keys)
 
         # 업데이트할 컬럼 (키 제외)
@@ -158,7 +218,7 @@ async def bulk_upsert(
             )
 
         result = await session.execute(text(sql), batch)  # noqa: S608
-        row_count = result.rowcount if result.rowcount else 0
+        row_count = result.rowcount if result.rowcount and result.rowcount > 0 else 0
         inserted += row_count
 
     await session.commit()

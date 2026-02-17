@@ -5,22 +5,15 @@ from typing import Any
 
 from pydantic import field_validator
 
-from app.schemas.base import BaseSchema
+from app.schemas.base import BaseSchema, GeoJSON
 
 
 class LotCreate(BaseSchema):
     """필지 생성 스키마."""
 
     pnu: str
-    sido_code: str
-    sgg_code: str
-    emd_code: str
-    ri_code: str
-    is_mountain: bool = False
-    main_number: str
-    sub_number: str
     jibun_address: str | None = None
-    raw_data: dict[str, Any] | None = None
+    geometry: dict[str, Any] | None = None
 
     @field_validator("pnu")
     @classmethod
@@ -34,24 +27,16 @@ class LotRead(BaseSchema):
     """필지 조회 스키마."""
 
     pnu: str
-    sido_code: str
-    sgg_code: str
-    emd_code: str
-    ri_code: str
-    is_mountain: bool
-    main_number: str
-    sub_number: str
     jibun_address: str | None
-    collected_at: datetime
+    geometry: GeoJSON = None
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class AncillaryLandCreate(BaseSchema):
     """부속필지 생성 스키마."""
 
     pnu: str
-    raw_data: dict[str, Any] | None = None
+
 
 
 class AncillaryLandRead(BaseSchema):
@@ -59,7 +44,5 @@ class AncillaryLandRead(BaseSchema):
 
     id: int
     pnu: str
-    raw_data: dict[str, Any] | None
-    collected_at: datetime
+
     created_at: datetime | None
-    updated_at: datetime | None

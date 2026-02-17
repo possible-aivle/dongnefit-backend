@@ -1,7 +1,6 @@
-"""실거래가 및 공시지가 스키마."""
+"""실거래가(매매/전월세) 및 공시지가 스키마."""
 
 from datetime import date, datetime
-from typing import Any
 
 from app.models.enums import PropertyType, TransactionType
 from app.schemas.base import BaseSchema
@@ -12,9 +11,8 @@ class OfficialLandPriceCreate(BaseSchema):
 
     pnu: str
     base_year: int
-    base_date: date | None = None
     price_per_sqm: int | None = None
-    raw_data: dict[str, Any] | None = None
+
 
 
 class OfficialLandPriceRead(BaseSchema):
@@ -23,35 +21,52 @@ class OfficialLandPriceRead(BaseSchema):
     id: int
     pnu: str
     base_year: int
-    base_date: date | None
     price_per_sqm: int | None
-    raw_data: dict[str, Any] | None
-    collected_at: datetime
+
+
     created_at: datetime | None
-    updated_at: datetime | None
 
 
-class RealEstateTransactionCreate(BaseSchema):
-    """부동산 실거래가 생성 스키마."""
+class RealEstateSaleCreate(BaseSchema):
+    """부동산 매매 실거래가 생성 스키마."""
 
-    pnu: str | None = None
+    property_type: PropertyType
+    transaction_date: date | None = None
+    transaction_amount: int | None = None
+
+
+
+class RealEstateSaleRead(BaseSchema):
+    """부동산 매매 실거래가 조회 스키마."""
+
+    id: int
+    property_type: PropertyType
+    transaction_date: date | None
+    transaction_amount: int | None
+
+    created_at: datetime | None
+
+
+class RealEstateRentalCreate(BaseSchema):
+    """부동산 전월세 실거래가 생성 스키마."""
+
     property_type: PropertyType
     transaction_type: TransactionType
     transaction_date: date | None = None
-    transaction_amount: int | None = None
-    raw_data: dict[str, Any] | None = None
+    deposit: int | None = None
+    monthly_rent_amount: int | None = None
 
 
-class RealEstateTransactionRead(BaseSchema):
-    """부동산 실거래가 조회 스키마."""
+
+class RealEstateRentalRead(BaseSchema):
+    """부동산 전월세 실거래가 조회 스키마."""
 
     id: int
-    pnu: str | None
     property_type: PropertyType
     transaction_type: TransactionType
     transaction_date: date | None
-    transaction_amount: int | None
-    raw_data: dict[str, Any] | None
-    collected_at: datetime
+    deposit: int | None
+    monthly_rent_amount: int | None
+
+
     created_at: datetime | None
-    updated_at: datetime | None

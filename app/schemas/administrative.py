@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any
 
-from app.schemas.base import BaseSchema
+from app.schemas.base import BaseSchema, GeoJSON
 
 
 class AdministrativeDivisionCreate(BaseSchema):
@@ -13,7 +13,8 @@ class AdministrativeDivisionCreate(BaseSchema):
     name: str
     level: int
     parent_code: str | None = None
-    raw_data: dict[str, Any] | None = None
+    geometry: dict[str, Any] | None = None
+
 
 
 class AdministrativeDivisionRead(BaseSchema):
@@ -24,9 +25,9 @@ class AdministrativeDivisionRead(BaseSchema):
     name: str
     level: int
     parent_code: str | None
-    collected_at: datetime
+    geometry: GeoJSON = None
+
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class AdministrativeEmdCreate(BaseSchema):
@@ -35,7 +36,8 @@ class AdministrativeEmdCreate(BaseSchema):
     code: str
     name: str
     division_code: str
-    raw_data: dict[str, Any] | None = None
+    geometry: dict[str, Any] | None = None
+
 
 
 class AdministrativeEmdRead(BaseSchema):
@@ -45,6 +47,6 @@ class AdministrativeEmdRead(BaseSchema):
     code: str
     name: str
     division_code: str
-    collected_at: datetime
+    geometry: GeoJSON = None
+
     created_at: datetime | None
-    updated_at: datetime | None

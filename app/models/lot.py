@@ -5,12 +5,12 @@ PNU(19자리): 시도(2) + 시군구(3) + 읍면동(3) + 리(2) + 산구분(1) +
 """
 
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import Column, String
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
 
-from app.models.base import PublicDataBase, get_utc_now
+from app.models.base import PublicDataBase, geometry_column, get_utc_now
 
 
 # pnu 가 primary_key 여서 SQLModel 상속
@@ -28,50 +28,13 @@ class Lot(SQLModel, table=True):
         primary_key=True,
         description="필지고유번호 (19자리)",
     )
-    sido_code: str = Field(
-        max_length=2,
-        index=True,
-        description="시도코드 (2자리)",
-    )
-    sgg_code: str = Field(
-        max_length=5,
-        index=True,
-        description="시군구코드 (5자리: 시도+시군구)",
-    )
-    emd_code: str = Field(
-        max_length=8,
-        index=True,
-        description="읍면동코드 (8자리: 시도+시군구+읍면동)",
-    )
-    ri_code: str = Field(
-        max_length=10,
-        description="리코드 (10자리: 시도+시군구+읍면동+리)",
-    )
-    is_mountain: bool = Field(
-        default=False,
-        description="산 여부 (산구분 1=산, 2=일반)",
-    )
-    main_number: str = Field(
-        max_length=4,
-        description="본번 (4자리)",
-    )
-    sub_number: str = Field(
-        max_length=4,
-        description="부번 (4자리)",
-    )
     jibun_address: str | None = Field(
         default=None,
         sa_column=Column(String(500)),
         description="지번주소",
     )
-    raw_data: dict | None = Field(
-        default=None,
-        sa_column=Column(JSONB),
-        description="연속지적도 원본 데이터",
-    )
-    collected_at: datetime = Field(default_factory=get_utc_now)
+    geometry: Any = geometry_column(description="필지 경계 (Polygon/MultiPolygon)")
     created_at: datetime | None = Field(default_factory=get_utc_now)
-    updated_at: datetime | None = Field(default_factory=get_utc_now)
 
 
 class AncillaryLand(PublicDataBase, table=True):
@@ -85,7 +48,7 @@ class AncillaryLand(PublicDataBase, table=True):
 
     pnu: str = Field(
         max_length=19,
-        foreign_key="lots.pnu",
+        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호",
     )

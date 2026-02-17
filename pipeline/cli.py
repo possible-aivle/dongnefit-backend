@@ -99,6 +99,7 @@ def main_menu() -> None:
             message="작업을 선택하세요:",
             choices=[
                 {"name": "데이터 수집 (API → DB)", "value": "collect"},
+                {"name": "공공데이터 적재 (파일 → DB)", "value": "load_public"},
                 {"name": "데이터 조회 / 통계", "value": "stats"},
                 Separator(),
                 {"name": "DB 테이블 조회", "value": "tables"},
@@ -169,6 +170,366 @@ def action_collect(db: DbManager) -> None:
     result = asyncio.run(processor.run(params))
 
     console.print(f"\n[green]완료[/]: {result.summary()}")
+
+
+# ── 공공데이터 적재 (파일 → DB) ──
+
+
+# 데이터 소스 레지스트리 (카테고리별 그룹핑)
+DATA_SOURCES: dict[str, dict] = {
+    # 토지
+    "cadastral": {
+        "name": "연속지적도",
+        "category": "토지",
+        "dir": "연속지적도",
+        "processor": "cadastral",
+        "file_type": "province_name",  # 파일명에 시도 이름 포함
+    },
+    "land_forest": {
+        "name": "토지임야정보",
+        "category": "토지",
+        "dir": "토지임야정보",
+        "processor": "land_forest",
+        "file_type": "sido_code",  # 파일명에 시도코드 포함
+    },
+    "land_characteristic": {
+        "name": "토지특성정보",
+        "category": "토지",
+        "dir": "토지특성정보",
+        "processor": "land_characteristic",
+        "file_type": "sido_code",
+        "file_prefix": "AL_D195",  # AL_D194(SHP)와 혼재 → CSV만 선택
+    },
+    "land_use_plan": {
+        "name": "토지이용계획정보",
+        "category": "토지",
+        "dir": "토지이용계획정보",
+        "processor": "land_use_plan",
+        "file_type": "sido_code",
+    },
+    "official_land_price": {
+        "name": "개별공시지가",
+        "category": "토지",
+        "dir": "개발공시지가",
+        "processor": "official_land_price",
+        "file_type": "sido_code",
+    },
+    "land_ownership": {
+        "name": "토지소유정보",
+        "category": "토지",
+        "dir": "토지소유정보",
+        "processor": "land_ownership",
+        "file_type": "sido_code",
+    },
+    # 건물
+    "building_register_header": {
+        "name": "건축물대장 표제부",
+        "category": "건물",
+        "dir": "건축물대장_표제부",
+        "processor": "building_register_header",
+        "file_type": "txt_single",  # 단일 TXT 파일
+    },
+    "building_register_general": {
+        "name": "건축물대장 총괄표제부",
+        "category": "건물",
+        "dir": "건축물대장_총괄표제부",
+        "processor": "building_register_general",
+        "file_type": "txt_single",
+    },
+    "building_register_floor_detail": {
+        "name": "건축물대장 층별개요",
+        "category": "건물",
+        "dir": "건축물대장_층별개요",
+        "processor": "building_register_floor_detail",
+        "file_type": "txt_single",
+    },
+    "building_register_area": {
+        "name": "건축물대장 전유공용면적",
+        "category": "건물",
+        "dir": "건축물대장_전유공용면적",
+        "processor": "building_register_area",
+        "file_type": "txt_single",
+    },
+    "building_register_ancillary_lot": {
+        "name": "건축물대장 부속지번",
+        "category": "건물",
+        "dir": "건축물대장_부속지번",
+        "processor": "building_register_ancillary_lot",
+        "file_type": "txt_single",
+    },
+    "gis_building_integrated": {
+        "name": "GIS건물통합정보",
+        "category": "건물",
+        "dir": "GIS건물통합정보",
+        "processor": "gis_building_integrated",
+        "file_type": "sido_code",
+    },
+    # 공간
+    "admin_boundary_sido": {
+        "name": "행정경계 시도",
+        "category": "공간",
+        "dir": "행정경계_시도",
+        "processor": "admin_boundary_sido",
+        "file_type": "single",  # 단일 전국 파일
+    },
+    "admin_boundary_sigungu": {
+        "name": "행정경계 시군구",
+        "category": "공간",
+        "dir": "행정경계_시군구",
+        "processor": "admin_boundary_sigungu",
+        "file_type": "single",
+    },
+    "admin_boundary_emd": {
+        "name": "행정경계 읍면동",
+        "category": "공간",
+        "dir": "행정경계_읍면동",
+        "processor": "admin_boundary_emd",
+        "file_type": "single",
+    },
+    "road_center_line": {
+        "name": "도로중심선",
+        "category": "공간",
+        "dir": "도로중심선",
+        "processor": "road_center_line",
+        "file_type": "province_name",
+    },
+    "use_region_district": {
+        "name": "용도지역지구정보",
+        "category": "공간",
+        "dir": "용도지역지구정보",
+        "processor": "use_region_district",
+        "file_type": "single",
+    },
+    # 거래
+    "real_estate_sale": {
+        "name": "부동산 매매 실거래가",
+        "category": "거래",
+        "dir": "실거래가_매매",
+        "processor": "real_estate_sale",
+        "file_type": "excel",
+    },
+    "real_estate_rental": {
+        "name": "부동산 전월세 실거래가",
+        "category": "거래",
+        "dir": "실거래가_전월세",
+        "processor": "real_estate_rental",
+        "file_type": "excel",
+    },
+}
+
+
+def action_load_public(db: DbManager) -> None:
+    """공공데이터 적재 메뉴 (파일 → DB)."""
+    import asyncio
+
+    from pipeline.registry import Registry, auto_discover
+
+    auto_discover()
+
+    # 1. 데이터 소스 선택 (카테고리별 Separator)
+    source_choices = []
+    current_category = None
+    for key, src in DATA_SOURCES.items():
+        if src["category"] != current_category:
+            if current_category is not None:
+                source_choices.append(Separator())
+            source_choices.append(Separator(f"── {src['category']} ──"))
+            current_category = src["category"]
+
+        # 디렉토리 존재 여부 확인
+        data_dir = Path(__file__).parent / "public_data" / src["dir"]
+        exists = "✓" if data_dir.exists() else "✗"
+        source_choices.append({
+            "name": f"[{exists}] {src['name']}",
+            "value": key,
+            "enabled": False,
+        })
+
+    selected_sources = inquirer.checkbox(
+        message="적재할 데이터 소스 선택 (Space 선택, Enter 확인):",
+        choices=source_choices,
+    ).execute()
+
+    if not selected_sources:
+        console.print("[dim]선택된 데이터 소스가 없습니다.[/]")
+        return
+
+    # 2. 지역 선택 (지역 필터링이 필요한 소스가 있는 경우)
+    needs_region_filter = any(
+        DATA_SOURCES[s]["file_type"] not in ("single",)
+        for s in selected_sources
+    )
+
+    sgg_prefixes: list[str] | None = None
+    sido_codes: set[str] | None = None
+    province_names: set[str] | None = None
+
+    if needs_region_filter:
+        from pipeline.regions import (
+            Region,
+            get_province_file_names_for_regions,
+            get_sgg_prefixes_for_regions,
+            get_sido_codes_for_regions,
+            load_regions,
+        )
+
+        regions = load_regions()
+
+        # 시도별 그룹핑
+        region_choices = []
+        region_choices.append(Separator("── 특별시/광역시 ──"))
+        for r in regions:
+            if r.is_metro:
+                region_choices.append({
+                    "name": r.name,
+                    "value": r,
+                    "enabled": False,
+                })
+
+        region_choices.append(Separator("── 도 ──"))
+        for r in regions:
+            if not r.is_metro:
+                label = f"{r.name} ({r.parent})" if r.parent else r.name
+                region_choices.append({
+                    "name": label,
+                    "value": r,
+                    "enabled": False,
+                })
+
+        selected_regions: list[Region] = inquirer.checkbox(
+            message="지역 선택 (Space 선택, Enter 확인, 미선택시 전체):",
+            choices=region_choices,
+        ).execute()
+
+        if selected_regions:
+            sido_codes = get_sido_codes_for_regions(selected_regions)
+            sgg_prefixes = get_sgg_prefixes_for_regions(selected_regions)
+            province_names = get_province_file_names_for_regions(selected_regions)
+
+    # 3. 적재 옵션
+    truncate = inquirer.confirm(
+        message="기존 데이터 삭제 후 적재? (TRUNCATE)",
+        default=False,
+    ).execute()
+
+    # 4. 확인
+    console.print("\n[bold]━━━ 적재 설정 확인 ━━━[/]")
+    console.print(f"  데이터 소스: {len(selected_sources)}개")
+    for s in selected_sources:
+        console.print(f"    - {DATA_SOURCES[s]['name']}")
+    if sgg_prefixes:
+        console.print(f"  지역 필터: {len(sgg_prefixes)}개 시군구 prefix")
+    else:
+        console.print("  지역 필터: 전체")
+    console.print(f"  TRUNCATE: {'예' if truncate else '아니오'}")
+
+    confirm = inquirer.confirm(
+        message="적재를 시작하시겠습니까?",
+        default=True,
+    ).execute()
+
+    if not confirm:
+        console.print("[dim]취소됨[/]")
+        return
+
+    # 5. 실행
+    console.print("\n[bold]━━━ 공공데이터 적재 시작 ━━━[/]\n")
+
+    for i, source_key in enumerate(selected_sources, 1):
+        src = DATA_SOURCES[source_key]
+        console.print(f"[bold cyan]▶ [{i}/{len(selected_sources)}] {src['name']}[/]")
+
+        processor_name = src["processor"]
+        try:
+            processor = Registry.get(processor_name)
+        except KeyError:
+            console.print(f"  [red]프로세서 미등록: {processor_name}[/]")
+            continue
+
+        file_type = src["file_type"]
+        file_prefix = src.get("file_prefix", "")
+        zip_glob = f"{file_prefix}*.zip" if file_prefix else "*.zip"
+        data_dir = Path(__file__).parent / "public_data" / src["dir"]
+
+        if not data_dir.exists():
+            console.print(f"  [yellow]디렉토리 없음: {data_dir}[/]")
+            continue
+
+        try:
+            params: dict = {}
+
+            if file_type == "sido_code":
+                # 시도코드 기반 ZIP 파일
+                from pipeline.file_utils import find_zip_files_by_sido_code
+                if sido_codes:
+                    zip_files = find_zip_files_by_sido_code(
+                        data_dir, sido_codes, pattern=zip_glob,
+                    )
+                else:
+                    zip_files = sorted(data_dir.glob(zip_glob))
+                params["zip_files"] = zip_files
+                params["sgg_prefixes"] = sgg_prefixes
+
+            elif file_type == "sgg_code":
+                # 시군구코드 기반 ZIP 파일
+                from pipeline.file_utils import find_zip_files_by_sgg_code
+                if sgg_prefixes:
+                    zip_files = find_zip_files_by_sgg_code(
+                        data_dir, sgg_prefixes, pattern=zip_glob,
+                    )
+                else:
+                    zip_files = sorted(data_dir.glob(zip_glob))
+                params["zip_files"] = zip_files
+                params["sgg_prefixes"] = sgg_prefixes
+
+            elif file_type == "province_name":
+                # 시도 이름 기반 ZIP 파일
+                params["province_names"] = list(province_names) if province_names else None
+                params["sgg_prefixes"] = sgg_prefixes
+
+            elif file_type == "txt_single":
+                # 단일 TXT 파일
+                txt_files = list(data_dir.glob("*.txt"))
+                if not txt_files:
+                    console.print("  [yellow]TXT 파일 없음[/]")
+                    continue
+                params["file_path"] = str(txt_files[0])
+                params["sgg_prefixes"] = sgg_prefixes
+
+            elif file_type == "single":
+                # 단일 전국 파일 (행정경계 등)
+                params["sgg_prefixes"] = sgg_prefixes
+
+            elif file_type == "excel":
+                # 엑셀 (실거래가) - 자체 run 로직
+                params["truncate"] = truncate
+                params["sgg_prefixes"] = sgg_prefixes
+
+            if truncate and file_type != "excel":
+                # TRUNCATE (excel은 자체 처리)
+                from pipeline.loader import get_table_name
+                table_name = get_table_name(processor.data_type)
+                from sqlalchemy import text
+
+                from app.database import async_session_maker
+
+                async def do_truncate():
+                    async with async_session_maker() as session:
+                        await session.execute(text(f"TRUNCATE TABLE {table_name} CASCADE"))
+                        await session.commit()
+
+                asyncio.run(do_truncate())
+                console.print(f"  [yellow]{table_name} TRUNCATE 완료[/]")
+
+            result = asyncio.run(processor.run(params))
+            console.print(f"  [green]완료[/]: {result.summary()}\n")
+
+        except Exception as e:
+            console.print(f"  [red]에러: {e}[/]\n")
+            import traceback
+            traceback.print_exc()
+
+    console.print("[bold]━━━ 공공데이터 적재 완료 ━━━[/]")
 
 
 # ── 데이터 조회/통계 ──
@@ -412,6 +773,7 @@ def action_drop(db: DbManager) -> None:
 
 ACTIONS: dict[str, Callable[[DbManager], None]] = {
     "collect": action_collect,
+    "load_public": action_load_public,
     "stats": action_stats,
     "tables": action_tables,
     "swap": action_swap,
