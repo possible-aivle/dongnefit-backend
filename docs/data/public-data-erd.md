@@ -252,14 +252,14 @@ erDiagram
     }
 
     %% ============================================
-    %% 행정구역 (administrative.py)
+    %% 행정경계 (administrative.py)
     %% ============================================
     AdministrativeDivision {
         int id PK
-        string code UK "행정구역코드 (2~5자리)"
-        string name "행정구역명"
+        string code UK "행정경계코드 (2~5자리)"
+        string name "행정경계명"
         int level "레벨 (1=시도, 2=시군구)"
-        string parent_code "상위 행정구역코드"
+        string parent_code "상위 행정경계코드"
         geometry geometry "PostGIS Polygon/MultiPolygon"
 
 
@@ -296,7 +296,7 @@ erDiagram
         string source_id "원본 피처 ID"
         string district_name "용도지역/지구/구역명"
         string district_code "용도지역/지구/구역코드"
-        string admin_code "관할 행정구역코드"
+        string admin_code "관할 행정경계코드"
         geometry geometry "PostGIS Polygon/MultiPolygon"
 
 
@@ -322,7 +322,7 @@ erDiagram
     Lot ||--o{ GisBuildingIntegrated : "pnu -> lots.pnu"
     Lot ||--o{ AncillaryLand : "pnu -> lots.pnu"
 
-    %% 행정구역 계층 관계
+    %% 행정경계 계층 관계
     AdministrativeDivision ||--o{ AdministrativeEmd : "code -> division_code"
 ```
 
@@ -345,7 +345,7 @@ erDiagram
 | 건물   | `building_register_ancillary_lots` | 건축물대장 부속지번            | O      | -                  |
 | 건물   | `gis_building_integrated`          | GIS건물통합정보 (AL_D010, SHP) | O      | pnu + building_id  |
 | 필지   | `ancillary_lands`                  | 부속필지                       | O      | -                  |
-| 행정   | `administrative_divisions`         | 행정구역 (시도/시군구)         | X      | code               |
+| 행정   | `administrative_divisions`         | 행정경계 (시도/시군구)         | X      | code               |
 | 행정   | `administrative_emds`              | 읍면동                         | X      | code               |
 | 공간   | `road_center_lines`                | 도로중심선                     | X      | -                  |
 | 공간   | `use_region_districts`             | 용도지역지구                   | X      | -                  |

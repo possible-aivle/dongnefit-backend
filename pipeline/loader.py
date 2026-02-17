@@ -10,7 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
 
-from app.models.administrative import AdministrativeDivision, AdministrativeEmd
+from app.models.administrative import AdministrativeEmd, AdministrativeSgg, AdministrativeSido
 from app.models.building import (
     BuildingRegisterAncillaryLot,
     BuildingRegisterArea,
@@ -51,7 +51,8 @@ MODEL_MAP: dict[PublicDataType, type[SQLModel]] = {
     PublicDataType.BUILDING_REGISTER_FLOOR_DETAIL: BuildingRegisterFloorDetail,
     PublicDataType.BUILDING_REGISTER_AREA: BuildingRegisterArea,
     PublicDataType.BUILDING_REGISTER_ANCILLARY_LOT: BuildingRegisterAncillaryLot,
-    PublicDataType.ADMINISTRATIVE_DIVISION: AdministrativeDivision,
+    PublicDataType.ADMINISTRATIVE_SIDO: AdministrativeSido,
+    PublicDataType.ADMINISTRATIVE_SGG: AdministrativeSgg,
     PublicDataType.ADMINISTRATIVE_EMD: AdministrativeEmd,
     PublicDataType.ROAD_CENTER_LINE: RoadCenterLine,
     PublicDataType.USE_REGION_DISTRICT: UseRegionDistrict,
@@ -66,8 +67,9 @@ UPSERT_KEYS: dict[PublicDataType, list[str]] = {
     PublicDataType.LAND_USE_PLAN: ["pnu", "data_year", "use_district_name"],
     PublicDataType.LAND_AND_FOREST_INFO: ["pnu", "data_year"],
     PublicDataType.OFFICIAL_LAND_PRICE: ["pnu", "base_year"],
-    PublicDataType.ADMINISTRATIVE_DIVISION: ["code"],
-    PublicDataType.ADMINISTRATIVE_EMD: ["code"],
+    PublicDataType.ADMINISTRATIVE_SIDO: ["sido_code"],
+    PublicDataType.ADMINISTRATIVE_SGG: ["sgg_code"],
+    PublicDataType.ADMINISTRATIVE_EMD: ["emd_code"],
     PublicDataType.BUILDING_REGISTER_HEADER: ["mgm_bldrgst_pk"],
     PublicDataType.BUILDING_REGISTER_GENERAL: ["mgm_bldrgst_pk"],
     PublicDataType.BUILDING_REGISTER_FLOOR_DETAIL: ["mgm_bldrgst_pk", "floor_type_name", "floor_no"],

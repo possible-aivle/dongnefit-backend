@@ -1,4 +1,4 @@
-"""행정구역 스키마."""
+"""행정경계 스키마."""
 
 from datetime import datetime
 from typing import Any
@@ -6,47 +6,62 @@ from typing import Any
 from app.schemas.base import BaseSchema, GeoJSON
 
 
-class AdministrativeDivisionCreate(BaseSchema):
-    """행정구역(시도/시군구) 생성 스키마."""
+class AdministrativeSidoCreate(BaseSchema):
+    """행정경계 시도 생성 스키마."""
 
-    code: str
+    sido_code: str
     name: str
-    level: int
-    parent_code: str | None = None
     geometry: dict[str, Any] | None = None
 
 
-
-class AdministrativeDivisionRead(BaseSchema):
-    """행정구역(시도/시군구) 조회 스키마."""
+class AdministrativeSidoRead(BaseSchema):
+    """행정경계 시도 조회 스키마."""
 
     id: int
-    code: str
+    sido_code: str
     name: str
-    level: int
-    parent_code: str | None
+    geometry: GeoJSON = None
+
+    created_at: datetime | None
+
+
+class AdministrativeSggCreate(BaseSchema):
+    """행정경계 시군구 생성 스키마."""
+
+    sgg_code: str
+    name: str
+    sido_code: str
+    geometry: dict[str, Any] | None = None
+
+
+class AdministrativeSggRead(BaseSchema):
+    """행정경계 시군구 조회 스키마."""
+
+    id: int
+    sgg_code: str
+    name: str
+    sido_code: str
     geometry: GeoJSON = None
 
     created_at: datetime | None
 
 
 class AdministrativeEmdCreate(BaseSchema):
-    """행정구역 읍면동 생성 스키마."""
+    """행정경계 읍면동 생성 스키마."""
 
-    code: str
+    emd_code: str
     name: str
-    division_code: str
+    sgg_code: str
     geometry: dict[str, Any] | None = None
 
 
-
 class AdministrativeEmdRead(BaseSchema):
-    """행정구역 읍면동 조회 스키마."""
+    """행정경계 읍면동 조회 스키마."""
 
     id: int
-    code: str
+    emd_code: str
     name: str
-    division_code: str
+    sgg_code: str
     geometry: GeoJSON = None
 
     created_at: datetime | None

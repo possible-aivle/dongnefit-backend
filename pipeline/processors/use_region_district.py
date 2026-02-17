@@ -49,7 +49,7 @@ class UseRegionDistrictProcessor(BaseProcessor):
     FIELD_MAP_KR: dict[str, str] = {
         "관리번호": "source_id",
         "용도지역지구명": "district_name",
-        "행정구역코드": "admin_code",
+        "행정경계코드": "admin_code",
         "용도코드": "district_code",
     }
 

@@ -64,6 +64,6 @@ class UseRegionDistrict(PublicDataBase, table=True):
         default=None,
         max_length=10,
         index=True,
-        description="관할 행정구역코드",
+        description="관할 행정경계코드",
     )
     geometry: Any = geometry_column(description="용도지역지구 경계 (Polygon/MultiPolygon)")

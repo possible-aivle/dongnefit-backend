@@ -505,23 +505,29 @@ def action_load_public(db: DbManager) -> None:
                 params["truncate"] = truncate
                 params["sgg_prefixes"] = sgg_prefixes
 
-            if truncate and file_type != "excel":
-                # TRUNCATE (excel은 자체 처리)
-                from pipeline.loader import get_table_name
-                table_name = get_table_name(processor.data_type)
-                from sqlalchemy import text
+            async def _run_pipeline(processor=processor, file_type=file_type, truncate=truncate, params=params):
+                from app.database import engine
 
-                from app.database import async_session_maker
+                try:
+                    if truncate and file_type != "excel":
+                        from sqlalchemy import text
 
-                async def do_truncate(table_name: str = table_name):
-                    async with async_session_maker() as session:
-                        await session.execute(text(f"TRUNCATE TABLE {table_name} CASCADE"))
-                        await session.commit()
+                        from app.database import async_session_maker
+                        from pipeline.loader import get_table_name
 
-                asyncio.run(do_truncate())
-                console.print(f"  [yellow]{table_name} TRUNCATE 완료[/]")
+                        table_name = get_table_name(processor.data_type)
+                        async with async_session_maker() as session:
+                            await session.execute(
+                                text(f"TRUNCATE TABLE {table_name} CASCADE")
+                            )
+                            await session.commit()
+                        console.print(f"  [yellow]{table_name} TRUNCATE 완료[/]")
 
-            result = asyncio.run(processor.run(params))
+                    return await processor.run(params)
+                finally:
+                    await engine.dispose()
+
+            result = asyncio.run(_run_pipeline())
             console.print(f"  [green]완료[/]: {result.summary()}\n")
 
         except Exception as e:

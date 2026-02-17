@@ -4,18 +4,18 @@
 
 ## 기술 스택
 
-| 카테고리 | 패키지 |
-|---------|--------|
-| Package Manager | uv |
-| Web Framework | FastAPI, Uvicorn |
-| ORM | SQLAlchemy 2.0 (async), SQLModel |
-| Database | PostgreSQL 17, asyncpg, Alembic |
-| Validation | Pydantic v2 (+ email) |
-| Authentication | OAuth2 (Google, Kakao), Session-based |
-| AI/LLM | LangGraph, LangChain, OpenAI, Anthropic |
-| Web Scraping | Selenium, krwordrank |
-| Code Quality | Ruff (lint + format), mypy (strict) |
-| Testing | pytest, pytest-asyncio, pytest-cov |
+| 카테고리        | 패키지                                  |
+| --------------- | --------------------------------------- |
+| Package Manager | uv                                      |
+| Web Framework   | FastAPI, Uvicorn                        |
+| ORM             | SQLAlchemy 2.0 (async), SQLModel        |
+| Database        | PostgreSQL 17, asyncpg, Alembic         |
+| Validation      | Pydantic v2 (+ email)                   |
+| Authentication  | OAuth2 (Google, Kakao), Session-based   |
+| AI/LLM          | LangGraph, LangChain, OpenAI, Anthropic |
+| Web Scraping    | Selenium, krwordrank                    |
+| Code Quality    | Ruff (lint + format), mypy (strict)     |
+| Testing         | pytest, pytest-asyncio, pytest-cov      |
 
 ## 프로젝트 구조
 
@@ -51,7 +51,7 @@ backend/
 │   │   ├── lot.py               # 필지 (토지대장)
 │   │   ├── land.py              # 토지특성, 용도지역, 임야
 │   │   ├── building.py          # 건축물대장 (표제부, 층별)
-│   │   ├── administrative.py    # 행정구역 (시군구, 읍면동)
+│   │   ├── administrative.py    # 행정경계 (시군구, 읍면동)
 │   │   ├── transaction.py       # 공시지가, 실거래가
 │   │   ├── spatial.py           # 도로중심선, 용도지역지구
 │   │   └── file.py              # 파일 저장소
@@ -226,58 +226,65 @@ uv run python -m pipeline.transaction_crawler --test
 ## API 문서
 
 서버 실행 후:
+
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 
 ## API 엔드포인트
 
 ### 인증
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| GET | `/api/auth/google` | Google OAuth 로그인 |
-| GET | `/api/auth/google/callback` | Google OAuth 콜백 |
-| GET | `/api/auth/kakao` | Kakao OAuth 로그인 |
-| GET | `/api/auth/kakao/callback` | Kakao OAuth 콜백 |
-| POST | `/api/auth/logout` | 로그아웃 |
-| GET | `/api/auth/me` | 현재 사용자 정보 |
+
+| Method | Endpoint                    | 설명                |
+| ------ | --------------------------- | ------------------- |
+| GET    | `/api/auth/google`          | Google OAuth 로그인 |
+| GET    | `/api/auth/google/callback` | Google OAuth 콜백   |
+| GET    | `/api/auth/kakao`           | Kakao OAuth 로그인  |
+| GET    | `/api/auth/kakao/callback`  | Kakao OAuth 콜백    |
+| POST   | `/api/auth/logout`          | 로그아웃            |
+| GET    | `/api/auth/me`              | 현재 사용자 정보    |
 
 ### 사용자 (Admin)
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| GET | `/api/v1/users` | 사용자 목록 (필터링/정렬/페이지네이션) |
-| GET | `/api/v1/users/me` | 내 정보 |
-| POST | `/api/v1/users` | 사용자 생성 |
-| PATCH | `/api/v1/users/{id}` | 사용자 수정 |
+
+| Method | Endpoint             | 설명                                   |
+| ------ | -------------------- | -------------------------------------- |
+| GET    | `/api/v1/users`      | 사용자 목록 (필터링/정렬/페이지네이션) |
+| GET    | `/api/v1/users/me`   | 내 정보                                |
+| POST   | `/api/v1/users`      | 사용자 생성                            |
+| PATCH  | `/api/v1/users/{id}` | 사용자 수정                            |
 
 ### 동네
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| GET | `/api/v1/neighborhoods` | 동네 목록 |
-| GET | `/api/v1/neighborhoods/{id}` | 동네 상세 |
-| POST | `/api/v1/neighborhoods/search-by-location` | 위치 기반 검색 |
+
+| Method | Endpoint                                   | 설명           |
+| ------ | ------------------------------------------ | -------------- |
+| GET    | `/api/v1/neighborhoods`                    | 동네 목록      |
+| GET    | `/api/v1/neighborhoods/{id}`               | 동네 상세      |
+| POST   | `/api/v1/neighborhoods/search-by-location` | 위치 기반 검색 |
 
 ### 리포트
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| GET | `/api/v1/reports` | 리포트 목록 |
-| GET | `/api/v1/reports/published` | 발행된 리포트 |
-| POST | `/api/v1/reports` | 리포트 생성 |
-| POST | `/api/v1/reports/{id}/publish` | 리포트 발행 |
+
+| Method | Endpoint                       | 설명          |
+| ------ | ------------------------------ | ------------- |
+| GET    | `/api/v1/reports`              | 리포트 목록   |
+| GET    | `/api/v1/reports/published`    | 발행된 리포트 |
+| POST   | `/api/v1/reports`              | 리포트 생성   |
+| POST   | `/api/v1/reports/{id}/publish` | 리포트 발행   |
 
 ### 게시판
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| GET | `/api/v1/discussions` | 게시글 목록 |
-| POST | `/api/v1/discussions` | 게시글 작성 |
-| POST | `/api/v1/discussions/{id}/like` | 좋아요 토글 |
-| POST | `/api/v1/discussions/{id}/replies` | 댓글 작성 |
+
+| Method | Endpoint                           | 설명        |
+| ------ | ---------------------------------- | ----------- |
+| GET    | `/api/v1/discussions`              | 게시글 목록 |
+| POST   | `/api/v1/discussions`              | 게시글 작성 |
+| POST   | `/api/v1/discussions/{id}/like`    | 좋아요 토글 |
+| POST   | `/api/v1/discussions/{id}/replies` | 댓글 작성   |
 
 ### 알림
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| GET | `/api/v1/notifications` | 알림 목록 |
-| GET | `/api/v1/notifications/unread-count` | 읽지 않은 알림 수 |
-| POST | `/api/v1/notifications/read-all` | 모두 읽음 처리 |
+
+| Method | Endpoint                             | 설명              |
+| ------ | ------------------------------------ | ----------------- |
+| GET    | `/api/v1/notifications`              | 알림 목록         |
+| GET    | `/api/v1/notifications/unread-count` | 읽지 않은 알림 수 |
+| POST   | `/api/v1/notifications/read-all`     | 모두 읽음 처리    |
 
 ## 아키텍처 패턴
 

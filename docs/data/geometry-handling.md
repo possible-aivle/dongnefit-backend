@@ -48,7 +48,15 @@ API 응답에서 사용하는 geometry JSON 형식입니다.
 ```json
 {
   "type": "Polygon",
-  "coordinates": [[[127.0, 37.5], [127.1, 37.5], [127.1, 37.6], [127.0, 37.6], [127.0, 37.5]]]
+  "coordinates": [
+    [
+      [127.0, 37.5],
+      [127.1, 37.5],
+      [127.1, 37.6],
+      [127.0, 37.6],
+      [127.0, 37.5]
+    ]
+  ]
 }
 ```
 
@@ -79,36 +87,36 @@ class AdministrativeDivision(PublicDataBase, table=True):
 
     code: str = Field(...)
     name: str = Field(...)
-    geometry: Any = geometry_column(description="행정구역 경계 (Polygon/MultiPolygon)")
+    geometry: Any = geometry_column(description="행정경계 (Polygon/MultiPolygon)")
 ```
 
 ### 왜 `geometry: Any`인가?
 
-| 후보 | 문제점 |
-|------|--------|
-| `geometry: WKBElement` | Pydantic이 WKBElement를 모름 → 유효성 검증 실패 |
-| `geometry: bytes` | WKBElement는 bytes 서브클래스가 아님 → 타입이 부정확 |
-| `geometry: dict` | DB에서 읽으면 dict가 아닌 WKBElement가 옴 |
-| **`geometry: Any`** | 유일하게 모든 상황에서 동작 |
+| 후보                   | 문제점                                               |
+| ---------------------- | ---------------------------------------------------- |
+| `geometry: WKBElement` | Pydantic이 WKBElement를 모름 → 유효성 검증 실패      |
+| `geometry: bytes`      | WKBElement는 bytes 서브클래스가 아님 → 타입이 부정확 |
+| `geometry: dict`       | DB에서 읽으면 dict가 아닌 WKBElement가 옴            |
+| **`geometry: Any`**    | 유일하게 모든 상황에서 동작                          |
 
 geometry 필드는 상황에 따라 다른 타입을 가집니다:
 
-| 상황 | 타입 |
-|------|------|
-| DB에서 읽을 때 | `WKBElement` |
-| 파이프라인에서 쓸 때 | `str` (WKT) |
-| 값이 없을 때 | `None` |
+| 상황                 | 타입         |
+| -------------------- | ------------ |
+| DB에서 읽을 때       | `WKBElement` |
+| 파이프라인에서 쓸 때 | `str` (WKT)  |
+| 값이 없을 때         | `None`       |
 
 ### 적용된 모델 목록
 
-| 모델 | 테이블 | geometry 타입 |
-|------|--------|--------------|
-| `AdministrativeDivision` | administrative_divisions | Polygon/MultiPolygon |
-| `AdministrativeEmd` | administrative_emds | Polygon/MultiPolygon |
-| `Lot` | lots | Polygon/MultiPolygon |
-| `RoadCenterLine` | road_center_lines | LineString/MultiLineString |
-| `UseRegionDistrict` | use_region_districts | Polygon/MultiPolygon |
-| `GisBuildingIntegrated` | gis_building_integrated | Polygon/MultiPolygon |
+| 모델                     | 테이블                   | geometry 타입              |
+| ------------------------ | ------------------------ | -------------------------- |
+| `AdministrativeDivision` | administrative_divisions | Polygon/MultiPolygon       |
+| `AdministrativeEmd`      | administrative_emds      | Polygon/MultiPolygon       |
+| `Lot`                    | lots                     | Polygon/MultiPolygon       |
+| `RoadCenterLine`         | road_center_lines        | LineString/MultiLineString |
+| `UseRegionDistrict`      | use_region_districts     | Polygon/MultiPolygon       |
+| `GisBuildingIntegrated`  | gis_building_integrated  | Polygon/MultiPolygon       |
 
 ---
 
@@ -216,7 +224,7 @@ DB 조회 → row.geometry (WKBElement)
 ```python
 from app.schemas.base import wkb_to_shapely
 
-# DB에서 읽은 행정구역
+# DB에서 읽은 행정경계
 division = session.get(AdministrativeDivision, 1)
 
 # Shapely 객체로 변환
@@ -233,13 +241,13 @@ intersects = shape.intersects(other_shape)
 
 ## 변환 함수 요약
 
-| 함수 | 위치 | 입력 | 출력 | 용도 |
-|------|------|------|------|------|
-| `geojson_to_wkt()` | `pipeline/file_utils.py` | GeoJSON dict | WKT str | 파이프라인 적재 |
-| `wkb_to_geojson()` | `app/schemas/base.py` | WKBElement | GeoJSON dict | API 응답 |
-| `wkb_to_shapely()` | `app/schemas/base.py` | WKBElement | Shapely 객체 | 서비스 로직 |
-| `GeoJSON` (타입) | `app/schemas/base.py` | - | - | 스키마 필드 타입 |
-| `geometry_column()` | `app/models/base.py` | - | Field | 모델 컬럼 정의 |
+| 함수                | 위치                     | 입력         | 출력         | 용도             |
+| ------------------- | ------------------------ | ------------ | ------------ | ---------------- |
+| `geojson_to_wkt()`  | `pipeline/file_utils.py` | GeoJSON dict | WKT str      | 파이프라인 적재  |
+| `wkb_to_geojson()`  | `app/schemas/base.py`    | WKBElement   | GeoJSON dict | API 응답         |
+| `wkb_to_shapely()`  | `app/schemas/base.py`    | WKBElement   | Shapely 객체 | 서비스 로직      |
+| `GeoJSON` (타입)    | `app/schemas/base.py`    | -            | -            | 스키마 필드 타입 |
+| `geometry_column()` | `app/models/base.py`     | -            | Field        | 모델 컬럼 정의   |
 
 ---
 

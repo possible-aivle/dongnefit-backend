@@ -1,6 +1,6 @@
-"""행정구역경계 프로세서 (시도, 시군구, 읍면동).
+"""행정경계 프로세서 (시도, 시군구, 읍면동).
 
-행정경계 SHP → administrative_divisions, administrative_emds 테이블.
+행정경계 SHP → administrative_sidos, administrative_sggs, administrative_emds 테이블.
 """
 
 from pathlib import Path
@@ -27,12 +27,12 @@ PUBLIC_DATA_DIR = Path(__file__).parent.parent / "public_data"
 class AdministrativeSidoProcessor(BaseProcessor):
     """행정경계 시도 프로세서.
 
-    행정경계_시도 SHP → administrative_divisions (level=1).
+    행정경계_시도 SHP → administrative_sidos.
     """
 
     name = "admin_boundary_sido"
     description = "행정경계 시도"
-    data_type = PublicDataType.ADMINISTRATIVE_DIVISION
+    data_type = PublicDataType.ADMINISTRATIVE_SIDO
     simplify_tolerance = 0.001
 
     async def collect(self, params: dict[str, Any]) -> list[dict]:
@@ -65,15 +65,10 @@ class AdministrativeSidoProcessor(BaseProcessor):
             if not bjcd or not name:
                 continue
 
-            code = bjcd[:2]
-
             records.append({
-                "code": code,
+                "sido_code": bjcd[:2],
                 "name": name.strip(),
-                "level": 1,
-                "parent_code": None,
                 "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
-
             })
 
         console.print(f"  변환 완료: {len(records)}건")
@@ -86,12 +81,12 @@ class AdministrativeSidoProcessor(BaseProcessor):
 class AdministrativeSigunguProcessor(BaseProcessor):
     """행정경계 시군구 프로세서.
 
-    행정경계_시군구 SHP → administrative_divisions (level=2).
+    행정경계_시군구 SHP → administrative_sggs.
     """
 
     name = "admin_boundary_sigungu"
     description = "행정경계 시군구"
-    data_type = PublicDataType.ADMINISTRATIVE_DIVISION
+    data_type = PublicDataType.ADMINISTRATIVE_SGG
     simplify_tolerance = 0.001
 
     async def collect(self, params: dict[str, Any]) -> list[dict]:
@@ -143,16 +138,11 @@ class AdministrativeSigunguProcessor(BaseProcessor):
             if not bjcd or not name or len(bjcd) < 5:
                 continue
 
-            code = bjcd[:5]
-            parent_code = bjcd[:2]
-
             records.append({
-                "code": code,
+                "sgg_code": bjcd[:5],
                 "name": name.strip(),
-                "level": 2,
-                "parent_code": parent_code,
+                "sido_code": bjcd[:2],
                 "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
-
             })
 
         console.print(f"  변환 완료: {len(records)}건")
@@ -221,14 +211,11 @@ class AdministrativeEmdProcessor(BaseProcessor):
             if not bjcd or not name or len(bjcd) < 5:
                 continue
 
-            division_code = bjcd[:5]
-
             records.append({
-                "code": bjcd,
+                "emd_code": bjcd,
                 "name": name.strip(),
-                "division_code": division_code,
+                "sgg_code": bjcd[:5],
                 "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
-
             })
 
         console.print(f"  변환 완료: {len(records)}건")

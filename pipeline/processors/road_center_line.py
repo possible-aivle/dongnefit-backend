@@ -65,7 +65,7 @@ class RoadCenterLineProcessor(BaseProcessor):
                     console.print("    [yellow]SHP 파일 없음[/]")
                     continue
 
-                # 도로중심선은 행정구역 코드 필터가 어려움 (PNU 없음)
+                # 도로중심선은 행정경계 코드 필터가 어려움 (PNU 없음)
                 # sgg_prefixes가 있으면 전체 읽고 후처리에서 필터링
                 features = read_shp_features(shp_path)
                 rows.extend(features)

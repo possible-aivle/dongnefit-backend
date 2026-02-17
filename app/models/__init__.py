@@ -1,6 +1,6 @@
 """Database models."""
 
-from app.models.administrative import AdministrativeDivision, AdministrativeEmd
+from app.models.administrative import AdministrativeEmd, AdministrativeSgg, AdministrativeSido
 from app.models.base import PublicDataBase, TimestampMixin
 from app.models.blog import BlogPost, BlogStatus
 from app.models.building import (
@@ -71,8 +71,9 @@ __all__ = [
     # Lot (필지)
     "Lot",
     "AncillaryLand",
-    # Administrative (행정구역)
-    "AdministrativeDivision",
+    # Administrative (행정경계)
+    "AdministrativeSido",
+    "AdministrativeSgg",
     "AdministrativeEmd",
     # Land (토지)
     "LandCharacteristic",
