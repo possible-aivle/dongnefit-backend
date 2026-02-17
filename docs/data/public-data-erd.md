@@ -7,7 +7,6 @@ erDiagram
     %% ============================================
     Lot {
         string pnu PK "필지고유번호"
-        string jibun_address "지번주소 (nullable)"
         geometry geometry "PostGIS Polygon/MultiPolygon"
 
         datetime created_at
@@ -19,41 +18,32 @@ erDiagram
     LandCharacteristic {
         int id PK
         string pnu FK "필지고유번호"
-        int data_year "기준년도"
-        string jimok_name "지목명"
+        string jimok "지목명"
         float land_area "토지면적(m2)"
-        string use_zone_name "용도지역명"
-        string land_use_name "토지이용상황"
+        string use_zone "용도지역명"
+        string land_use "토지이용상황"
         int official_price "공시지가(원)"
 
-
         datetime created_at
-        datetime updated_at
     }
 
     LandUsePlan {
         int id PK
         string pnu FK "필지고유번호"
-        int data_year "기준년도"
         string use_district_name "용도지역지구명"
 
-
         datetime created_at
-        datetime updated_at
     }
 
     LandAndForestInfo {
         int id PK
         string pnu FK "필지고유번호"
-        int data_year "기준년도"
-        string jimok_name "지목명"
+        string jimok "지목명"
         float area "면적(m2)"
-        string ownership_name "소유구분명"
+        string ownership "소유구분명"
         int owner_count "소유(공유)인수"
 
-
         datetime created_at
-        datetime updated_at
     }
 
     %% ============================================
@@ -331,9 +321,9 @@ erDiagram
 | 구분   | 테이블                             | 설명                           | Lot FK | UQ 제약            |
 | ------ | ---------------------------------- | ------------------------------ | ------ | ------------------ |
 | 중심   | `lots`                             | 필지 (PNU 기준)                | -      | pnu (PK)           |
-| 토지   | `land_characteristics`             | 토지특성정보 (AL_D195)         | O      | pnu + data_year    |
-| 토지   | `land_use_plans`                   | 토지이용계획정보 (AL_D154)     | O      | pnu + data_year    |
-| 토지   | `land_and_forest_infos`            | 토지임야정보 (AL_D003)         | O      | pnu + data_year    |
+| 토지   | `land_characteristics`             | 토지특성정보 (AL_D195)         | O      | pnu               |
+| 토지   | `land_use_plans`                   | 토지이용계획정보 (AL_D154)     | O      | pnu + use_district_name |
+| 토지   | `land_and_forest_infos`            | 토지임야정보 (AL_D003)         | O      | pnu               |
 | 소유   | `land_ownerships`                  | 토지소유정보                   | O      | pnu + co_owner_seq |
 | 가격   | `official_land_prices`             | 개별공시지가 (AL_D151)         | O      | pnu + base_year    |
 | 매매   | `real_estate_sales`                | 부동산 매매 실거래             | X      | -                  |

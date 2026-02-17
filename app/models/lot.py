@@ -7,7 +7,6 @@ PNU(19자리): 시도(2) + 시군구(3) + 읍면동(3) + 리(2) + 산구분(1) +
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Column, String
 from sqlmodel import Field, SQLModel
 
 from app.models.base import PublicDataBase, geometry_column, get_utc_now
@@ -27,11 +26,6 @@ class Lot(SQLModel, table=True):
         max_length=19,
         primary_key=True,
         description="필지고유번호",
-    )
-    jibun_address: str | None = Field(
-        default=None,
-        sa_column=Column(String(500)),
-        description="지번주소",
     )
     geometry: Any = geometry_column(description="필지 경계 (Polygon/MultiPolygon)")
     created_at: datetime | None = Field(default_factory=get_utc_now)

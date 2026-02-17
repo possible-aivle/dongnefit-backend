@@ -34,18 +34,6 @@ async def get_lot_by_pnu(db: AsyncSession, pnu: str) -> Lot | None:
     return result.scalar_one_or_none()
 
 
-async def search_lots_by_address(
-    db: AsyncSession, keyword: str, *, limit: int = 20
-) -> list[Lot]:
-    stmt = (
-        select(Lot)
-        .where(Lot.jibun_address.ilike(f"%{keyword}%"))
-        .limit(limit)
-    )
-    result = await db.execute(stmt)
-    return list(result.scalars().all())
-
-
 async def search_lot_by_point(
     db: AsyncSession, lat: float, lng: float
 ) -> Lot | None:
@@ -76,7 +64,6 @@ async def get_land_characteristic(
     stmt = (
         select(LandCharacteristic)
         .where(LandCharacteristic.pnu == pnu)
-        .order_by(desc(LandCharacteristic.data_year))
         .limit(1)
     )
     result = await db.execute(stmt)
@@ -87,7 +74,6 @@ async def get_land_use_plan(db: AsyncSession, pnu: str) -> LandUsePlan | None:
     stmt = (
         select(LandUsePlan)
         .where(LandUsePlan.pnu == pnu)
-        .order_by(desc(LandUsePlan.data_year))
         .limit(1)
     )
     result = await db.execute(stmt)
@@ -100,7 +86,6 @@ async def get_land_forest_info(
     stmt = (
         select(LandAndForestInfo)
         .where(LandAndForestInfo.pnu == pnu)
-        .order_by(desc(LandAndForestInfo.data_year))
         .limit(1)
     )
     result = await db.execute(stmt)

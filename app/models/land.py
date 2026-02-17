@@ -14,19 +14,18 @@ class LandCharacteristic(PublicDataBase, table=True):
     """
 
     __tablename__ = "land_characteristics"
-    __table_args__ = (UniqueConstraint("pnu", "data_year", name="uq_land_char_pnu_year"),)
+    __table_args__ = (UniqueConstraint("pnu", name="uq_land_char_pnu"),)
 
     pnu: str = Field(
         max_length=19,
         description="필지고유번호",
         index=True
     )
-    data_year: int = Field(description="기준년도")
 
-    jimok_name: str | None = Field(default=None, max_length=20, description="지목명")
+    jimok: str | None = Field(default=None, max_length=20, description="지목명")
     land_area: float | None = Field(default=None, description="토지면적(㎡)")
-    use_zone_name: str | None = Field(default=None, max_length=50, description="용도지역명")
-    land_use_name: str | None = Field(default=None, max_length=30, description="토지이용상황")
+    use_zone: str | None = Field(default=None, max_length=50, description="용도지역명")
+    land_use: str | None = Field(default=None, max_length=30, description="토지이용상황")
     official_price: int | None = Field(
         default=None, sa_column=Column(BigInteger, nullable=True), description="공시지가(원)"
     )
@@ -42,7 +41,7 @@ class LandUsePlan(PublicDataBase, table=True):
 
     __tablename__ = "land_use_plans"
     __table_args__ = (
-        UniqueConstraint("pnu", "data_year", "use_district_name", name="uq_land_use_pnu_year_name"),
+        UniqueConstraint("pnu", "use_district_name", name="uq_land_use_pnu_name"),
     )
 
     pnu: str = Field(
@@ -50,7 +49,6 @@ class LandUsePlan(PublicDataBase, table=True):
         description="필지고유번호",
         index=True
     )
-    data_year: int = Field(description="기준년도")
 
     use_district_name: str | None = Field(default=None, max_length=50, description="용도지역지구명")
 
@@ -64,16 +62,15 @@ class LandAndForestInfo(PublicDataBase, table=True):
     """
 
     __tablename__ = "land_and_forest_infos"
-    __table_args__ = (UniqueConstraint("pnu", "data_year", name="uq_land_forest_pnu_year"),)
+    __table_args__ = (UniqueConstraint("pnu", name="uq_land_forest_pnu"),)
 
     pnu: str = Field(
         max_length=19,
         description="필지고유번호",
         index=True
     )
-    data_year: int = Field(description="기준년도")
 
-    jimok_name: str | None = Field(default=None, max_length=20, description="지목명")
+    jimok: str | None = Field(default=None, max_length=20, description="지목명")
     area: float | None = Field(default=None, description="면적(㎡)")
-    ownership_name: str | None = Field(default=None, max_length=20, description="소유구분명")
+    ownership: str | None = Field(default=None, max_length=20, description="소유구분명")
     owner_count: int | None = Field(default=None, description="소유(공유)인수")

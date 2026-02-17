@@ -74,7 +74,7 @@ async def get_property_summary(
             building_summary.underground_floors = first.underground_floors
 
     return PropertySummaryResponse(
-        lot=LotSummary(pnu=lot.pnu, jibun_address=lot.jibun_address),
+        lot=LotSummary(pnu=lot.pnu),
         land=LandInfo.model_validate(land) if land else None,
         official_price=OfficialPriceInfo.model_validate(price) if price else None,
         building=building_summary,

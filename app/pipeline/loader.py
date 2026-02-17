@@ -63,9 +63,9 @@ MODEL_MAP: dict[PublicDataType, type[SQLModel]] = {
 # PNU 기반 테이블의 upsert 키 (unique constraint 기준)
 UPSERT_KEYS: dict[PublicDataType, list[str]] = {
     PublicDataType.CONTINUOUS_CADASTRAL: ["pnu"],
-    PublicDataType.LAND_CHARACTERISTIC: ["pnu", "data_year"],
-    PublicDataType.LAND_USE_PLAN: ["pnu", "data_year", "use_district_name"],
-    PublicDataType.LAND_AND_FOREST_INFO: ["pnu", "data_year"],
+    PublicDataType.LAND_CHARACTERISTIC: ["pnu"],
+    PublicDataType.LAND_USE_PLAN: ["pnu", "use_district_name"],
+    PublicDataType.LAND_AND_FOREST_INFO: ["pnu"],
     PublicDataType.OFFICIAL_LAND_PRICE: ["pnu", "base_year"],
     PublicDataType.ADMINISTRATIVE_SIDO: ["sido_code"],
     PublicDataType.ADMINISTRATIVE_SGG: ["sgg_code"],

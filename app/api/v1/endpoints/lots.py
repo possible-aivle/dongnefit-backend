@@ -37,11 +37,10 @@ def _validate_pnu(pnu: str) -> None:
     "/search",
     response_model=PaginatedResponse[LotSearchResult] | list[LotSearchResult],
     summary="필지 검색",
-    description="주소 키워드, 좌표, 또는 시군구코드로 필지를 검색합니다.",
+    description="좌표 또는 시군구코드로 필지를 검색합니다.",
 )
 async def search_lots(
     db: AsyncSession = Depends(get_db),
-    address: str | None = Query(None, description="주소 키워드 검색"),
     lat: float | None = Query(None, description="위도 (좌표 검색)"),
     lng: float | None = Query(None, description="경도 (좌표 검색)"),
     sgg_code: str | None = Query(None, description="시군구코드 (5자리)"),
@@ -71,14 +70,9 @@ async def search_lots(
             ),
         )
 
-    # 주소 키워드 검색
-    if address:
-        lots = await crud.search_lots_by_address(db, address, limit=limit)
-        return [LotSearchResult.model_validate(lot) for lot in lots]
-
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="address, lat+lng, 또는 sgg_code 중 하나를 지정해야 합니다.",
+        detail="lat+lng 또는 sgg_code 중 하나를 지정해야 합니다.",
     )
 
 
@@ -111,7 +105,6 @@ async def get_lot_detail(
 
     return LotDetailResponse(
         pnu=lot.pnu,
-        jibun_address=lot.jibun_address,
         geometry=lot.geometry,
         land=LandInfo.model_validate(land) if land else None,
         land_use_plan=LandUsePlanInfo.model_validate(land_use) if land_use else None,

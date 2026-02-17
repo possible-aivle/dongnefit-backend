@@ -15,28 +15,25 @@ from app.schemas.base import BaseSchema, GeoJSON
 class LandInfo(BaseSchema):
     """토지특성 요약."""
 
-    data_year: int
-    jimok_name: str | None = None
+    jimok: str | None = None
     land_area: float | None = None
-    use_zone_name: str | None = None
-    land_use_name: str | None = None
+    use_zone: str | None = None
+    land_use: str | None = None
     official_price: int | None = None
 
 
 class LandUsePlanInfo(BaseSchema):
     """토지이용계획 요약."""
 
-    data_year: int
     use_district_name: str | None = None
 
 
 class ForestInfo(BaseSchema):
     """임야정보 요약."""
 
-    data_year: int
-    jimok_name: str | None = None
+    jimok: str | None = None
     area: float | None = None
-    ownership_name: str | None = None
+    ownership: str | None = None
     owner_count: int | None = None
 
 
@@ -60,7 +57,6 @@ class LotDetailResponse(BaseSchema):
     """필지 종합 조회 응답 (GET /lots/{pnu})."""
 
     pnu: str
-    jibun_address: str | None = None
     geometry: GeoJSON = None
     land: LandInfo | None = None
     land_use_plan: LandUsePlanInfo | None = None
@@ -73,7 +69,6 @@ class LotSearchResult(BaseSchema):
     """필지 검색 결과."""
 
     pnu: str
-    jibun_address: str | None = None
 
 
 # ──────────────────────────── 건축물 관련 ────────────────────────────
@@ -221,7 +216,6 @@ class LotSummary(BaseSchema):
     """필지 요약 (통합 조회용)."""
 
     pnu: str
-    jibun_address: str | None = None
 
 
 class BuildingSummary(BaseSchema):
@@ -253,7 +247,6 @@ class MapLotFeature(BaseSchema):
     """지도용 필지 피처."""
 
     pnu: str
-    jibun_address: str | None = None
     geometry: GeoJSON = None
 
 

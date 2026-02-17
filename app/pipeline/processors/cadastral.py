@@ -30,7 +30,7 @@ PUBLIC_DATA_DIR = Path(__file__).parent.parent / "public_data"
 class CadastralProcessor(BaseProcessor):
     """연속지적도 SHP 프로세서.
 
-    PNU → pnu, JIBUN → jibun_address, geometry → geometry.
+    PNU → pnu, geometry → geometry.
     """
 
     name = "cadastral"
@@ -85,11 +85,9 @@ class CadastralProcessor(BaseProcessor):
                 continue
 
             pnu = pnu[:19]
-            jibun = str(row.get("JIBUN", row.get("ADDR", ""))).strip() or None
 
             records.append({
                 "pnu": pnu,
-                "jibun_address": jibun,
                 "geometry": geojson_to_wkt(row.pop("__geometry__", None)),
             })
 
