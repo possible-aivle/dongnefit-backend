@@ -120,7 +120,7 @@ class GisBuildingIntegratedProcessor(BaseProcessor):
         import fiona
 
         rows: list[dict] = []
-        with fiona.open(shp_path) as src:
+        with fiona.open(shp_path, encoding="euc-kr") as src:
             # CRS 자동 감지 및 WGS84 변환 준비
             transformer, needs_transform = _make_crs_transformer(src.crs)
 
