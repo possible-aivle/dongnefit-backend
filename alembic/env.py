@@ -58,6 +58,28 @@ if config.config_file_name is not None:
 # Model metadata for autogenerate
 target_metadata = SQLModel.metadata
 
+# PostGIS tiger/topology 테이블을 autogenerate에서 제외
+_EXCLUDE_TABLES = frozenset({
+    "spatial_ref_sys",
+    # tiger geocoder tables
+    "addr", "addrfeat", "bg", "county", "county_lookup", "countysub_lookup",
+    "cousub", "direction_lookup", "edges", "faces", "featnames",
+    "geocode_settings", "geocode_settings_default", "loader_lookuptables",
+    "loader_platform", "loader_variables", "pagc_gaz", "pagc_lex", "pagc_rules",
+    "place", "place_lookup", "secondary_unit_lookup", "state", "state_lookup",
+    "street_type_lookup", "tabblock", "tabblock20", "tract", "zcta5",
+    "zip_lookup", "zip_lookup_all", "zip_lookup_base", "zip_state", "zip_state_loc",
+    # topology tables
+    "topology", "layer",
+})
+
+
+def include_name(name: str, type_: str, parent_names: dict) -> bool:
+    """Autogenerate 대상 필터: tiger/topology 테이블 제외."""
+    if type_ == "table":
+        return name not in _EXCLUDE_TABLES
+    return True
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
@@ -69,6 +91,7 @@ def run_migrations_offline() -> None:
         dialect_opts={"paramstyle": "named"},
         process_revision_directives=alembic_helpers.writer,
         render_item=alembic_helpers.render_item,
+        include_name=include_name,
     )
 
     with context.begin_transaction():
@@ -83,6 +106,7 @@ def do_run_migrations(connection: Connection) -> None:
         compare_type=True,
         process_revision_directives=alembic_helpers.writer,
         render_item=alembic_helpers.render_item,
+        include_name=include_name,
     )
 
     with context.begin_transaction():
