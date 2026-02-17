@@ -48,8 +48,8 @@ class RealEstateSale(PublicDataBase, table=True):
     )
 
     # ── 위치 정보 ──
-    sigungu: str | None = Field(
-        default=None, max_length=100, index=True, description="시군구"
+    address: str | None = Field(
+        default=None, max_length=200, index=True, description="주소 (시군구 + 번지)"
     )
 
     # ── 건물 정보 ──
@@ -103,8 +103,8 @@ class RealEstateRental(PublicDataBase, table=True):
     )
 
     # ── 위치 정보 ──
-    sigungu: str | None = Field(
-        default=None, max_length=100, index=True, description="시군구"
+    address: str | None = Field(
+        default=None, max_length=200, index=True, description="주소 (시군구 + 번지)"
     )
 
     # ── 건물 정보 ──

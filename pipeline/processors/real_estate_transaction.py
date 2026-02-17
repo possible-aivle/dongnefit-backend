@@ -36,16 +36,16 @@ HEADER_ROW = 12  # 0-based index; Excel row 13이 컬럼 헤더
 # ── 파일명 → PropertyType 매핑 ──
 
 PROPERTY_TYPE_MAP: dict[str, PropertyType] = {
+    "토지": PropertyType.LAND,
     "아파트": PropertyType.APARTMENT,
     "연립다세대": PropertyType.ROW_HOUSE,
     "단독다가구": PropertyType.DETACHED_HOUSE,
     "오피스텔": PropertyType.OFFICETEL,
 }
 
-# ── 매매 전용 컬럼 매핑 ──
+# ── 매매 전용 컬럼 매핑 (시군구/번지 제외 — address로 별도 처리) ──
 
 SALE_COLUMN_MAP: dict[str, str] = {
-    "시군구": "sigungu",
     "단지명": "building_name",
     "건물명": "building_name",
     "전용면적(㎡)": "exclusive_area",
@@ -61,10 +61,10 @@ SALE_COLUMN_MAP: dict[str, str] = {
 # ── 전월세 전용 컬럼 매핑 ──
 
 RENTAL_COLUMN_MAP: dict[str, str] = {
-    "시군구": "sigungu",
     "단지명": "building_name",
     "건물명": "building_name",
     "전용면적(㎡)": "exclusive_area",
+    "계약면적(㎡)": "exclusive_area",
     "대지면적(㎡)": "land_area",
     "대지권면적(㎡)": "land_area",
     "연면적(㎡)": "floor_area",
@@ -150,6 +150,17 @@ def _utc_now() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
+def _build_address(row: dict[str, Any]) -> str | None:
+    """시군구 + 번지를 합쳐 address 문자열을 생성합니다."""
+    sigungu = _clean(row.get("시군구"))
+    bunji = _clean(row.get("번지"))
+    if not sigungu:
+        return None
+    if bunji:
+        return f"{sigungu} {bunji}"
+    return sigungu
+
+
 def parse_filename(filename: str) -> PropertyType | None:
     """파일명에서 PropertyType 파싱.
 
@@ -177,7 +188,7 @@ def transform_sale_row(
     }
 
     for col in columns:
-        if col in ("NO", "계약년월", "계약일"):
+        if col in ("NO", "계약년월", "계약일", "시군구", "번지", "본번", "부번"):
             continue
         db_field = SALE_COLUMN_MAP.get(col)
         if db_field is None:
@@ -193,6 +204,7 @@ def transform_sale_row(
             record[db_field] = _clean(val)
 
     record["transaction_date"] = _parse_date(row.get("계약년월"), row.get("계약일"))
+    record["address"] = _build_address(row)
 
     if "floor" in record and record["floor"] is not None:
         record["floor"] = str(record["floor"])
@@ -213,7 +225,7 @@ def transform_rental_row(
     }
 
     for col in columns:
-        if col in ("NO", "계약년월", "계약일"):
+        if col in ("NO", "계약년월", "계약일", "시군구", "번지", "본번", "부번"):
             continue
         db_field = RENTAL_COLUMN_MAP.get(col)
         if db_field is None:
@@ -229,6 +241,7 @@ def transform_rental_row(
             record[db_field] = _clean(val)
 
     record["transaction_date"] = _parse_date(row.get("계약년월"), row.get("계약일"))
+    record["address"] = _build_address(row)
 
     # 거래유형 결정 (전세/월세)
     rent_type = _clean(row.get("전월세구분"))
