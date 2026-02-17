@@ -38,6 +38,24 @@ class ArticleAnalyzer:
                 temperature=0.3,
             )
 
+    def _parse_json_response(self, content: str) -> dict:
+        """LLM 응답에서 JSON을 추출하여 파싱합니다."""
+        try:
+            # 마크다운 코드 블록 제거
+            content = content.replace("```json", "").replace("```", "").strip()
+            return json.loads(content)
+        except json.JSONDecodeError:
+            # JSON 파싱 실패 시, { 로 시작하고 } 로 끝나는 부분만 추출 시도
+            try:
+                start_idx = content.find("{")
+                end_idx = content.rfind("}")
+                if start_idx != -1 and end_idx != -1:
+                    json_str = content[start_idx : end_idx + 1]
+                    return json.loads(json_str)
+            except Exception:
+                pass
+            raise
+
     async def classify_article(self, article: NewsArticle) -> Optional[str]:
         """
         기사의 카테고리를 분류합니다.
@@ -62,7 +80,7 @@ class ArticleAnalyzer:
 
 부동산과 관련 없는 기사는 "irrelevant"로 분류하세요.
 
-응답은 반드시 JSON 형식으로만 작성하세요:
+응답은 반드시 JSON 형식으로만 작성하세요 (마크다운 없이):
 {"category": "market_trend"}"""
 
         user_prompt = f"""기사 제목: {article.title}
@@ -76,7 +94,8 @@ class ArticleAnalyzer:
                 HumanMessage(content=user_prompt),
             ]
             response = await self.llm.ainvoke(messages)
-            result = json.loads(response.content)
+            # JSON 파싱 헬퍼 사용
+            result = self._parse_json_response(str(response.content))
             category = result.get("category")
 
             if category == "irrelevant":
@@ -162,7 +181,7 @@ class ArticleAnalyzer:
 - importance: 1-10 (10이 가장 중요)
 - summary: 이슈 요약 (2-3문장)
 
-응답은 반드시 다음 JSON 형식을 따르세요:
+응답은 반드시 다음 JSON 형식을 따르세요 (마크다운 없이):
 {{
   "issues": [
     {{
@@ -192,7 +211,9 @@ class ArticleAnalyzer:
                 HumanMessage(content=user_prompt),
             ]
             response = await self.llm.ainvoke(messages)
-            result = json.loads(response.content)
+
+            # JSON 파싱 헬퍼 사용
+            result = self._parse_json_response(str(response.content))
 
             issues = []
             for issue_data in result.get("issues", []):
@@ -200,7 +221,7 @@ class ArticleAnalyzer:
                 sources = [article.url for article in articles[:5]]
 
                 issue = PolicyIssue(
-                    category=category,
+                    category=category, # type: ignore
                     title=issue_data["title"],
                     sentiment=issue_data["sentiment"],
                     importance=issue_data["importance"],
