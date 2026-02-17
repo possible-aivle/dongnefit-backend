@@ -20,8 +20,6 @@ class LandOwnership(PublicDataBase, table=True):
 
     pnu: str = Field(
         max_length=19,
-        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
-        index=True,
         description="필지고유번호",
     )
     base_year_month: str = Field(max_length=7, description="기준연월 (YYYY-MM)")

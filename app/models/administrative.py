@@ -26,6 +26,7 @@ class AdministrativeDivision(PublicDataBase, table=True):
     parent_code: str | None = Field(
         default=None,
         max_length=5,
+        index=True,
         description="상위 행정구역코드 (시군구의 경우 시도코드)",
     )
     geometry: Any = geometry_column(description="행정구역 경계 (Polygon/MultiPolygon)")

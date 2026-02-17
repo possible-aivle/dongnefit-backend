@@ -1,5 +1,8 @@
 """통합 요약 엔드포인트 - AI 콘텐츠 생성용."""
 
+import asyncio
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +20,8 @@ from app.schemas.public_data import (
 
 router = APIRouter()
 
+PNU_PATTERN = re.compile(r"^\d{19}$")
+
 
 @router.get(
     "/{pnu}/summary",
@@ -28,6 +33,12 @@ async def get_property_summary(
     pnu: str,
     db: AsyncSession = Depends(get_db),
 ) -> PropertySummaryResponse:
+    if not PNU_PATTERN.match(pnu):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="PNU는 19자리 숫자여야 합니다.",
+        )
+
     lot = await crud.get_lot_by_pnu(db, pnu)
     if not lot:
         raise HTTPException(
@@ -35,14 +46,18 @@ async def get_property_summary(
             detail="필지를 찾을 수 없습니다.",
         )
 
-    land = await crud.get_land_characteristic(db, pnu)
-    price = await crud.get_official_land_price(db, pnu)
-    general = await crud.get_building_general(db, pnu)
-
     # PNU에서 sgg_code 추출 (앞 5자리)
     sgg_code = pnu[:5]
-    recent_sales = await crud.get_recent_sales_by_sgg(db, sgg_code, limit=5)
-    recent_rentals = await crud.get_recent_rentals_by_sgg(db, sgg_code, limit=5)
+
+    # 6개 쿼리를 병렬 실행
+    land, price, general, headers, recent_sales, recent_rentals = await asyncio.gather(
+        crud.get_land_characteristic(db, pnu),
+        crud.get_official_land_price(db, pnu),
+        crud.get_building_general(db, pnu),
+        crud.get_building_headers(db, pnu),
+        crud.get_recent_sales_by_sgg(db, sgg_code, limit=5),
+        crud.get_recent_rentals_by_sgg(db, sgg_code, limit=5),
+    )
 
     building_summary = None
     if general:
@@ -53,7 +68,6 @@ async def get_property_summary(
             approval_date=general.approval_date,
         )
         # 표제부에서 층수 정보 보완
-        headers = await crud.get_building_headers(db, pnu)
         if headers:
             first = headers[0]
             building_summary.above_ground_floors = first.above_ground_floors

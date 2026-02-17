@@ -20,10 +20,9 @@ class BuildingRegisterHeader(PublicDataBase, table=True):
         UniqueConstraint("mgm_bldrgst_pk", name="uq_bldrgst_header_pk"),
     )
 
-    mgm_bldrgst_pk: str = Field(max_length=33, index=True, description="관리 건축물대장 PK")
+    mgm_bldrgst_pk: str = Field(max_length=33, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호",
     )
@@ -54,10 +53,9 @@ class BuildingRegisterGeneral(PublicDataBase, table=True):
         UniqueConstraint("mgm_bldrgst_pk", name="uq_bldrgst_general_pk"),
     )
 
-    mgm_bldrgst_pk: str = Field(max_length=33, index=True, description="관리 건축물대장 PK")
+    mgm_bldrgst_pk: str = Field(max_length=33, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호",
     )
@@ -81,11 +79,16 @@ class BuildingRegisterFloorDetail(PublicDataBase, table=True):
     """
 
     __tablename__ = "building_register_floor_details"
+    __table_args__ = (
+        UniqueConstraint(
+            "mgm_bldrgst_pk", "floor_type_name", "floor_no",
+            name="uq_bldrgst_floor_detail",
+        ),
+    )
 
     mgm_bldrgst_pk: str = Field(max_length=33, index=True, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호",
     )
@@ -103,11 +106,16 @@ class BuildingRegisterArea(PublicDataBase, table=True):
     """
 
     __tablename__ = "building_register_areas"
+    __table_args__ = (
+        UniqueConstraint(
+            "mgm_bldrgst_pk", "dong_name", "ho_name", "floor_no", "exclu_common_type",
+            name="uq_bldrgst_area",
+        ),
+    )
 
     mgm_bldrgst_pk: str = Field(max_length=33, index=True, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호",
     )
@@ -128,16 +136,18 @@ class BuildingRegisterAncillaryLot(PublicDataBase, table=True):
     """
 
     __tablename__ = "building_register_ancillary_lots"
+    __table_args__ = (
+        UniqueConstraint("mgm_bldrgst_pk", "atch_pnu", name="uq_bldrgst_ancillary_lot"),
+    )
 
     mgm_bldrgst_pk: str = Field(max_length=33, index=True, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호 (본 건물)",
     )
     atch_pnu: str | None = Field(
-        default=None, max_length=19, index=True, description="부속 필지고유번호"
+        default=None, max_length=19, description="부속 필지고유번호"
     )
     created_date: str | None = Field(default=None, max_length=8, description="생성일자")
 
@@ -155,7 +165,6 @@ class GisBuildingIntegrated(PublicDataBase, table=True):
 
     pnu: str = Field(
         max_length=19,
-        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
         index=True,
         description="필지고유번호 (고유번호)",
     )

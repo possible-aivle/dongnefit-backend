@@ -7,10 +7,10 @@
 from pathlib import Path
 from typing import Any
 
-from InquirerPy import inquirer
 from rich.console import Console
 
 from app.models.enums import PublicDataType
+from pipeline.parsing import safe_float, safe_int
 from pipeline.processors.base import BaseProcessor, ProcessResult
 from pipeline.registry import Registry
 
@@ -144,6 +144,8 @@ class BuildingRegisterTxtProcessor(BaseProcessor):
 
     def get_params_interactive(self) -> dict[str, Any]:
         """CLI에서 txt 파일 경로를 입력받습니다."""
+        from InquirerPy import inquirer
+
         file_path = inquirer.filepath(
             message=f"{self.description} txt 파일 경로:",
             validate=lambda p: Path(p).exists() and Path(p).suffix == ".txt",
@@ -165,23 +167,8 @@ class BuildingRegisterTxtProcessor(BaseProcessor):
 
         return result
 
-    @staticmethod
-    def _safe_int(value: Any) -> int | None:
-        if value is None or value == "":
-            return None
-        try:
-            return int(float(str(value).replace(",", "")))
-        except (ValueError, TypeError):
-            return None
-
-    @staticmethod
-    def _safe_float(value: Any) -> float | None:
-        if value is None or value == "":
-            return None
-        try:
-            return float(str(value).replace(",", ""))
-        except (ValueError, TypeError):
-            return None
+    _safe_int = staticmethod(safe_int)
+    _safe_float = staticmethod(safe_float)
 
 
 # ── 표제부 프로세서 ──

@@ -63,16 +63,20 @@ MODEL_MAP: dict[PublicDataType, type[SQLModel]] = {
 UPSERT_KEYS: dict[PublicDataType, list[str]] = {
     PublicDataType.CONTINUOUS_CADASTRAL: ["pnu"],
     PublicDataType.LAND_CHARACTERISTIC: ["pnu", "data_year"],
-    PublicDataType.LAND_USE_PLAN: ["pnu", "data_year"],
+    PublicDataType.LAND_USE_PLAN: ["pnu", "data_year", "use_district_name"],
     PublicDataType.LAND_AND_FOREST_INFO: ["pnu", "data_year"],
     PublicDataType.OFFICIAL_LAND_PRICE: ["pnu", "base_year"],
     PublicDataType.ADMINISTRATIVE_DIVISION: ["code"],
     PublicDataType.ADMINISTRATIVE_EMD: ["code"],
     PublicDataType.BUILDING_REGISTER_HEADER: ["mgm_bldrgst_pk"],
     PublicDataType.BUILDING_REGISTER_GENERAL: ["mgm_bldrgst_pk"],
+    PublicDataType.BUILDING_REGISTER_FLOOR_DETAIL: ["mgm_bldrgst_pk", "floor_type_name", "floor_no"],
+    PublicDataType.BUILDING_REGISTER_AREA: ["mgm_bldrgst_pk", "dong_name", "ho_name", "floor_no", "exclu_common_type"],
+    PublicDataType.BUILDING_REGISTER_ANCILLARY_LOT: ["mgm_bldrgst_pk", "atch_pnu"],
     PublicDataType.GIS_BUILDING_INTEGRATED: ["pnu", "building_id"],
     PublicDataType.LAND_OWNERSHIP: ["pnu", "co_owner_seq"],
-    #* ROAD_CENTER_LINE, USE_REGION_DISTRICT: 단순 INSERT (UPSERT_KEYS에 없음)
+    PublicDataType.ROAD_CENTER_LINE: ["source_id"],
+    PublicDataType.USE_REGION_DISTRICT: ["source_id"],
 }
 
 
@@ -137,23 +141,25 @@ async def bulk_insert(
     batch_size: int = 500,
     *,
     simplify_tolerance: float | None = None,
+    _pre_serialized: bool = False,
 ) -> int:
     """raw dict 리스트를 지정 테이블에 bulk insert합니다."""
     if not records:
         return 0
 
-    records = _serialize_records(records)
+    if not _pre_serialized:
+        records = _serialize_records(records)
     total = 0
     for i in range(0, len(records), batch_size):
         batch = records[i : i + batch_size]
         columns = list(batch[0].keys())
-        col_str = ", ".join(columns)
+        col_str = ", ".join(f'"{c}"' for c in columns)
         val_str = ", ".join(
             _build_val_expr(col, simplify_tolerance=simplify_tolerance) for col in columns
         )
 
         await session.execute(
-            text(f"INSERT INTO {table_name} ({col_str}) VALUES ({val_str})"),  # noqa: S608
+            text(f'INSERT INTO "{table_name}" ({col_str}) VALUES ({val_str})'),  # noqa: S608
             batch,
         )
         total += len(batch)
@@ -184,36 +190,39 @@ async def bulk_upsert(
     table_name = get_table_name(data_type)
     upsert_keys = UPSERT_KEYS.get(data_type)
 
+    # 직렬화를 한 번만 수행
+    records = _serialize_records(records)
+
     if upsert_keys is None:
-        # 단순 INSERT (실거래가 등 중복키 없는 경우)
-        count = await bulk_insert(session, table_name, records, batch_size)
+        # 단순 INSERT (UPSERT_KEYS에 없는 경우)
+        count = await bulk_insert(
+            session, table_name, records, batch_size, _pre_serialized=True
+        )
         return ProcessResult(inserted=count)
 
     # UPSERT (ON CONFLICT DO UPDATE)
-    records = _serialize_records(records)
     inserted = 0
-    updated = 0
 
     for i in range(0, len(records), batch_size):
         batch = records[i : i + batch_size]
         columns = list(batch[0].keys())
-        col_str = ", ".join(columns)
+        col_str = ", ".join(f'"{c}"' for c in columns)
         val_str = ", ".join(
             _build_val_expr(col, simplify_tolerance=simplify_tolerance) for col in columns
         )
-        conflict_str = ", ".join(upsert_keys)
+        conflict_str = ", ".join(f'"{k}"' for k in upsert_keys)
 
         # 업데이트할 컬럼 (키 제외)
         update_cols = [c for c in columns if c not in upsert_keys]
         if update_cols:
-            set_str = ", ".join(f"{col} = EXCLUDED.{col}" for col in update_cols)
+            set_str = ", ".join(f'"{col}" = EXCLUDED."{col}"' for col in update_cols)
             sql = (
-                f"INSERT INTO {table_name} ({col_str}) VALUES ({val_str}) "
+                f'INSERT INTO "{table_name}" ({col_str}) VALUES ({val_str}) '
                 f"ON CONFLICT ({conflict_str}) DO UPDATE SET {set_str}"
             )
         else:
             sql = (
-                f"INSERT INTO {table_name} ({col_str}) VALUES ({val_str}) "
+                f'INSERT INTO "{table_name}" ({col_str}) VALUES ({val_str}) '
                 f"ON CONFLICT ({conflict_str}) DO NOTHING"
             )
 
@@ -223,7 +232,4 @@ async def bulk_upsert(
 
     await session.commit()
 
-    return ProcessResult(
-        inserted=inserted,
-        updated=updated,
-    )
+    return ProcessResult(inserted=inserted)

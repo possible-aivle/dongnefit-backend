@@ -11,6 +11,7 @@ from rich.console import Console
 
 from app.models.enums import PublicDataType
 from pipeline.file_utils import _make_crs_transformer, _transform_geojson, geojson_to_wkt
+from pipeline.parsing import safe_float, safe_int
 from pipeline.processors.base import BaseProcessor
 from pipeline.registry import Registry
 
@@ -207,23 +208,8 @@ class GisBuildingIntegratedProcessor(BaseProcessor):
 
         return {"file_path": file_path}
 
-    @staticmethod
-    def _safe_int(value: Any) -> int | None:
-        if value is None or value == "":
-            return None
-        try:
-            return int(float(str(value).replace(",", "")))
-        except (ValueError, TypeError):
-            return None
-
-    @staticmethod
-    def _safe_float(value: Any) -> float | None:
-        if value is None or value == "":
-            return None
-        try:
-            return float(str(value).replace(",", ""))
-        except (ValueError, TypeError):
-            return None
+    _safe_int = staticmethod(safe_int)
+    _safe_float = staticmethod(safe_float)
 
 
 Registry.register(GisBuildingIntegratedProcessor())

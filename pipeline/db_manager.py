@@ -114,18 +114,43 @@ class DbManager:
     def show_tables(self, env: str) -> None:
         """테이블 목록과 행 수를 출력합니다."""
         config = self.get_config(env)
-        tables = self.get_tables(env)
+        row_counts = self._get_all_row_counts(config)
 
         table = Table(title=f"[{env}] 테이블 목록 ({config.display_name})")
         table.add_column("#", style="dim")
         table.add_column("테이블", style="cyan")
         table.add_column("행 수", style="green", justify="right")
 
-        for i, tbl in enumerate(tables, 1):
-            count = self._get_row_count(config, tbl)
-            table.add_row(str(i), tbl, str(count))
+        for i, (tbl, count) in enumerate(sorted(row_counts.items()), 1):
+            table.add_row(str(i), tbl, f"{count:,}")
 
         console.print(table)
+
+    def _get_all_row_counts(self, config: DbConfig) -> dict[str, int]:
+        """모든 public 테이블의 행 수를 단일 쿼리로 반환합니다."""
+        result = subprocess.run(
+            [
+                "psql",
+                *config.conn_args,
+                "-t", "-A",
+                "-c",
+                "SELECT relname, n_live_tup::bigint "
+                "FROM pg_stat_user_tables "
+                "WHERE schemaname = 'public' "
+                "ORDER BY relname;",
+            ],
+            capture_output=True,
+            text=True,
+            env=dict(os.environ) | config.env_dict,
+            check=False,
+        )
+        counts: dict[str, int] = {}
+        if result.returncode == 0:
+            for line in result.stdout.strip().split("\n"):
+                if "|" in line:
+                    parts = line.split("|")
+                    counts[parts[0].strip()] = int(parts[1].strip())
+        return counts
 
     def _get_row_count(self, config: DbConfig, table_name: str) -> int:
         result = subprocess.run(
@@ -238,7 +263,7 @@ class DbManager:
             if errors:
                 console.print("  [red]에러 발생:[/]")
                 for e in errors:
-                    console.print("    {e}")
+                    console.print(f"    {e}")
             else:
                 console.print("  [green]복원 완료[/] (경고 있음, 정상)")
         else:
@@ -266,7 +291,7 @@ class DbManager:
         ALTER TABLE "{tmp}" RENAME TO "{table_b}";
         """
 
-        console.print("  스왑 중: {table_a} ↔ {table_b}")
+        console.print(f"  스왑 중: {table_a} ↔ {table_b}")
         subprocess.run(
             ["psql", *config.conn_args, "-c", sql],
             env=dict(os.environ) | config.env_dict,
@@ -285,8 +310,8 @@ class DbManager:
 
         local → test, test → prod 등 환경 간 데이터 이동에 사용합니다.
         """
-        console.print("\n[bold]테이블 복사: [{source_env}] → [{target_env}][/]")
-        console.print("  대상 테이블: {', '.join(tables)}")
+        console.print(f"\n[bold]테이블 복사: [{source_env}] → [{target_env}][/]")
+        console.print(f"  대상 테이블: {', '.join(tables)}")
 
         dump_path = self.dump_tables(source_env, tables)
         self.restore(target_env, dump_path, clean=clean)
@@ -302,7 +327,7 @@ class DbManager:
         table_list = ", ".join(f'"{t}"' for t in tables)
         sql = f"TRUNCATE TABLE {table_list} CASCADE;"
 
-        console.print("  초기화 중: {', '.join(tables)}")
+        console.print(f"  초기화 중: {', '.join(tables)}")
         subprocess.run(
             ["psql", *config.conn_args, "-c", sql],
             env=dict(os.environ) | config.env_dict,
@@ -317,7 +342,7 @@ class DbManager:
         table_list = ", ".join(f'"{t}"' for t in tables)
         sql = f"DROP TABLE IF EXISTS {table_list} CASCADE;"
 
-        console.print("  삭제 중: {', '.join(tables)}")
+        console.print(f"  삭제 중: {', '.join(tables)}")
         subprocess.run(
             ["psql", *config.conn_args, "-c", sql],
             env=dict(os.environ) | config.env_dict,

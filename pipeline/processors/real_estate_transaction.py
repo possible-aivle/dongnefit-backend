@@ -175,14 +175,18 @@ def parse_filename(filename: str) -> PropertyType | None:
     return PROPERTY_TYPE_MAP.get(prop_name)
 
 
-def transform_sale_row(
+def _transform_row(
     row: dict[str, Any],
     columns: list[str],
     property_type: PropertyType,
     now: datetime,
+    column_map: dict[str, str],
+    amount_fields: set[str],
     sigungu_map: dict[str, str] | None = None,
+    *,
+    is_rental: bool = False,
 ) -> dict[str, Any]:
-    """매매 엑셀 행 하나를 DB 레코드 dict로 변환."""
+    """엑셀 행 하나를 DB 레코드 dict로 변환 (매매/전월세 공통)."""
     from pipeline.regions import extract_sgg_code
 
     record: dict[str, Any] = {
@@ -193,11 +197,11 @@ def transform_sale_row(
     for col in columns:
         if col in ("NO", "계약년월", "계약일", "시군구", "번지", "본번", "부번"):
             continue
-        db_field = SALE_COLUMN_MAP.get(col)
+        db_field = column_map.get(col)
         if db_field is None:
             continue
         val = row.get(col)
-        if db_field in SALE_AMOUNT_FIELDS:
+        if db_field in amount_fields:
             record[db_field] = _parse_amount(val)
         elif db_field in FLOAT_FIELDS:
             record[db_field] = _parse_float(val)
@@ -209,14 +213,34 @@ def transform_sale_row(
     record["transaction_date"] = _parse_date(row.get("계약년월"), row.get("계약일"))
     record["address"] = _build_address(row)
 
-    # 시군구코드 추출
     sigungu_text = _clean(row.get("시군구"))
     record["sgg_code"] = extract_sgg_code(sigungu_text, sigungu_map) if sigungu_text else None
+
+    if is_rental:
+        rent_type = _clean(row.get("전월세구분"))
+        if rent_type == "월세":
+            record["transaction_type"] = TransactionType.MONTHLY_RENT.name
+        else:
+            record["transaction_type"] = TransactionType.JEONSE.name
 
     if "floor" in record and record["floor"] is not None:
         record["floor"] = str(record["floor"])
 
     return record
+
+
+def transform_sale_row(
+    row: dict[str, Any],
+    columns: list[str],
+    property_type: PropertyType,
+    now: datetime,
+    sigungu_map: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """매매 엑셀 행 하나를 DB 레코드 dict로 변환."""
+    return _transform_row(
+        row, columns, property_type, now,
+        SALE_COLUMN_MAP, SALE_AMOUNT_FIELDS, sigungu_map,
+    )
 
 
 def transform_rental_row(
@@ -227,47 +251,11 @@ def transform_rental_row(
     sigungu_map: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """전월세 엑셀 행 하나를 DB 레코드 dict로 변환."""
-    from pipeline.regions import extract_sgg_code
-
-    record: dict[str, Any] = {
-        "property_type": property_type.name,
-        "created_at": now,
-    }
-
-    for col in columns:
-        if col in ("NO", "계약년월", "계약일", "시군구", "번지", "본번", "부번"):
-            continue
-        db_field = RENTAL_COLUMN_MAP.get(col)
-        if db_field is None:
-            continue
-        val = row.get(col)
-        if db_field in RENTAL_AMOUNT_FIELDS:
-            record[db_field] = _parse_amount(val)
-        elif db_field in FLOAT_FIELDS:
-            record[db_field] = _parse_float(val)
-        elif db_field == "build_year":
-            record[db_field] = _parse_int(val)
-        else:
-            record[db_field] = _clean(val)
-
-    record["transaction_date"] = _parse_date(row.get("계약년월"), row.get("계약일"))
-    record["address"] = _build_address(row)
-
-    # 시군구코드 추출
-    sigungu_text = _clean(row.get("시군구"))
-    record["sgg_code"] = extract_sgg_code(sigungu_text, sigungu_map) if sigungu_text else None
-
-    # 거래유형 결정 (전세/월세)
-    rent_type = _clean(row.get("전월세구분"))
-    if rent_type == "월세":
-        record["transaction_type"] = TransactionType.MONTHLY_RENT.name
-    else:
-        record["transaction_type"] = TransactionType.JEONSE.name
-
-    if "floor" in record and record["floor"] is not None:
-        record["floor"] = str(record["floor"])
-
-    return record
+    return _transform_row(
+        row, columns, property_type, now,
+        RENTAL_COLUMN_MAP, RENTAL_AMOUNT_FIELDS, sigungu_map,
+        is_rental=True,
+    )
 
 
 class RealEstateSaleProcessor(BaseProcessor):

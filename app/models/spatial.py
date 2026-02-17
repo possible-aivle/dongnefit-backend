@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field
 
 from app.models.base import PublicDataBase, geometry_column
@@ -16,10 +17,12 @@ class RoadCenterLine(PublicDataBase, table=True):
     """
 
     __tablename__ = "road_center_lines"
+    __table_args__ = (
+        UniqueConstraint("source_id", name="uq_road_center_line_source_id"),
+    )
 
     source_id: str = Field(
         max_length=200,
-        index=True,
         description="원본 데이터 피처 ID",
     )
     road_name: str | None = Field(
@@ -39,10 +42,12 @@ class UseRegionDistrict(PublicDataBase, table=True):
     """
 
     __tablename__ = "use_region_districts"
+    __table_args__ = (
+        UniqueConstraint("source_id", name="uq_use_region_district_source_id"),
+    )
 
     source_id: str = Field(
         max_length=200,
-        index=True,
         description="원본 데이터 피처 ID",
     )
     district_name: str | None = Field(

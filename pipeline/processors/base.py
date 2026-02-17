@@ -10,11 +10,14 @@ from app.models.enums import PublicDataType
 
 @dataclass
 class ProcessResult:
-    """처리 결과."""
+    """처리 결과.
+
+    Note: upsert 연산 시 inserted는 실제 삽입+업데이트 합계입니다.
+    PostgreSQL ON CONFLICT DO UPDATE의 rowcount는 둘을 구분하지 않습니다.
+    """
 
     collected: int = 0
     inserted: int = 0
-    updated: int = 0
     skipped: int = 0
     errors: int = 0
 
@@ -23,9 +26,7 @@ class ProcessResult:
         if self.collected:
             parts.append(f"수집: {self.collected}건")
         if self.inserted:
-            parts.append(f"신규: {self.inserted}건")
-        if self.updated:
-            parts.append(f"업데이트: {self.updated}건")
+            parts.append(f"적재: {self.inserted}건")
         if self.skipped:
             parts.append(f"스킵: {self.skipped}건")
         if self.errors:

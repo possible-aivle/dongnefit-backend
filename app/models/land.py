@@ -1,6 +1,6 @@
 """토지 관련 모델 (토지특성, 토지이용계획, 토지임야정보)."""
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import BigInteger, Column, UniqueConstraint
 from sqlmodel import Field
 
 from app.models.base import PublicDataBase
@@ -18,8 +18,6 @@ class LandCharacteristic(PublicDataBase, table=True):
 
     pnu: str = Field(
         max_length=19,
-        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
-        index=True,
         description="필지고유번호",
     )
     data_year: int = Field(description="기준년도")
@@ -28,7 +26,9 @@ class LandCharacteristic(PublicDataBase, table=True):
     land_area: float | None = Field(default=None, description="토지면적(㎡)")
     use_zone_name: str | None = Field(default=None, max_length=50, description="용도지역명")
     land_use_name: str | None = Field(default=None, max_length=30, description="토지이용상황")
-    official_price: int | None = Field(default=None, description="공시지가(원)")
+    official_price: int | None = Field(
+        default=None, sa_column=Column(BigInteger, nullable=True), description="공시지가(원)"
+    )
 
 
 class LandUsePlan(PublicDataBase, table=True):
@@ -36,15 +36,16 @@ class LandUsePlan(PublicDataBase, table=True):
 
     코어 데이터 - 최신성 중요.
     vworld csv 데이터 기반 (AL_D155, 15개 CSV 컬럼).
+    한 필지에 여러 용도지역이 중복 지정될 수 있으므로 use_district_name을 유니크 키에 포함.
     """
 
     __tablename__ = "land_use_plans"
-    __table_args__ = (UniqueConstraint("pnu", "data_year", name="uq_land_use_pnu_year"),)
+    __table_args__ = (
+        UniqueConstraint("pnu", "data_year", "use_district_name", name="uq_land_use_pnu_year_name"),
+    )
 
     pnu: str = Field(
         max_length=19,
-        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
-        index=True,
         description="필지고유번호",
     )
     data_year: int = Field(description="기준년도")
@@ -65,8 +66,6 @@ class LandAndForestInfo(PublicDataBase, table=True):
 
     pnu: str = Field(
         max_length=19,
-        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
-        index=True,
         description="필지고유번호",
     )
     data_year: int = Field(description="기준년도")
