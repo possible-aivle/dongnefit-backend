@@ -26,6 +26,10 @@ except ImportError:
 
 from app.config import settings
 from app.core.agent.models import PolicyIssue, RegionalAnalysisContent
+from app.core.agent.resources.region_prompts import (
+    GYEONGGI_CITY_PROMPTS,
+    SEOUL_GU_PROMPTS,
+)
 
 
 class ContentGenerator:
@@ -101,9 +105,18 @@ class ContentGenerator:
             positive_issues = []
             negative_issues = []
 
+        # 지역 데이터 조회
+        region_data = self._get_region_data(region)
+
         # 블로그 본문 생성
         blog_content = await self._generate_blog_content(
-            region, policy_issues, positive_issues, negative_issues, user_query, needs_classification
+            region,
+            policy_issues,
+            positive_issues,
+            negative_issues,
+            user_query,
+            needs_classification,
+            region_data,
         )
 
         # DALL-E 이미지 생성 및 삽입
@@ -186,6 +199,30 @@ class ContentGenerator:
         except Exception as e:
             print(f"[오류] 키워드 추출 중 오류 발생: {e}")
             return []
+        except Exception as e:
+            print(f"[오류] 키워드 추출 중 오류 발생: {e}")
+            return []
+
+    def _get_region_data(self, region: str) -> Optional[Dict]:
+        """지역명을 기반으로 프롬프트 데이터를 조회합니다."""
+        # 1. 서울 자치구 검색
+        if region in SEOUL_GU_PROMPTS:
+            return SEOUL_GU_PROMPTS[region]
+
+        # '구'가 빠진 경우 (예: 강남 -> 강남구)
+        if region + "구" in SEOUL_GU_PROMPTS:
+            return SEOUL_GU_PROMPTS[region + "구"]
+
+        # 2. 경기 주요 도시 검색
+        if region in GYEONGGI_CITY_PROMPTS:
+            return GYEONGGI_CITY_PROMPTS[region]
+
+        # '시'가 빠진 경우 (예: 수원 -> 수원시)
+        if region + "시" in GYEONGGI_CITY_PROMPTS:
+            return GYEONGGI_CITY_PROMPTS[region + "시"]
+
+        print(f"[시스템] '{region}'에 대한 맞춤형 프롬프트 데이터가 없습니다. 기본 설정을 사용합니다.")
+        return None
 
     # ========================================================
     # Blog Content Generation
@@ -236,25 +273,52 @@ class ContentGenerator:
         negative_issues: List[PolicyIssue],
         user_query: str,
         needs_classification: bool,
+        region_data: Optional[Dict] = None,
     ) -> str:
-        """블로그 본문 생성 (사용자 의도에 따라 유연하게)."""
+        """블로그 본문 생성 (사용자 의도 및 지역 데이터 반영)."""
+
+        # 지역 데이터가 있으면 프롬프트 강화
+        region_context = ""
+        target_audience = "일반 부동산 관심층"
+
+        if region_data:
+            desc = region_data.get("description", "")
+            audience = region_data.get("target_audience", "일반 투자자 및 실거주자")
+            focus_points = region_data.get("focus_points", [])
+
+            target_audience = audience
+
+            focus_points_str = "\n".join([f"- {point}" for point in focus_points])
+
+            region_context = f"""
+[지역 전문 정보]
+- 지역 특징: {desc}
+- 타겟 독자: {audience}
+- **필수 포함 핵심 포인트**:
+{focus_points_str}
+
+위 '핵심 포인트'를 글의 적절한 부분에 자연스럽게 녹여내세요.
+"""
 
         if needs_classification:
             # 호재/악재 분류 모드
-            system_prompt = """당신은 전문 부동산 블로거입니다.
+            system_prompt = f"""당신은 '{region}' 지역 부동산 전문가입니다.
+주독자층: {target_audience}
 
-주어진 지역의 정책 호재와 악재를 바탕으로 독자들에게 유익한 블로그 글을 작성하세요.
+주어진 지역의 정책 호재와 악재를 바탕으로, {target_audience}에게 실질적인 도움이 되는 블로그 글을 작성하세요.
+
+{region_context}
 
 글 구성:
-1. 서론: 해당 지역의 최근 동향 소개
+1. 서론: 해당 지역의 최근 분위기 및 특징 ({target_audience} 관점)
 2. 호재 분석: 각 호재를 섹션으로 나누어 상세 설명
 3. 악재 분석: 각 악재를 섹션으로 나누어 상세 설명
-4. 결론: 종합 의견 및 투자 시사점
+4. 결론: {target_audience}를 위한 투자/실거주 조언
 
 작성 지침:
 - Markdown 형식 사용 (H2, H3, 리스트 등)
 - 각 이슈마다 출처 링크 포함
-- 전문가적인 내용이지만 일반인도 이해하기 쉽게 작성
+- 전문적인 내용을 담되, {target_audience}가 이해하기 쉬운 어조 사용
 - 중요한 내용은 **강조** 처리
 - 목록(-)이나 표를 활용하여 정보 정리
 - 소제목(##)을 사용하여 가독성을 높이기
@@ -287,11 +351,15 @@ class ContentGenerator:
         else:
             if not all_issues:
                 # 데이터가 없는 경우: 일반 키워드/주제 기반 생성 (구 Tistory 기능 통합)
-                system_prompt = """당신은 전문 부동산 블로거입니다.
-주어진 주제에 대해 자세하고 유익한 블로그 글을 작성해주세요.
+                system_prompt = f"""당신은 '{region}' 지역 부동산 전문가입니다.
+주독자층: {target_audience}
+
+주어진 주제에 대해 {target_audience}의 눈높이에 맞춘 상세하고 유익한 블로그 글을 작성해주세요.
+
+{region_context}
 
 작성 지침:
-1. 전문가적인 내용이지만 일반인도 이해하기 쉽게 작성해주세요.
+1. 전문적인 내용을 담되, 독자가 이해하기 쉽게 작성해주세요.
 2. 소제목(##)을 사용하여 가독성을 높여주세요.
 3. 중요한 내용은 **강조**해주세요.
 4. 목록(-)이나 표를 사용해 정보를 정리해주세요.
@@ -309,14 +377,17 @@ class ContentGenerator:
 
             else:
                 # 일반 분석 모드 (호재/악재 분류 없음)
-                system_prompt = """당신은 전문 부동산 블로거입니다.
+                system_prompt = f"""당신은 '{region}' 지역 부동산 전문가입니다.
+주독자층: {target_audience}
 
-사용자의 질문에 맞는 유익하고 전문적인 블로그 글을 작성하세요.
+사용자의 질문에 대해 {target_audience}에게 도움이 되는 전문적인 블로그 글을 작성하세요.
+
+{region_context}
 
 글 구성:
-1. 서론: 주제 소개 및 배경
-2. 본론: 주제에 맞는 다양한 분석 및 정보 (소제목으로 구분)
-3. 결론: 종합 의견 및 실용적인 팁
+1. 서론: 주제 소개 및 지역 배경
+2. 본론: 주제에 맞는 심층 분석 (소제목으로 구분)
+3. 결론: {target_audience}를 위한 조언
 
 작성 지침:
 - Markdown 형식 사용 (H2, H3, 리스트 등)
