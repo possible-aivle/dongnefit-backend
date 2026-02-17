@@ -37,5 +37,10 @@ class OfficialLandPriceProcessor(VworldCsvProcessor):
 
         return mapped
 
+    def transform(self, raw_data: list[dict]) -> list[dict[str, Any]]:
+        """1:N 레코드를 PNU별 JSONB 배열로 집계합니다."""
+        records = super().transform(raw_data)
+        return self._aggregate_jsonb(records, "official_prices")
+
 
 Registry.register(OfficialLandPriceProcessor())

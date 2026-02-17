@@ -348,7 +348,10 @@ class BuildingRegisterAreaProcessor(BuildingRegisterTxtProcessor):
 
 
 class BuildingRegisterAncillaryLotProcessor(BuildingRegisterTxtProcessor):
-    """건축물대장 부속지번 프로세서 (mart_djy_05.txt)."""
+    """건축물대장 부속지번 프로세서 (mart_djy_05.txt).
+
+    부속지번 데이터를 PNU별로 집계하여 lots.ancillary_lots JSONB에 저장합니다.
+    """
 
     name = "building_register_ancillary_lot"
     description = "건축물대장 부속지번"
@@ -378,6 +381,11 @@ class BuildingRegisterAncillaryLotProcessor(BuildingRegisterTxtProcessor):
         mapped["atch_pnu"] = atch_pnu
 
         return mapped
+
+    def transform(self, raw_data: list[dict]) -> list[dict[str, Any]]:
+        """1:N 레코드를 PNU별 JSONB 배열로 집계합니다."""
+        records = super().transform(raw_data)
+        return self._aggregate_jsonb(records, "ancillary_lots")
 
     def _build_atch_pnu(self, fields: list[str]) -> str | None:
         """부속지번에서 PNU를 생성합니다."""

@@ -46,6 +46,30 @@ class BaseProcessor(ABC):
     data_type: PublicDataType  # 예: PublicDataType.CONTINUOUS_CADASTRAL
     simplify_tolerance: float | None = None  # geometry 단순화 허용 오차 (도 단위)
 
+    @staticmethod
+    def _aggregate_jsonb(
+        records: list[dict[str, Any]], jsonb_column: str
+    ) -> list[dict[str, Any]]:
+        """1:N 레코드를 PNU별로 그룹핑하여 JSONB 배열로 집계합니다.
+
+        입력: [{pnu: "X", a: 1, b: 2}, {pnu: "X", a: 3, b: 4}]
+        출력: [{pnu: "X", <jsonb_column>: [{a: 1, b: 2}, {a: 3, b: 4}]}]
+        """
+        from collections import defaultdict
+
+        groups: dict[str, list[dict]] = defaultdict(list)
+        for rec in records:
+            pnu = rec.get("pnu")
+            if not pnu:
+                continue
+            item = {k: v for k, v in rec.items() if k != "pnu"}
+            groups[pnu].append(item)
+
+        return [
+            {"pnu": pnu, jsonb_column: items}
+            for pnu, items in groups.items()
+        ]
+
     @abstractmethod
     async def collect(self, params: dict[str, Any]) -> list[dict]:
         """외부 소스에서 원본 데이터를 수집합니다."""

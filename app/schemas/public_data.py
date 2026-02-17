@@ -9,60 +9,68 @@ from typing import Any
 from app.models.enums import PropertyType, TransactionType
 from app.schemas.base import BaseSchema, GeoJSON
 
-# ──────────────────────────── 토지 관련 ────────────────────────────
+# ──────────────────────────── 토지 관련 (JSONB 아이템) ────────────────────────────
 
 
-class LandInfo(BaseSchema):
-    """토지특성 요약."""
-
-    jimok: str | None = None
-    land_area: float | None = None
-    use_zone: str | None = None
-    land_use: str | None = None
-    official_price: int | None = None
-
-
-class LandUsePlanInfo(BaseSchema):
-    """토지이용계획 요약."""
+class UsePlanItem(BaseSchema):
+    """토지이용계획 항목 (JSONB 배열 원소)."""
 
     use_district_name: str | None = None
 
 
-class ForestInfo(BaseSchema):
-    """임야정보 요약."""
+class OwnershipItem(BaseSchema):
+    """토지소유 항목 (JSONB 배열 원소)."""
 
-    jimok: str | None = None
-    area: float | None = None
-    ownership: str | None = None
-    owner_count: int | None = None
-
-
-class OwnershipInfo(BaseSchema):
-    """소유정보 요약."""
-
+    base_year_month: str | None = None
+    co_owner_seq: str | None = None
     ownership_type: str | None = None
     ownership_change_reason: str | None = None
     ownership_change_date: str | None = None
     owner_count: int | None = None
 
 
-class OfficialPriceInfo(BaseSchema):
-    """개별공시지가 요약."""
+class OfficialPriceItem(BaseSchema):
+    """개별공시지가 항목 (JSONB 배열 원소)."""
 
-    base_year: int
+    base_year: int | None = None
     price_per_sqm: int | None = None
 
 
+class AncillaryLotItem(BaseSchema):
+    """부속지번 항목 (JSONB 배열 원소)."""
+
+    mgm_bldrgst_pk: str | None = None
+    atch_pnu: str | None = None
+    created_date: str | None = None
+
+
 class LotDetailResponse(BaseSchema):
-    """필지 종합 조회 응답 (GET /lots/{pnu})."""
+    """필지 종합 조회 응답 (GET /lots/{pnu}).
+
+    통합 lots 테이블에서 한 번의 쿼리로 모든 토지 정보를 반환합니다.
+    """
 
     pnu: str
     geometry: GeoJSON = None
-    land: LandInfo | None = None
-    land_use_plan: LandUsePlanInfo | None = None
-    forest_info: ForestInfo | None = None
-    official_price: OfficialPriceInfo | None = None
-    ownerships: list[OwnershipInfo] = []
+
+    # flat 필드 (토지특성/토지임야)
+    jimok: str | None = None
+    jimok_code: str | None = None
+    area: float | None = None
+    use_zone: str | None = None
+    use_zone_code: str | None = None
+    land_use: str | None = None
+    land_use_code: str | None = None
+    official_price: int | None = None
+    ownership: str | None = None
+    ownership_code: str | None = None
+    owner_count: int | None = None
+
+    # JSONB 필드
+    use_plans: list[UsePlanItem] = []
+    ownerships: list[OwnershipItem] = []
+    official_prices: list[OfficialPriceItem] = []
+    ancillary_lots: list[AncillaryLotItem] = []
 
 
 class LotSearchResult(BaseSchema):
@@ -212,12 +220,6 @@ class TransactionListResponse(BaseSchema):
 # ──────────────────────────── 통합 요약 ────────────────────────────
 
 
-class LotSummary(BaseSchema):
-    """필지 요약 (통합 조회용)."""
-
-    pnu: str
-
-
 class BuildingSummary(BaseSchema):
     """건축물 요약 (통합 조회용)."""
 
@@ -232,9 +234,7 @@ class BuildingSummary(BaseSchema):
 class PropertySummaryResponse(BaseSchema):
     """AI 콘텐츠 생성용 통합 조회 응답 (GET /properties/{pnu}/summary)."""
 
-    lot: LotSummary
-    land: LandInfo | None = None
-    official_price: OfficialPriceInfo | None = None
+    lot: LotDetailResponse
     building: BuildingSummary | None = None
     recent_sales: list[SaleResponse] = []
     recent_rentals: list[RentalResponse] = []

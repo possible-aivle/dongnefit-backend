@@ -1,4 +1,4 @@
-"""실거래가(매매/전월세) 및 공시지가 모델."""
+"""실거래가(매매/전월세) 모델."""
 
 from datetime import date
 
@@ -7,27 +7,6 @@ from sqlmodel import Field
 
 from app.models.base import PublicDataBase
 from app.models.enums import PropertyType, TransactionType
-
-
-class OfficialLandPrice(PublicDataBase, table=True):
-    """개별공시지가 테이블.
-
-    사업성 분석 필수 데이터.
-    vworld csv 데이터 기반 (AL_D151, 13개 CSV 컬럼).
-    """
-
-    __tablename__ = "official_land_prices"
-    __table_args__ = (UniqueConstraint("pnu", "base_year", name="uq_official_price_pnu_year"),)
-
-    pnu: str = Field(
-        max_length=19,
-        description="필지고유번호",
-        index=True
-    )
-    base_year: int = Field(description="기준연도")
-    price_per_sqm: int | None = Field(
-        default=None, sa_column=Column(BigInteger, nullable=True), description="공시지가(원/㎡)"
-    )
 
 
 class RealEstateSale(PublicDataBase, table=True):

@@ -17,9 +17,12 @@ class LandCharacteristicProcessor(VworldCsvProcessor):
     COLUMN_MAP: dict[str, str] = {
         "고유번호": "pnu",
         "지목명": "jimok",
-        "토지면적": "land_area",
+        "지목코드": "jimok_code",
+        "토지면적": "area",
         "용도지역명1": "use_zone",
-        "토지이용상황": "land_use",
+        "용도지역코드1": "use_zone_code",
+        "토지이용현황": "land_use",
+        "토지이용현황코드": "land_use_code",
         "공시지가": "official_price",
     }
 
@@ -29,7 +32,7 @@ class LandCharacteristicProcessor(VworldCsvProcessor):
             return None
 
         mapped["pnu"] = pnu
-        mapped["land_area"] = self._safe_float(mapped.get("land_area"))
+        mapped["area"] = self._safe_float(mapped.get("area"))
         mapped["official_price"] = self._safe_int(mapped.get("official_price"))
         mapped.pop("data_base_date", None)
 

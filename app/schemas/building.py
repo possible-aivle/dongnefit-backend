@@ -74,23 +74,6 @@ class BuildingRegisterAreaRead(BaseSchema):
     created_at: datetime | None
 
 
-class BuildingRegisterAncillaryLotCreate(BaseSchema):
-    """건축물대장 부속지번 생성 스키마."""
-
-    pnu: str
-
-
-
-class BuildingRegisterAncillaryLotRead(BaseSchema):
-    """건축물대장 부속지번 조회 스키마."""
-
-    id: int
-    pnu: str
-
-
-    created_at: datetime | None
-
-
 class GisBuildingIntegratedCreate(BaseSchema):
     """GIS건물통합정보 생성 스키마."""
 

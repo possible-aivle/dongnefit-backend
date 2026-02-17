@@ -1,6 +1,5 @@
 """필지(Lot) 엔드포인트 - 검색 + 종합 조회."""
 
-import asyncio
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -10,13 +9,12 @@ from app.crud import public_data as crud
 from app.database import get_db
 from app.schemas.base import PaginatedResponse, PaginationMeta
 from app.schemas.public_data import (
-    ForestInfo,
-    LandInfo,
-    LandUsePlanInfo,
+    AncillaryLotItem,
     LotDetailResponse,
     LotSearchResult,
-    OfficialPriceInfo,
-    OwnershipInfo,
+    OfficialPriceItem,
+    OwnershipItem,
+    UsePlanItem,
 )
 
 router = APIRouter()
@@ -80,7 +78,7 @@ async def search_lots(
     "/{pnu}",
     response_model=LotDetailResponse,
     summary="필지 종합 조회",
-    description="PNU로 필지의 토지특성, 이용계획, 임야정보, 공시지가, 소유정보를 종합 조회합니다.",
+    description="PNU로 필지의 토지특성, 이용계획, 공시지가, 소유정보를 종합 조회합니다.",
 )
 async def get_lot_detail(
     pnu: str,
@@ -95,20 +93,30 @@ async def get_lot_detail(
             detail="필지를 찾을 수 없습니다.",
         )
 
-    land, land_use, forest, price, ownerships = await asyncio.gather(
-        crud.get_land_characteristic(db, pnu),
-        crud.get_land_use_plan(db, pnu),
-        crud.get_land_forest_info(db, pnu),
-        crud.get_official_land_price(db, pnu),
-        crud.get_land_ownerships(db, pnu),
-    )
-
     return LotDetailResponse(
         pnu=lot.pnu,
         geometry=lot.geometry,
-        land=LandInfo.model_validate(land) if land else None,
-        land_use_plan=LandUsePlanInfo.model_validate(land_use) if land_use else None,
-        forest_info=ForestInfo.model_validate(forest) if forest else None,
-        official_price=OfficialPriceInfo.model_validate(price) if price else None,
-        ownerships=[OwnershipInfo.model_validate(o) for o in ownerships],
+        jimok=lot.jimok,
+        jimok_code=lot.jimok_code,
+        area=lot.area,
+        use_zone=lot.use_zone,
+        use_zone_code=lot.use_zone_code,
+        land_use=lot.land_use,
+        land_use_code=lot.land_use_code,
+        official_price=lot.official_price,
+        ownership=lot.ownership,
+        ownership_code=lot.ownership_code,
+        owner_count=lot.owner_count,
+        use_plans=[
+            UsePlanItem.model_validate(p) for p in (lot.use_plans or [])
+        ],
+        ownerships=[
+            OwnershipItem.model_validate(o) for o in (lot.ownerships or [])
+        ],
+        official_prices=[
+            OfficialPriceItem.model_validate(p) for p in (lot.official_prices or [])
+        ],
+        ancillary_lots=[
+            AncillaryLotItem.model_validate(a) for a in (lot.ancillary_lots or [])
+        ],
     )
