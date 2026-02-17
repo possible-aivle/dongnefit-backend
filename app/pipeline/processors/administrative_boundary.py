@@ -9,15 +9,15 @@ from typing import Any
 from rich.console import Console
 
 from app.models.enums import PublicDataType
-from pipeline.file_utils import (
+from app.pipeline.file_utils import (
     cleanup_temp_dir,
     extract_zip,
     find_shp_in_dir,
     geojson_to_wkt,
     read_shp_features,
 )
-from pipeline.processors.base import BaseProcessor
-from pipeline.registry import Registry
+from app.pipeline.processors.base import BaseProcessor
+from app.pipeline.registry import Registry
 
 console = Console()
 

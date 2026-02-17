@@ -248,7 +248,7 @@ def run_crawler(
         property_types: 대상 부동산 유형 코드 목록 (기본: 전체)
         include_rent: 전월세 포함 여부 (기본: True)
         delay: 다운로드 간 대기 시간 (초)
-        output_dir: 출력 디렉토리 (기본: pipeline/public_data/실거래가/)
+        output_dir: 출력 디렉토리 (기본: app/pipeline/public_data/실거래가/)
 
     Returns:
         {"success": n, "no_data": n, "failed": n} 통계

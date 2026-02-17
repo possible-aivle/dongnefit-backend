@@ -78,11 +78,11 @@ class BaseProcessor(ABC):
     async def load(self, records: list[dict[str, Any]]) -> ProcessResult:
         """변환된 데이터를 DB에 적재합니다.
 
-        기본 구현은 pipeline.loader의 bulk_upsert를 사용합니다.
+        기본 구현은 app.pipeline.loader의 bulk_upsert를 사용합니다.
         소스별로 오버라이드할 수 있습니다.
         """
         from app.database import async_session_maker
-        from pipeline.loader import bulk_upsert
+        from app.pipeline.loader import bulk_upsert
 
         async with async_session_maker() as session:
             result = await bulk_upsert(

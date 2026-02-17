@@ -4,7 +4,7 @@
 새 데이터 소스 추가 시 여기에 등록하면 CLI 메뉴에 자동 노출됩니다.
 """
 
-from pipeline.processors.base import BaseProcessor
+from app.pipeline.processors.base import BaseProcessor
 
 
 class Registry:
@@ -48,9 +48,9 @@ def auto_discover() -> None:
     import importlib
     import pkgutil
 
-    import pipeline.processors as pkg
+    import app.pipeline.processors as pkg
 
     for _importer, modname, _ispkg in pkgutil.iter_modules(pkg.__path__):
         if modname == "base":
             continue
-        importlib.import_module(f"pipeline.processors.{modname}")
+        importlib.import_module(f"app.pipeline.processors.{modname}")

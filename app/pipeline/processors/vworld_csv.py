@@ -13,14 +13,14 @@ from typing import Any
 from InquirerPy import inquirer
 from rich.console import Console
 
-from pipeline.file_utils import (
+from app.pipeline.file_utils import (
     cleanup_temp_dir,
     extract_zip,
     find_csv_in_dir,
     read_csv_filtered,
 )
-from pipeline.parsing import safe_float, safe_int
-from pipeline.processors.base import BaseProcessor
+from app.pipeline.parsing import safe_float, safe_int
+from app.pipeline.processors.base import BaseProcessor
 
 console = Console()
 

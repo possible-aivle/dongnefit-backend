@@ -18,7 +18,6 @@ class AdministrativeSido(PublicDataBase, table=True):
     sido_code: str = Field(
         max_length=2,
         unique=True,
-        index=True,
         description="시도코드 (2자리)",
     )
     name: str = Field(max_length=100, description="시도명")
@@ -36,14 +35,13 @@ class AdministrativeSgg(PublicDataBase, table=True):
     sgg_code: str = Field(
         max_length=5,
         unique=True,
-        index=True,
         description="시군구코드 (5자리)",
     )
     name: str = Field(max_length=100, description="시군구명")
     sido_code: str = Field(
         max_length=2,
-        index=True,
         description="소속 시도코드 (2자리)",
+        index=True,
     )
     geometry: Any = geometry_column(description="시군구 경계 (Polygon/MultiPolygon)")
 
@@ -60,14 +58,12 @@ class AdministrativeEmd(PublicDataBase, table=True):
     emd_code: str = Field(
         max_length=10,
         unique=True,
-        index=True,
         description="읍면동코드 (8~10자리)",
     )
     name: str = Field(max_length=100, description="읍면동명")
     sgg_code: str = Field(
         max_length=5,
-        foreign_key="administrative_sggs.sgg_code",
+        description="소속 시군구코드 (5자리)",
         index=True,
-        description="소속 시군구코드",
     )
     geometry: Any = geometry_column(description="읍면동 경계 (Polygon/MultiPolygon)")

@@ -92,7 +92,7 @@ backend/
 │       ├── seed_data.py         # 더미 데이터 시딩 (Faker)
 │       └── clear_data.py        # 데이터 초기화 (admin 보존)
 │
-├── pipeline/                    # 공공데이터 수집 CLI
+├── app/pipeline/                    # 공공데이터 수집 CLI
 │   ├── __main__.py              # CLI 진입점
 │   ├── cli.py                   # 인터랙티브 메뉴
 │   ├── clients/                 # 데이터 소스 클라이언트
@@ -184,7 +184,7 @@ uv run uvicorn app.main:app --reload --port 8000
 
 ```bash
 # CLI 실행 (인터랙티브 메뉴)
-uv run python -m pipeline
+uv run python -m app.pipeline
 
 # "공공데이터 적재 (파일 → DB)" 선택
 # → 데이터 소스 복수 선택 (토지/건물/공간/거래 19종)
@@ -192,7 +192,7 @@ uv run python -m pipeline
 # → UPSERT/TRUNCATE 옵션 → 적재 실행
 ```
 
-`pipeline/public_data/` 디렉토리에 ZIP/CSV/TXT/XLSX 원본 파일이 필요합니다.
+`app/pipeline/public_data/` 디렉토리에 ZIP/CSV/TXT/XLSX 원본 파일이 필요합니다.
 
 ### 7. 실거래가 크롤러
 
@@ -206,22 +206,22 @@ uv run python -m pipeline
 
 ```bash
 # 전체 다운로드 (기본: 최근 1년)
-uv run python -m pipeline.transaction_crawler
+uv run python -m app.pipeline.transaction_crawler
 
 # 기간 지정
-uv run python -m pipeline.transaction_crawler --start 2025-01-01 --end 2025-12-31
+uv run python -m app.pipeline.transaction_crawler --start 2025-01-01 --end 2025-12-31
 
 # 특정 부동산 유형만 (A=아파트, B=연립다세대, C=단독다가구, D=오피스텔, G=토지)
-uv run python -m pipeline.transaction_crawler --types A B
+uv run python -m app.pipeline.transaction_crawler --types A B
 
 # 매매만 (전월세 제외)
-uv run python -m pipeline.transaction_crawler --no-rent
+uv run python -m app.pipeline.transaction_crawler --no-rent
 
 # 테스트 (아파트 매매 당월만)
-uv run python -m pipeline.transaction_crawler --test
+uv run python -m app.pipeline.transaction_crawler --test
 ```
 
-다운로드 파일 위치: `pipeline/public_data/실거래가/`
+다운로드 파일 위치: `app/pipeline/public_data/실거래가/`
 
 ## API 문서
 

@@ -1,7 +1,7 @@
 """DongneFit 공공데이터 관리 CLI.
 
 사용법:
-    uv run python -m pipeline.cli
+    uv run python -m app.pipeline.cli
 """
 
 import sys
@@ -14,7 +14,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from pipeline.db_manager import DbManager
+from app.pipeline.db_manager import DbManager
 
 console = Console()
 
@@ -137,7 +137,7 @@ def main_menu() -> None:
 def action_collect(db: DbManager) -> None:
     """데이터 수집 메뉴."""
     from app.models.enums import PublicDataType
-    from pipeline.registry import Registry, auto_discover
+    from app.pipeline.registry import Registry, auto_discover
 
     auto_discover()
 
@@ -322,7 +322,7 @@ def action_load_public(db: DbManager) -> None:
     """공공데이터 적재 메뉴 (파일 → DB)."""
     import asyncio
 
-    from pipeline.registry import Registry, auto_discover
+    from app.pipeline.registry import Registry, auto_discover
 
     auto_discover()
 
@@ -365,7 +365,7 @@ def action_load_public(db: DbManager) -> None:
     province_names: set[str] | None = None
 
     if needs_region_filter:
-        from pipeline.regions import (
+        from app.pipeline.regions import (
             Region,
             get_province_file_names_for_regions,
             get_sgg_prefixes_for_regions,
@@ -460,7 +460,7 @@ def action_load_public(db: DbManager) -> None:
 
             if file_type == "sido_code":
                 # 시도코드 기반 ZIP 파일
-                from pipeline.file_utils import find_zip_files_by_sido_code
+                from app.pipeline.file_utils import find_zip_files_by_sido_code
                 if sido_codes:
                     zip_files = find_zip_files_by_sido_code(
                         data_dir, sido_codes, pattern=zip_glob,
@@ -472,7 +472,7 @@ def action_load_public(db: DbManager) -> None:
 
             elif file_type == "sgg_code":
                 # 시군구코드 기반 ZIP 파일
-                from pipeline.file_utils import find_zip_files_by_sgg_code
+                from app.pipeline.file_utils import find_zip_files_by_sgg_code
                 if sgg_prefixes:
                     zip_files = find_zip_files_by_sgg_code(
                         data_dir, sgg_prefixes, pattern=zip_glob,
@@ -513,7 +513,7 @@ def action_load_public(db: DbManager) -> None:
                         from sqlalchemy import text
 
                         from app.database import async_session_maker
-                        from pipeline.loader import get_table_name
+                        from app.pipeline.loader import get_table_name
 
                         table_name = get_table_name(processor.data_type)
                         async with async_session_maker() as session:
@@ -543,7 +543,7 @@ def action_load_public(db: DbManager) -> None:
 
 def action_stats(db: DbManager) -> None:
     """공공데이터 통계 조회."""
-    from pipeline.loader import get_all_public_tables
+    from app.pipeline.loader import get_all_public_tables
 
     env = select_env(db)
     config = db.get_config(env)

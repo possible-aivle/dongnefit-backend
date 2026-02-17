@@ -1,8 +1,8 @@
 """부동산 실거래가 엑셀 데이터 프로세서.
 
 매매와 전월세를 별도 프로세서로 분리하여 처리합니다.
-- RealEstateSaleProcessor: pipeline/public_data/실거래가_매매/ → real_estate_sales
-- RealEstateRentalProcessor: pipeline/public_data/실거래가_전월세/ → real_estate_rentals
+- RealEstateSaleProcessor: app/pipeline/public_data/실거래가_매매/ → real_estate_sales
+- RealEstateRentalProcessor: app/pipeline/public_data/실거래가_전월세/ → real_estate_rentals
 
 파일명 규칙:
   매매: {부동산유형}_매매_{YYYYMM}.xlsx
@@ -10,10 +10,10 @@
 
 Usage:
     # CLI
-    uv run python -m pipeline.cli
+    uv run python -m app.pipeline.cli
 
     # 직접 실행 (전체 적재, TRUNCATE 후)
-    uv run python -m pipeline.processors.real_estate_transaction
+    uv run python -m app.pipeline.processors.real_estate_transaction
 """
 
 from datetime import date, datetime
@@ -24,8 +24,8 @@ import pandas as pd
 from rich.console import Console
 
 from app.models.enums import PropertyType, PublicDataType, TransactionType
-from pipeline.processors.base import BaseProcessor, ProcessResult
-from pipeline.registry import Registry
+from app.pipeline.processors.base import BaseProcessor, ProcessResult
+from app.pipeline.registry import Registry
 
 console = Console()
 
@@ -187,7 +187,7 @@ def _transform_row(
     is_rental: bool = False,
 ) -> dict[str, Any]:
     """엑셀 행 하나를 DB 레코드 dict로 변환 (매매/전월세 공통)."""
-    from pipeline.regions import extract_sgg_code
+    from app.pipeline.regions import extract_sgg_code
 
     record: dict[str, Any] = {
         "property_type": property_type.name,
@@ -261,7 +261,7 @@ def transform_rental_row(
 class RealEstateSaleProcessor(BaseProcessor):
     """부동산 매매 실거래가 엑셀 프로세서.
 
-    pipeline/public_data/실거래가_매매/ 의 엑셀 파일을 읽어
+    app/pipeline/public_data/실거래가_매매/ 의 엑셀 파일을 읽어
     real_estate_sales 테이블에 bulk insert합니다.
     """
 
@@ -313,7 +313,7 @@ class RealEstateSaleProcessor(BaseProcessor):
         sgg_prefixes: list[str] | None = params.get("sgg_prefixes")
 
         # 시군구 매핑 로드 (sgg_code 추출용)
-        from pipeline.regions import build_sigungu_to_sgg_map
+        from app.pipeline.regions import build_sigungu_to_sgg_map
 
         sigungu_map = build_sigungu_to_sgg_map()
 
@@ -340,7 +340,7 @@ class RealEstateSaleProcessor(BaseProcessor):
             console.print(f"  지역 필터: {len(sgg_prefixes)}개 시군구 prefix")
 
         from app.database import async_session_maker
-        from pipeline.loader import bulk_insert
+        from app.pipeline.loader import bulk_insert
 
         if truncate:
             async with async_session_maker() as session:
@@ -408,7 +408,7 @@ class RealEstateSaleProcessor(BaseProcessor):
 class RealEstateRentalProcessor(BaseProcessor):
     """부동산 전월세 실거래가 엑셀 프로세서.
 
-    pipeline/public_data/실거래가_전월세/ 의 엑셀 파일을 읽어
+    app/pipeline/public_data/실거래가_전월세/ 의 엑셀 파일을 읽어
     real_estate_rentals 테이블에 bulk insert합니다.
     """
 
@@ -460,7 +460,7 @@ class RealEstateRentalProcessor(BaseProcessor):
         sgg_prefixes: list[str] | None = params.get("sgg_prefixes")
 
         # 시군구 매핑 로드 (sgg_code 추출용)
-        from pipeline.regions import build_sigungu_to_sgg_map
+        from app.pipeline.regions import build_sigungu_to_sgg_map
 
         sigungu_map = build_sigungu_to_sgg_map()
 
@@ -487,7 +487,7 @@ class RealEstateRentalProcessor(BaseProcessor):
             console.print(f"  지역 필터: {len(sgg_prefixes)}개 시군구 prefix")
 
         from app.database import async_session_maker
-        from pipeline.loader import bulk_insert
+        from app.pipeline.loader import bulk_insert
 
         if truncate:
             async with async_session_maker() as session:

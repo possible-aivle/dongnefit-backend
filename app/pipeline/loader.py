@@ -33,7 +33,7 @@ from app.models.transaction import (
     RealEstateRental,
     RealEstateSale,
 )
-from pipeline.processors.base import ProcessResult
+from app.pipeline.processors.base import ProcessResult
 
 # ── 데이터타입 ↔ 모델 매핑 ──
 

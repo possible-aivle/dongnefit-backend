@@ -10,9 +10,9 @@ from typing import Any
 from rich.console import Console
 
 from app.models.enums import PublicDataType
-from pipeline.parsing import safe_float, safe_int
-from pipeline.processors.base import BaseProcessor, ProcessResult
-from pipeline.registry import Registry
+from app.pipeline.parsing import safe_float, safe_int
+from app.pipeline.processors.base import BaseProcessor, ProcessResult
+from app.pipeline.registry import Registry
 
 console = Console()
 
@@ -160,7 +160,7 @@ class BuildingRegisterTxtProcessor(BaseProcessor):
         대용량 txt 데이터는 배치 사이즈를 크게 설정합니다.
         """
         from app.database import async_session_maker
-        from pipeline.loader import bulk_upsert
+        from app.pipeline.loader import bulk_upsert
 
         async with async_session_maker() as session:
             result = await bulk_upsert(session, self.data_type, records, batch_size=2000)
