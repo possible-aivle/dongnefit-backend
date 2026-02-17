@@ -38,10 +38,11 @@ dependencies = [
     "python-multipart>=0.0.18",
     "itsdangerous>=2.2.0",
     "beautifulsoup4>=4.14.3",
-    "matplotlib>=3.10.8",
     # CLI (pipeline)
     "rich>=13.0.0",
     "InquirerPy>=0.3.4",
+    "plotly>=6.5.2",
+    "kaleido>=1.2.0",
 ]
 
 [project.optional-dependencies]
