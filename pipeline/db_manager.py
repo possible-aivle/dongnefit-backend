@@ -256,8 +256,34 @@ class DbManager:
         console.print(f"  [green]완료[/]: {output_path} ({size_mb:.1f} MB)")
         return output_path
 
+    def _list_tables_in_dump(self, dump_path: Path) -> list[str]:
+        """덤프 파일에 포함된 테이블 목록을 반환합니다."""
+        if self._use_docker(self.get_config(list(self.environments.keys())[0])):
+            cmd = ["docker", "exec", "-i", DOCKER_CONTAINER, "pg_restore", "--list"]
+            with open(dump_path, "rb") as f:
+                result = subprocess.run(cmd, stdin=f, capture_output=True, text=True, check=False)
+        else:
+            cmd = ["pg_restore", "--list", str(dump_path)]
+            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+
+        tables: list[str] = []
+        for line in result.stdout.split("\n"):
+            # "NNN; NNNN NNNNN TABLE DATA public tablename owner" 형식
+            if "TABLE DATA" in line and "public" in line:
+                parts = line.split()
+                try:
+                    public_idx = parts.index("public")
+                    tables.append(parts[public_idx + 1])
+                except (ValueError, IndexError):
+                    continue
+        return tables
+
     def restore(self, env: str, dump_path: Path, clean: bool = False) -> None:
         """bin 파일을 지정 환경 DB에 복원합니다.
+
+        --data-only 모드로 복원하여 Alembic 관리 스키마(PostGIS geometry 타입,
+        spatial index 등)를 보존합니다.
+        clean=True이면 대상 테이블을 TRUNCATE 후 데이터만 복원합니다.
 
         Args:
             env: 대상 환경
@@ -271,14 +297,32 @@ class DbManager:
 
         console.print(f"  복원 중: {dump_path} → [{env}] {config.display_name}")
 
+        # clean 모드: 덤프에 포함된 테이블을 TRUNCATE
+        if clean:
+            tables = self._list_tables_in_dump(dump_path)
+            if tables:
+                # alembic_version은 TRUNCATE 대상에서 제외
+                tables = [t for t in tables if t != "alembic_version"]
+                table_list = ", ".join(f'"{t}"' for t in tables)
+                console.print(f"  TRUNCATE: {len(tables)}개 테이블")
+                subprocess.run(
+                    [
+                        "psql", *config.conn_args,
+                        "-c", f"TRUNCATE TABLE {table_list} CASCADE;",
+                    ],
+                    env=dict(os.environ) | config.env_dict,
+                    capture_output=True,
+                    check=True,
+                )
+
+        # --data-only: 스키마(테이블 구조, 인덱스, geometry 타입)를 보존하고 데이터만 복원
         if self._use_docker(config):
             cmd = [
                 "docker", "exec", "-i", DOCKER_CONTAINER,
                 "pg_restore", *config.docker_conn_args,
                 "--no-owner", "--no-privileges",
+                "--data-only",
             ]
-            if clean:
-                cmd.append("--clean")
             with open(dump_path, "rb") as f:
                 result = subprocess.run(
                     cmd, stdin=f, capture_output=True, text=False, check=False,
@@ -288,10 +332,9 @@ class DbManager:
             cmd = [
                 "pg_restore", *config.conn_args,
                 "--no-owner", "--no-privileges",
+                "--data-only",
+                str(dump_path),
             ]
-            if clean:
-                cmd.append("--clean")
-            cmd.append(str(dump_path))
             result = subprocess.run(
                 cmd, capture_output=True, text=True,
                 env=dict(os.environ) | config.env_dict, check=False,

@@ -111,7 +111,7 @@ def main_menu() -> None:
                 {"name": "Bin 파일 목록", "value": "list_dumps"},
                 Separator(),
                 {"name": "테이블 데이터 초기화 (TRUNCATE)", "value": "truncate"},
-                {"name": "스왑 임시 테이블 삭제 (DROP)", "value": "drop"},
+                {"name": "스왑용 임시 테이블 삭제 (DROP)", "value": "drop"},
                 Separator(),
                 {"name": "종료", "value": "exit"},
             ],
@@ -752,11 +752,11 @@ def action_truncate(db: DbManager) -> None:
         db.truncate_tables(env, tables)
 
 
-# ── 스왑 임시 테이블 삭제 ──
+# ── 스왑용 임시 테이블 삭제 ──
 
 
 def action_drop(db: DbManager) -> None:
-    """스왑 임시 테이블 삭제 (_swap_tmp_, _old_, _new_ 접두어만 허용)."""
+    """스왑용 임시 테이블 삭제 (_swap_tmp_, _old_, _new_ 접두어만 허용)."""
     env = select_env(db)
     swap_tables = db.get_swap_tables(env)
 
