@@ -356,7 +356,7 @@ def action_load_public(db: DbManager) -> None:
 
     # 2. 지역 선택 (지역 필터링이 필요한 소스가 있는 경우)
     needs_region_filter = any(
-        DATA_SOURCES[s]["file_type"] not in ("single", "excel")
+        DATA_SOURCES[s]["file_type"] not in ("single",)
         for s in selected_sources
     )
 
@@ -503,6 +503,7 @@ def action_load_public(db: DbManager) -> None:
             elif file_type == "excel":
                 # 엑셀 (실거래가) - 자체 run 로직
                 params["truncate"] = truncate
+                params["sgg_prefixes"] = sgg_prefixes
 
             if truncate and file_type != "excel":
                 # TRUNCATE (excel은 자체 처리)

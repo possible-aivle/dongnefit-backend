@@ -51,6 +51,9 @@ class RealEstateSale(PublicDataBase, table=True):
     address: str | None = Field(
         default=None, max_length=200, index=True, description="주소 (시군구 + 번지)"
     )
+    sgg_code: str | None = Field(
+        default=None, max_length=5, index=True, description="시군구코드 (5자리, 시군구 텍스트에서 추출)"
+    )
 
     # ── 건물 정보 ──
     building_name: str | None = Field(
@@ -105,6 +108,9 @@ class RealEstateRental(PublicDataBase, table=True):
     # ── 위치 정보 ──
     address: str | None = Field(
         default=None, max_length=200, index=True, description="주소 (시군구 + 번지)"
+    )
+    sgg_code: str | None = Field(
+        default=None, max_length=5, index=True, description="시군구코드 (5자리, 시군구 텍스트에서 추출)"
     )
 
     # ── 건물 정보 ──

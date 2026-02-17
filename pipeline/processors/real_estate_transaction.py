@@ -180,8 +180,11 @@ def transform_sale_row(
     columns: list[str],
     property_type: PropertyType,
     now: datetime,
+    sigungu_map: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """매매 엑셀 행 하나를 DB 레코드 dict로 변환."""
+    from pipeline.regions import extract_sgg_code
+
     record: dict[str, Any] = {
         "property_type": property_type.name,
         "created_at": now,
@@ -206,6 +209,10 @@ def transform_sale_row(
     record["transaction_date"] = _parse_date(row.get("계약년월"), row.get("계약일"))
     record["address"] = _build_address(row)
 
+    # 시군구코드 추출
+    sigungu_text = _clean(row.get("시군구"))
+    record["sgg_code"] = extract_sgg_code(sigungu_text, sigungu_map) if sigungu_text else None
+
     if "floor" in record and record["floor"] is not None:
         record["floor"] = str(record["floor"])
 
@@ -217,8 +224,11 @@ def transform_rental_row(
     columns: list[str],
     property_type: PropertyType,
     now: datetime,
+    sigungu_map: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """전월세 엑셀 행 하나를 DB 레코드 dict로 변환."""
+    from pipeline.regions import extract_sgg_code
+
     record: dict[str, Any] = {
         "property_type": property_type.name,
         "created_at": now,
@@ -242,6 +252,10 @@ def transform_rental_row(
 
     record["transaction_date"] = _parse_date(row.get("계약년월"), row.get("계약일"))
     record["address"] = _build_address(row)
+
+    # 시군구코드 추출
+    sigungu_text = _clean(row.get("시군구"))
+    record["sgg_code"] = extract_sgg_code(sigungu_text, sigungu_map) if sigungu_text else None
 
     # 거래유형 결정 (전세/월세)
     rent_type = _clean(row.get("전월세구분"))
@@ -308,6 +322,12 @@ class RealEstateSaleProcessor(BaseProcessor):
         excel_dir = Path(params.get("excel_dir", str(SALE_EXCEL_DIR)))
         target_props = set(params.get("property_types", list(PROPERTY_TYPE_MAP.keys())))
         truncate = params.get("truncate", False)
+        sgg_prefixes: list[str] | None = params.get("sgg_prefixes")
+
+        # 시군구 매핑 로드 (sgg_code 추출용)
+        from pipeline.regions import build_sigungu_to_sgg_map
+
+        sigungu_map = build_sigungu_to_sgg_map()
 
         # 대상 파일 수집
         files = sorted(excel_dir.glob("*.xlsx"))
@@ -328,6 +348,8 @@ class RealEstateSaleProcessor(BaseProcessor):
         console.print(f"  디렉토리: {excel_dir}")
         console.print(f"  대상 파일: {len(target_files)}개")
         console.print(f"  부동산 유형: {', '.join(target_props)}")
+        if sgg_prefixes:
+            console.print(f"  지역 필터: {len(sgg_prefixes)}개 시군구 prefix")
 
         from app.database import async_session_maker
         from pipeline.loader import bulk_insert
@@ -357,8 +379,21 @@ class RealEstateSaleProcessor(BaseProcessor):
                 columns = list(df.columns)
                 rows = df.to_dict("records")
                 records = [
-                    transform_sale_row(r, columns, prop_type, now) for r in rows
+                    transform_sale_row(r, columns, prop_type, now, sigungu_map)
+                    for r in rows
                 ]
+
+                # sgg_prefixes 필터링
+                if sgg_prefixes:
+                    before_count = len(records)
+                    records = [
+                        r for r in records
+                        if r.get("sgg_code")
+                        and any(r["sgg_code"].startswith(p) for p in sgg_prefixes)
+                    ]
+                    filtered = before_count - len(records)
+                    if filtered:
+                        label += f" (필터: {filtered:,}건 제외)"
 
                 if records:
                     async with async_session_maker() as session:
@@ -434,6 +469,12 @@ class RealEstateRentalProcessor(BaseProcessor):
         excel_dir = Path(params.get("excel_dir", str(RENTAL_EXCEL_DIR)))
         target_props = set(params.get("property_types", list(PROPERTY_TYPE_MAP.keys())))
         truncate = params.get("truncate", False)
+        sgg_prefixes: list[str] | None = params.get("sgg_prefixes")
+
+        # 시군구 매핑 로드 (sgg_code 추출용)
+        from pipeline.regions import build_sigungu_to_sgg_map
+
+        sigungu_map = build_sigungu_to_sgg_map()
 
         # 대상 파일 수집
         files = sorted(excel_dir.glob("*.xlsx"))
@@ -454,6 +495,8 @@ class RealEstateRentalProcessor(BaseProcessor):
         console.print(f"  디렉토리: {excel_dir}")
         console.print(f"  대상 파일: {len(target_files)}개")
         console.print(f"  부동산 유형: {', '.join(target_props)}")
+        if sgg_prefixes:
+            console.print(f"  지역 필터: {len(sgg_prefixes)}개 시군구 prefix")
 
         from app.database import async_session_maker
         from pipeline.loader import bulk_insert
@@ -483,8 +526,21 @@ class RealEstateRentalProcessor(BaseProcessor):
                 columns = list(df.columns)
                 rows = df.to_dict("records")
                 records = [
-                    transform_rental_row(r, columns, prop_type, now) for r in rows
+                    transform_rental_row(r, columns, prop_type, now, sigungu_map)
+                    for r in rows
                 ]
+
+                # sgg_prefixes 필터링
+                if sgg_prefixes:
+                    before_count = len(records)
+                    records = [
+                        r for r in records
+                        if r.get("sgg_code")
+                        and any(r["sgg_code"].startswith(p) for p in sgg_prefixes)
+                    ]
+                    filtered = before_count - len(records)
+                    if filtered:
+                        label += f" (필터: {filtered:,}건 제외)"
 
                 if records:
                     async with async_session_maker() as session:

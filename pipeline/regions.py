@@ -266,6 +266,143 @@ def get_sgg_prefixes_for_regions(regions: list[Region]) -> list[str]:
     return sorted(set(prefixes))
 
 
+@functools.lru_cache(maxsize=1)
+def build_sigungu_to_sgg_map() -> dict[str, str]:
+    """엑셀 '시군구' 텍스트 prefix → 5자리 시군구코드 매핑을 생성합니다.
+
+    행정경계 SHP에서 시도/시군구 정보를 읽어 매핑을 구축합니다.
+    키 예시: "서울특별시 종로구" → "11010"
+             "경기도 수원시 장안구" → "41135"
+
+    SHP 파일이 없으면 빈 dict를 반환합니다.
+    """
+    try:
+        return _build_sigungu_map_from_shp()
+    except Exception:
+        return {}
+
+
+def _build_sigungu_map_from_shp() -> dict[str, str]:
+    """SHP 파일에서 시군구 텍스트 → 코드 매핑을 구축합니다.
+
+    SHP에서 시군구는 "종로구"(11110), "성남시"(41130), "분당구"(41135) 등으로 분리되어 있지만,
+    실거래가 엑셀에서는 "서울특별시 종로구 ...", "경기도 성남시 분당구 ..." 형태입니다.
+    따라서 "시도 시 구" 형태의 compound 키도 생성합니다.
+    """
+    import fiona
+
+    result: dict[str, str] = {}
+
+    # 시도 SHP → {sido_code: sido_name}
+    sido_dir = PUBLIC_DATA_DIR / "행정경계_시도"
+    sido_shp = _find_shp_in_zip_dir(sido_dir)
+    if not sido_shp:
+        return {}
+
+    sido_names: dict[str, str] = {}
+    with fiona.open(sido_shp) as src:
+        for feat in src:
+            props = feat.get("properties", {})
+            bjcd = str(props.get("BJCD", props.get("ADM_CD", props.get("CTPRVN_CD", ""))))
+            name = str(props.get("NAME", props.get("CTP_KOR_NM", props.get("CTPRVN_NM", ""))))
+            if bjcd and name:
+                code = bjcd[:2]
+                sido_names[code] = name
+
+    # 시군구 SHP → sgg_code: sgg_name (sido별 그룹핑)
+    sgg_dir = PUBLIC_DATA_DIR / "행정경계_시군구"
+    sgg_shp = _find_shp_in_zip_dir(sgg_dir)
+    if not sgg_shp:
+        return {}
+
+    # 1단계: SHP에서 모든 시군구 엔트리 수집
+    sgg_entries: dict[str, str] = {}  # sgg_code → sgg_name
+    sgg_by_sido: dict[str, list[tuple[str, str]]] = {}  # sido_code → [(sgg_code, sgg_name)]
+
+    with fiona.open(sgg_shp) as src:
+        for feat in src:
+            props = feat.get("properties", {})
+            bjcd = str(
+                props.get("BJCD", props.get("ADM_CD", props.get("SIG_CD", "")))
+            )
+            name = str(
+                props.get("NAME", props.get("SIG_KOR_NM", props.get("SIGUNGU_NM", "")))
+            )
+            if bjcd and name and len(bjcd) >= 5:
+                sido_code = bjcd[:2]
+                sgg_code = bjcd[:5]
+                sgg_entries[sgg_code] = name
+                sgg_by_sido.setdefault(sido_code, []).append((sgg_code, name))
+
+    # 2단계: 매핑 구축
+    for sido_code, entries in sgg_by_sido.items():
+        sido_name = sido_names.get(sido_code, "")
+        if not sido_name:
+            continue
+
+        # 시 → 구 관계 파악: 코드 앞 4자리가 같으면 같은 시 소속
+        # 예: 성남시(41130), 수정구(41131), 중원구(41133), 분당구(41135)
+        # 5번째 자리가 0인 것이 시 레벨, 나머지가 구 레벨
+        parent_cities: dict[str, str] = {}  # code_prefix(4자리) → city_name
+        child_gus: list[tuple[str, str, str]] = []  # (sgg_code, gu_name, code_prefix)
+
+        for sgg_code, sgg_name in entries:
+            code_prefix = sgg_code[:4]
+            if sgg_code[4] == "0" and sgg_name.endswith("시"):
+                # 시 레벨 엔트리 (예: 성남시 41130)
+                parent_cities[code_prefix] = sgg_name
+            elif sgg_name.endswith("구") and code_prefix in parent_cities or sgg_code[4] != "0":
+                # 구 레벨일 수 있음 — 나중에 parent 체크
+                child_gus.append((sgg_code, sgg_name, code_prefix))
+
+        # 모든 엔트리에 대해 기본 매핑 추가: "시도 시군구명" → code
+        for sgg_code, sgg_name in entries:
+            full_key = f"{sido_name} {sgg_name}"
+            result[full_key] = sgg_code
+
+        # 구가 시 하위에 있는 경우 compound 키 추가: "시도 시이름 구이름" → 구code
+        for sgg_code, gu_name, code_prefix in child_gus:
+            city_name = parent_cities.get(code_prefix)
+            if city_name and gu_name.endswith("구"):
+                compound_key = f"{sido_name} {city_name} {gu_name}"
+                result[compound_key] = sgg_code
+
+    return result
+
+
+def extract_sgg_code(sigungu_text: str, sigungu_map: dict[str, str] | None = None) -> str | None:
+    """엑셀 '시군구' 텍스트에서 5자리 시군구코드를 추출합니다.
+
+    longest-prefix 매칭을 사용하여 가장 구체적인 시군구코드를 반환합니다.
+
+    Args:
+        sigungu_text: 엑셀 시군구 컬럼 값 (예: "서울특별시 종로구 숭인동")
+        sigungu_map: 시군구 텍스트→코드 매핑. None이면 자동 로드.
+
+    Returns:
+        5자리 시군구코드 (예: "11110") 또는 None
+    """
+    if not sigungu_text:
+        return None
+
+    if sigungu_map is None:
+        sigungu_map = build_sigungu_to_sgg_map()
+
+    if not sigungu_map:
+        return None
+
+    # longest-prefix 매칭: 가장 긴 매칭 키를 우선 사용
+    best_code: str | None = None
+    best_len = 0
+
+    for prefix, code in sigungu_map.items():
+        if sigungu_text.startswith(prefix) and len(prefix) > best_len:
+            best_code = code
+            best_len = len(prefix)
+
+    return best_code
+
+
 def get_province_file_names_for_regions(regions: list[Region]) -> set[str]:
     """Region 목록에서 파일명에 사용되는 시도 약칭을 반환합니다.
 
