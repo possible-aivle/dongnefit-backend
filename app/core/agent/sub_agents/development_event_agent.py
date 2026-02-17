@@ -480,101 +480,93 @@ JSON 배열로 문단들을 반환하세요. 다른 텍스트는 포함하지 �
         period: str,
         chart_data: List[dict],
     ) -> Optional[str]:
-        """matplotlib로 연도별 호재/악재 막대 그래프 이미지를 생성합니다."""
+        """Plotly로 연도별 호재/악재 막대 그래프 이미지를 생성합니다."""
 
         if not chart_data:
             return None
 
         try:
-            import matplotlib
-            matplotlib.use("Agg")  # non-interactive backend
-            import matplotlib.pyplot as plt
-            import matplotlib.font_manager as fm
-            import numpy as np
+            import plotly.graph_objects as go
+            import plotly.io as pio
 
-            # 한글 폰트 설정
-            font_candidates = [
-                "Malgun Gothic",  # Windows
-                "NanumGothic",    # Linux
-                "AppleGothic",    # macOS
-            ]
-            font_set = False
-            for font_name in font_candidates:
-                font_paths = fm.findSystemFonts()
-                for fp in fm.fontManager.ttflist:
-                    if font_name in fp.name:
-                        plt.rcParams["font.family"] = fp.name
-                        font_set = True
-                        break
-                if font_set:
-                    break
-
-            if not font_set:
-                plt.rcParams["font.family"] = "sans-serif"
-
-            plt.rcParams["axes.unicode_minus"] = False
-
+            # 데이터 준비
             years = [d["year"] for d in chart_data]
             positives = [d["positive"] for d in chart_data]
             negatives = [d["negative"] for d in chart_data]
 
-            x = np.arange(len(years))
-            width = 0.35
+            # 그래프 생성
+            fig = go.Figure()
 
-            fig, ax = plt.subplots(figsize=(10, 6))
+            # 호재 막대 (초록 계열)
+            fig.add_trace(go.Bar(
+                name="호재",
+                x=years,
+                y=positives,
+                marker_color="#00CC96",  # 세련된 민트 그린
+                text=positives,
+                textposition="auto",
+                hovertemplate="%{x}년 호재: %{y}건<extra></extra>"
+            ))
 
-            bars_pos = ax.bar(
-                x - width / 2, positives, width,
-                label="호재", color="#4CAF50", edgecolor="white", linewidth=0.5
+            # 악재 막대 (붉은 계열)
+            fig.add_trace(go.Bar(
+                name="악재/리스크",
+                x=years,
+                y=negatives,
+                marker_color="#EF553B",  # 세련된 코랄 레드
+                text=negatives,
+                textposition="auto",
+                hovertemplate="%{x}년 악재: %{y}건<extra></extra>"
+            ))
+
+            # 레이아웃 설정
+            fig.update_layout(
+                title={
+                    "text": f"<b>{region} 개발 이벤트 추이 ({period})</b>",
+                    "y": 0.95,
+                    "x": 0.5,
+                    "xanchor": "center",
+                    "yanchor": "top",
+                    "font": {"size": 20, "family": "Malgun Gothic, AppleGothic, NanumGothic, sans-serif"}
+                },
+                xaxis_title="연도",
+                yaxis_title="이벤트 수",
+                barmode="group",
+                template="plotly_white",  # 깔끔한 흰색 배경 템플릿
+                font=dict(
+                    family="Malgun Gothic, AppleGothic, NanumGothic, sans-serif",
+                    size=12,
+                    color="#333333"
+                ),
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                ),
+                margin=dict(l=40, r=40, t=80, b=40),
+                bargap=0.15,
+                bargroupgap=0.1
             )
-            bars_neg = ax.bar(
-                x + width / 2, negatives, width,
-                label="악재", color="#F44336", edgecolor="white", linewidth=0.5
+
+            # X축 설정 (모든 연도 표시)
+            fig.update_xaxes(
+                tickmode="array",
+                tickvals=years,
+                showgrid=False
             )
 
-            # 막대 위 숫자 표시
-            for bar in bars_pos:
-                height = bar.get_height()
-                if height > 0:
-                    ax.annotate(
-                        f"{int(height)}",
-                        xy=(bar.get_x() + bar.get_width() / 2, height),
-                        xytext=(0, 3), textcoords="offset points",
-                        ha="center", va="bottom", fontsize=11, fontweight="bold",
-                    )
-
-            for bar in bars_neg:
-                height = bar.get_height()
-                if height > 0:
-                    ax.annotate(
-                        f"{int(height)}",
-                        xy=(bar.get_x() + bar.get_width() / 2, height),
-                        xytext=(0, 3), textcoords="offset points",
-                        ha="center", va="bottom", fontsize=11, fontweight="bold",
-                    )
-
-            ax.set_xlabel("연도", fontsize=12)
-            ax.set_ylabel("이벤트 수", fontsize=12)
-            ax.set_title(
-                f"{region} 개발 이벤트 추이({period})\n호재/악재 그래프",
-                fontsize=14, fontweight="bold", pad=15,
-            )
-            ax.set_xticks(x)
-            ax.set_xticklabels([str(y) for y in years], fontsize=11)
-            ax.legend(fontsize=11, loc="upper right")
-
-            # Y축 정수만 표시
+            # Y축 설정 (정수만 표시, 그리드 추가)
             max_val = max(max(positives, default=0), max(negatives, default=0))
-            ax.set_ylim(0, max_val + 2)
-            ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+            fig.update_yaxes(
+                range=[0, max_val * 1.2],  # 위쪽 여백 확보
+                dtick=1,
+                showgrid=True,
+                gridcolor="#E5E5E5"
+            )
 
-            ax.spines["top"].set_visible(False)
-            ax.spines["right"].set_visible(False)
-            ax.grid(axis="y", alpha=0.3)
-
-            plt.tight_layout()
-
-            # 이미지 저장
+            # 이미지 저장 경로 설정
             output_dir = os.path.join(
                 os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
                     os.path.dirname(os.path.abspath(__file__))
@@ -588,15 +580,18 @@ JSON 배열로 문단들을 반환하세요. 다른 텍스트는 포함하지 �
             filename = f"development_events_{safe_region}_{timestamp}.png"
             filepath = os.path.join(output_dir, filename)
 
-            plt.savefig(filepath, dpi=150, bbox_inches="tight")
-            plt.close(fig)
+            # 이미지로 저장 (kaleido 필요)
+            # scale=2로 설정하여 고해상도 저장
+            fig.write_image(filepath, scale=2, width=1000, height=600)
 
-            print(f"  [OK] 그래프 이미지 저장: {filepath}")
+            print(f"  [OK] 그래프 이미지 저장 (Plotly): {filepath}")
             return filepath
 
-        except ImportError:
-            print("  [경고] matplotlib가 설치되지 않아 그래프를 생성할 수 없습니다.")
+        except ImportError as e:
+            print(f"  [경고] Plotly 또는 kaleido가 설치되지 않아 그래프를 생성할 수 없습니다: {e}")
             return None
         except Exception as e:
             print(f"  [오류] 그래프 생성 실패: {e}")
+            import traceback
+            traceback.print_exc()
             return None
