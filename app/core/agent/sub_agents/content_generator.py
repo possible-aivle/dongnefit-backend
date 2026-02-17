@@ -503,7 +503,22 @@ III. 결론
                 HumanMessage(content=user_prompt),
             ]
             response = await self.llm.ainvoke(messages)
-            return response.content
+            draft = response.content
+
+            # 3. 비평 및 수정 (Critique & Revision)
+            print(f"[시스템] 초안 작성 완료 (길이: {len(draft)})")
+
+            critique = await self._critique_content(
+                draft, outline, region_context, target_audience
+            )
+            print(f"[시스템] 비평 완료:\n{critique[:200]}...")
+
+            final_content = await self._revise_content(
+                draft, critique, region_context, target_audience
+            )
+            print(f"[시스템] 수정 완료 (길이: {len(final_content)})")
+
+            return final_content
 
         except Exception as e:
             print(f"[콘텐츠 생성 오류]: {e}")
@@ -511,7 +526,93 @@ III. 결론
                 region, all_issues if not needs_classification else positive_issues + negative_issues
             )
 
+
+
+    async def _critique_content(
+        self,
+        draft: str,
+        outline: str,
+        region_context: str,
+        target_audience: str,
+    ) -> str:
+        """블로그 초안을 비평하여 개선점을 도출합니다."""
+        system_prompt = f"""당신은 꼼꼼한 콘텐츠 에디터입니다.
+작성된 블로그 글(초안)을 검토하고, 더 나은 글이 되도록 구체적인 피드백을 제공하세요.
+
+타겟 독자: {target_audience}
+{region_context}
+
+[검토 기준]
+1. **아웃라인 준수**: 아웃라인의 논리적 흐름을 잘 따르고 있는가?
+2. **독자 지향성**: {target_audience}가 흥미를 가질 만한 어조와 내용을 담고 있는가?
+3. **가독성**: 문단이 너무 길지 않고, 소제목과 강조가 적절히 사용되었는가?
+4. **전문성**: 부동산 전문 용어가 적절히 사용되었으며, 신뢰감을 주는가?
+5. **SEO**: 지역명과 핵심 키워드가 자연스럽게 포함되었는가?
+
+비평은 다음 형식으로 작성하세요:
+1. 잘된 점: (1~2줄)
+2. 개선할 점(구체적인 수정 지침): (3~4가지 핵심 포인트)"""
+
+        user_prompt = f"""[아웃라인]
+{outline}
+
+[블로그 초안]
+{draft}
+
+위 초안을 비평해주세요."""
+
+        try:
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt),
+            ]
+            response = await self.llm.ainvoke(messages)
+            return response.content
+        except Exception as e:
+            print(f"[비평 생성 오류]: {e}")
+            return "비평 생성 실패"
+
+    async def _revise_content(
+        self,
+        draft: str,
+        critique: str,
+        region_context: str,
+        target_audience: str,
+    ) -> str:
+        """비평을 반영하여 블로그 글을 수정합니다."""
+        system_prompt = f"""당신은 전문 블로그 작가입니다.
+에디터의 [비평 및 수정 지침]을 반영하여 [블로그 초안]을 다시 작성하세요.
+
+타겟 독자: {target_audience}
+{region_context}
+
+작성 지침:
+- 에디터의 지적 사항을 적극 반영하여 글을 개선하세요.
+- 마크다운 형식을 유지하세요.
+- 글의 흐름이 끊기지 않도록 자연스럽게 연결하세요.
+- 글자 수는 기존 분량을 유지하거나 약간 늘리세요."""
+
+        user_prompt = f"""[블로그 초안]
+{draft}
+
+[비평 및 수정 지침]
+{critique}
+
+위 지침을 반영하여 완성도 높은 최종 원고를 작성해주세요."""
+
+        try:
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt),
+            ]
+            response = await self.llm.ainvoke(messages)
+            return response.content
+        except Exception as e:
+            print(f"[수정 생성 오류]: {e}")
+            return draft # 수정 실패 시 초안 반환
+
     async def _generate_title(
+
         self,
         region: str,
         policy_issues: List[PolicyIssue],
