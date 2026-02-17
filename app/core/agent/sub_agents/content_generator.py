@@ -208,19 +208,23 @@ class ContentGenerator:
 
     def _get_region_data(self, region: str) -> Optional[Dict]:
         """지역명을 기반으로 프롬프트 데이터를 조회합니다."""
-        # 1. 서울 자치구 검색
-        if region in SEOUL_GU_PROMPTS:
-            return SEOUL_GU_PROMPTS[region]
 
-        # '구'가 빠진 경우 (예: 강남 -> 강남구)
+        # 1. 서울 자치구 검색
+        for gu_name, data in SEOUL_GU_PROMPTS.items():
+             # 정확히 일치하거나, 입력 문자열에 키가 포함된 경우 (예: "서울 강남구" -> "강남구")
+            if gu_name == region or gu_name in region:
+                return data
+
+        # '구'가 빠진 경우 (예: "강남" -> "강남구")
         if region + "구" in SEOUL_GU_PROMPTS:
             return SEOUL_GU_PROMPTS[region + "구"]
 
         # 2. 경기 주요 도시 검색
-        if region in GYEONGGI_CITY_PROMPTS:
-            return GYEONGGI_CITY_PROMPTS[region]
+        for city_name, data in GYEONGGI_CITY_PROMPTS.items():
+            if city_name == region or city_name in region:
+                return data
 
-        # '시'가 빠진 경우 (예: 수원 -> 수원시)
+        # '시'가 빠진 경우 (예: "수원" -> "수원시")
         if region + "시" in GYEONGGI_CITY_PROMPTS:
             return GYEONGGI_CITY_PROMPTS[region + "시"]
 
