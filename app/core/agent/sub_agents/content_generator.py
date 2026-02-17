@@ -26,6 +26,10 @@ except ImportError:
 
 from app.config import settings
 from app.core.agent.models import PolicyIssue, RegionalAnalysisContent
+from app.core.agent.resources.region_prompts import (
+    GYEONGGI_CITY_PROMPTS,
+    SEOUL_GU_PROMPTS,
+)
 
 
 class ContentGenerator:
@@ -101,9 +105,18 @@ class ContentGenerator:
             positive_issues = []
             negative_issues = []
 
+        # 지역 데이터 조회
+        region_data = self._get_region_data(region)
+
         # 블로그 본문 생성
         blog_content = await self._generate_blog_content(
-            region, policy_issues, positive_issues, negative_issues, user_query, needs_classification
+            region,
+            policy_issues,
+            positive_issues,
+            negative_issues,
+            user_query,
+            needs_classification,
+            region_data,
         )
 
         # DALL-E 이미지 생성 및 삽입
@@ -187,6 +200,27 @@ class ContentGenerator:
             print(f"[오류] 키워드 추출 중 오류 발생: {e}")
             return []
 
+    def _get_region_data(self, region: str) -> Optional[Dict]:
+        """지역명을 기반으로 프롬프트 데이터를 조회합니다."""
+        # 1. 서울 자치구 검색
+        if region in SEOUL_GU_PROMPTS:
+            return SEOUL_GU_PROMPTS[region]
+
+        # '구'가 빠진 경우 (예: 강남 -> 강남구)
+        if region + "구" in SEOUL_GU_PROMPTS:
+            return SEOUL_GU_PROMPTS[region + "구"]
+
+        # 2. 경기 주요 도시 검색
+        if region in GYEONGGI_CITY_PROMPTS:
+            return GYEONGGI_CITY_PROMPTS[region]
+
+        # '시'가 빠진 경우 (예: 수원 -> 수원시)
+        if region + "시" in GYEONGGI_CITY_PROMPTS:
+            return GYEONGGI_CITY_PROMPTS[region + "시"]
+
+        print(f"[시스템] '{region}'에 대한 맞춤형 프롬프트 데이터가 없습니다. 기본 설정을 사용합니다.")
+        return None
+
     # ========================================================
     # Blog Content Generation
     # ========================================================
@@ -228,6 +262,81 @@ class ContentGenerator:
         # 기본값: 분류 수행 (보수적)
         return True
 
+    async def _generate_outline(
+        self,
+        region: str,
+        target_audience: str,
+        all_issues: List[PolicyIssue],
+        positive_issues: List[PolicyIssue],
+        negative_issues: List[PolicyIssue],
+        user_query: str,
+        needs_classification: bool,
+        region_context: str,
+    ) -> str:
+        """블로그 글의 구조(아웃라인)를 먼저 생성합니다 (Chain-of-Thought)."""
+
+        system_prompt = f"""당신은 숙련된 콘텐츠 기획자입니다.
+블로그 글 작성을 위한 상세한 '아웃라인(개요)'을 작성해주세요.
+
+지역: {region}
+타겟 독자: {target_audience}
+사용자 요청: {user_query}
+
+{region_context}
+
+목표: 독자가 끝까지 읽게 만드는 논리적이고 매력적인 구성 설계.
+"""
+
+        if needs_classification:
+            pos_text = "\n".join([f"- {i.title}" for i in positive_issues])
+            neg_text = "\n".join([f"- {i.title}" for i in negative_issues])
+
+            user_prompt = f"""다음 호재와 악재를 포함하여 아웃라인을 작성하세요.
+
+[호재]
+{pos_text if pos_text else "(없음)"}
+
+[악재]
+{neg_text if neg_text else "(없음)"}
+
+필수 포함 구조:
+I. 서론 (Hook)
+II. 지역 분위기 및 호재 분석 (Main Body 1)
+III. 리스크 및 악재 분석 (Main Body 2)
+IV. 종합 결론 및 제언 (Conclusion)
+
+각 섹션별로 다룰 핵심 키워드나 논거를 3~4개씩 불렛포인트로 작성해주세요."""
+
+        elif all_issues:
+             issues_text = "\n".join([f"- {i.title}" for i in all_issues])
+             user_prompt = f"""다음 이슈들을 포함하여 아웃라인을 작성하세요.
+
+[이슈 목록]
+{issues_text}
+
+필수 포함 구조:
+I. 서론
+II. 주요 이슈 심층 분석 (2~3개 섹션으로 구분)
+III. 결론
+
+각 섹션별로 다룰 내용을 구체적으로 기획해주세요."""
+
+        else:
+            user_prompt = f"""주제: {user_query}
+
+위 주제에 대한 아웃라인을 자유롭게 작성하세요. 전형적인 서론-본론-결론 구조를 따르되, 독자의 흥미를 끌 수 있는 소제목을 기획해주세요."""
+
+        try:
+             messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt),
+            ]
+             response = await self.llm.ainvoke(messages)
+             return response.content
+        except Exception as e:
+            print(f"[아웃라인 생성 오류]: {e}")
+            return "아웃라인 생성 실패. 기본 구조로 진행합니다."
+
     async def _generate_blog_content(
         self,
         region: str,
@@ -236,31 +345,70 @@ class ContentGenerator:
         negative_issues: List[PolicyIssue],
         user_query: str,
         needs_classification: bool,
+        region_data: Optional[Dict] = None,
     ) -> str:
-        """블로그 본문 생성 (사용자 의도에 따라 유연하게)."""
+        """블로그 본문 생성 (사용자 의도 및 지역 데이터 반영)."""
 
+        # 지역 데이터가 있으면 프롬프트 강화
+        region_context = ""
+        target_audience = "일반 부동산 관심층"
+
+        if region_data:
+            desc = region_data.get("description", "")
+            audience = region_data.get("target_audience", "일반 투자자 및 실거주자")
+            focus_points = region_data.get("focus_points", [])
+
+            target_audience = audience
+
+            focus_points_str = "\n".join([f"- {point}" for point in focus_points])
+
+            region_context = f"""
+[지역 전문 정보]
+- 지역 특징: {desc}
+- 타겟 독자: {audience}
+- **필수 포함 핵심 포인트**:
+{focus_points_str}
+
+위 '핵심 포인트'를 글의 적절한 부분에 자연스럽게 녹여내세요.
+"""
+
+        # 1. 아웃라인 생성 (CoT)
+        outline = await self._generate_outline(
+            region,
+            target_audience,
+            all_issues,
+            positive_issues,
+            negative_issues,
+            user_query,
+            needs_classification,
+            region_context
+        )
+        print(f"[시스템] 아웃라인 생성 완료:\n{outline[:200]}...")
+
+        # 2. 블로그 본문 생성 (아웃라인 기반)
         if needs_classification:
             # 호재/악재 분류 모드
-            system_prompt = """당신은 전문 부동산 블로거입니다.
+            system_prompt = f"""당신은 '{region}' 지역 부동산 전문가입니다.
+주독자층: {target_audience}
 
-주어진 지역의 정책 호재와 악재를 바탕으로 독자들에게 유익한 블로그 글을 작성하세요.
+제공된 [아웃라인]을 바탕으로, {target_audience}에게 실질적인 도움이 되는 블로그 글을 작성하세요.
 
-글 구성:
-1. 서론: 해당 지역의 최근 동향 소개
-2. 호재 분석: 각 호재를 섹션으로 나누어 상세 설명
-3. 악재 분석: 각 악재를 섹션으로 나누어 상세 설명
-4. 결론: 종합 의견 및 투자 시사점
+{region_context}
+
+[아웃라인]
+{outline}
 
 작성 지침:
+- **반드시 위 아웃라인의 흐름과 논리를 따르세요.**
 - Markdown 형식 사용 (H2, H3, 리스트 등)
 - 각 이슈마다 출처 링크 포함
-- 전문가적인 내용이지만 일반인도 이해하기 쉽게 작성
+- 전문적인 내용을 담되, {target_audience}가 이해하기 쉬운 어조 사용
 - 중요한 내용은 **강조** 처리
 - 목록(-)이나 표를 활용하여 정보 정리
-- 소제목(##)을 사용하여 가독성을 높이기
 - SEO를 고려한 키워드 자연스러운 배치
 - 글자 수는 약 2000자 정도로 작성"""
 
+            # 상세 정보 제공 (Context for filling the outline)
             positive_text = "\n".join(
                 [
                     f"- [{issue.title}] {issue.summary} (중요도: {issue.importance}/10)"
@@ -275,55 +423,63 @@ class ContentGenerator:
                 ]
             )
 
-            user_prompt = f"""다음 정보를 바탕으로 '{region}' 지역 분석 블로그 글을 작성하세요.
+            user_prompt = f"""위 아웃라인에 맞춰 다음 세부 정보를 활용해 글을 완성해주세요.
 
-**호재:**
+**호재 데이터:**
 {positive_text if positive_text else "(없음)"}
 
-**악재:**
+**악재 데이터:**
 {negative_text if negative_text else "(없음)"}
 
 독자들이 이해하기 쉽고, 실질적인 정보를 제공하는 글을 작성하세요."""
+
         else:
             if not all_issues:
-                # 데이터가 없는 경우: 일반 키워드/주제 기반 생성 (구 Tistory 기능 통합)
-                system_prompt = """당신은 전문 부동산 블로거입니다.
-주어진 주제에 대해 자세하고 유익한 블로그 글을 작성해주세요.
+                # 데이터가 없는 경우 (일반 주제)
+                system_prompt = f"""당신은 '{region}' 지역 부동산 전문가입니다.
+주독자층: {target_audience}
+
+제공된 [아웃라인]을 바탕으로 {target_audience}의 눈높이에 맞춘 상세하고 유익한 블로그 글을 작성해주세요.
+
+{region_context}
+
+[아웃라인]
+{outline}
 
 작성 지침:
-1. 전문가적인 내용이지만 일반인도 이해하기 쉽게 작성해주세요.
-2. 소제목(##)을 사용하여 가독성을 높여주세요.
-3. 중요한 내용은 **강조**해주세요.
-4. 목록(-)이나 표를 사용해 정보를 정리해주세요.
-5. 실제 사례나 통계 자료가 있다면(가상의 예시라도) 포함해주세요.
-6. 마지막에 결론과 함께 독자에게 도움이 될 만한 조언을 추가해주세요.
-7. 마크다운 형식으로 작성해주세요.
-8. 글자 수는 약 2000자 정도로 작성해주세요.
+1. **반드시 위 아웃라인의 흐름과 논리를 따르세요.**
+2. 전문적인 내용을 담되, 독자가 이해하기 쉽게 작성해주세요.
+3. 소제목(##)을 사용하여 가독성을 높여주세요.
+4. 중요한 내용은 **강조**해주세요.
+5. 목록(-)이나 표를 사용해 정보를 정리해주세요.
+6. 실제 사례나 통계 자료가 있다면(가상의 예시라도) 포함해주세요.
+7. 마지막에 결론과 함께 독자에게 도움이 될 만한 조언을 추가해주세요.
+8. 마크다운 형식으로 작성해주세요.
+9. 글자 수는 약 2000자 정도로 작성해주세요.
 """
                 user_prompt = f"""주제: {region} {user_query}
 
-위 주제에 대한 블로그 글을 작성해주세요.
-블로그 글은 서론, 본론, 결론으로 구성하고, 필요한 경우 하위 섹션을 추가해주세요.
-가독성을 높이기 위해 적절한 소제목(##)을 사용해주세요.
-현재 수집된 구체적인 정책 데이터가 없으므로, 일반적인 부동산 지식과 통찰력을 바탕으로 작성해주세요."""
+위 주제에 대해 아웃라인을 충실히 따르는 블로그 글을 작성해주세요.
+현재 수집된 구체적인 정책 데이터가 없으므로, 일반적인 부동산 지식과 통찰력을 바탕으로 풍부하게 내용을 채워주세요."""
 
             else:
-                # 일반 분석 모드 (호재/악재 분류 없음)
-                system_prompt = """당신은 전문 부동산 블로거입니다.
+                # 일반 분석 모드 (이슈 존재)
+                system_prompt = f"""당신은 '{region}' 지역 부동산 전문가입니다.
+주독자층: {target_audience}
 
-사용자의 질문에 맞는 유익하고 전문적인 블로그 글을 작성하세요.
+제공된 [아웃라인]을 바탕으로 {target_audience}에게 도움이 되는 전문적인 블로그 글을 작성하세요.
 
-글 구성:
-1. 서론: 주제 소개 및 배경
-2. 본론: 주제에 맞는 다양한 분석 및 정보 (소제목으로 구분)
-3. 결론: 종합 의견 및 실용적인 팁
+{region_context}
+
+[아웃라인]
+{outline}
 
 작성 지침:
+- **반드시 위 아웃라인의 흐름과 논리를 따르세요.**
 - Markdown 형식 사용 (H2, H3, 리스트 등)
 - 전문가적인 내용이지만 일반인도 이해하기 쉽게 작성
 - 중요한 내용은 **강조** 처리
 - 목록(-)이나 표를 활용하여 정보 정리
-- 소제목(##)을 사용하여 가독성을 높이기
 - SEO를 고려한 키워드 자연스러운 배치
 - 글자 수는 약 2000자 정도로 작성"""
 
@@ -334,14 +490,76 @@ class ContentGenerator:
                     ]
                 )
 
-                user_prompt = f"""사용자 요청: "{user_query}"
+                user_prompt = f"""위 아웃라인에 맞춰 다음 이슈 데이터를 활용해 글을 완성해주세요.
 
-'{region}' 지역에 대한 다음 정보를 참고하여 블로그 글을 작성하세요:
-
-**관련 이슈:**
+**관련 이슈 목록:**
 {issues_text}
 
-사용자의 요청에 맞게 유용하고 실질적인 정보를 제공하세요."""
+사용자의 요청("{user_query}")에 맞게 유용하고 실질적인 정보를 제공하세요."""
+
+        try:
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt),
+            ]
+            response = await self.llm.ainvoke(messages)
+            draft = response.content
+
+            # 3. 비평 및 수정 (Critique & Revision)
+            print(f"[시스템] 초안 작성 완료 (길이: {len(draft)})")
+
+            critique = await self._critique_content(
+                draft, outline, region_context, target_audience
+            )
+            print(f"[시스템] 비평 완료:\n{critique[:200]}...")
+
+            final_content = await self._revise_content(
+                draft, critique, region_context, target_audience
+            )
+            print(f"[시스템] 수정 완료 (길이: {len(final_content)})")
+
+            return final_content
+
+        except Exception as e:
+            print(f"[콘텐츠 생성 오류]: {e}")
+            return self._generate_fallback_content(
+                region, all_issues if not needs_classification else positive_issues + negative_issues
+            )
+
+
+
+    async def _critique_content(
+        self,
+        draft: str,
+        outline: str,
+        region_context: str,
+        target_audience: str,
+    ) -> str:
+        """블로그 초안을 비평하여 개선점을 도출합니다."""
+        system_prompt = f"""당신은 꼼꼼한 콘텐츠 에디터입니다.
+작성된 블로그 글(초안)을 검토하고, 더 나은 글이 되도록 구체적인 피드백을 제공하세요.
+
+타겟 독자: {target_audience}
+{region_context}
+
+[검토 기준]
+1. **아웃라인 준수**: 아웃라인의 논리적 흐름을 잘 따르고 있는가?
+2. **독자 지향성**: {target_audience}가 흥미를 가질 만한 어조와 내용을 담고 있는가?
+3. **가독성**: 문단이 너무 길지 않고, 소제목과 강조가 적절히 사용되었는가?
+4. **전문성**: 부동산 전문 용어가 적절히 사용되었으며, 신뢰감을 주는가?
+5. **SEO**: 지역명과 핵심 키워드가 자연스럽게 포함되었는가?
+
+비평은 다음 형식으로 작성하세요:
+1. 잘된 점: (1~2줄)
+2. 개선할 점(구체적인 수정 지침): (3~4가지 핵심 포인트)"""
+
+        user_prompt = f"""[아웃라인]
+{outline}
+
+[블로그 초안]
+{draft}
+
+위 초안을 비평해주세요."""
 
         try:
             messages = [
@@ -350,14 +568,51 @@ class ContentGenerator:
             ]
             response = await self.llm.ainvoke(messages)
             return response.content
-
         except Exception as e:
-            print(f"[콘텐츠 생성 오류]: {e}")
-            return self._generate_fallback_content(
-                region, all_issues if not needs_classification else positive_issues + negative_issues
-            )
+            print(f"[비평 생성 오류]: {e}")
+            return "비평 생성 실패"
+
+    async def _revise_content(
+        self,
+        draft: str,
+        critique: str,
+        region_context: str,
+        target_audience: str,
+    ) -> str:
+        """비평을 반영하여 블로그 글을 수정합니다."""
+        system_prompt = f"""당신은 전문 블로그 작가입니다.
+에디터의 [비평 및 수정 지침]을 반영하여 [블로그 초안]을 다시 작성하세요.
+
+타겟 독자: {target_audience}
+{region_context}
+
+작성 지침:
+- 에디터의 지적 사항을 적극 반영하여 글을 개선하세요.
+- 마크다운 형식을 유지하세요.
+- 글의 흐름이 끊기지 않도록 자연스럽게 연결하세요.
+- 글자 수는 기존 분량을 유지하거나 약간 늘리세요."""
+
+        user_prompt = f"""[블로그 초안]
+{draft}
+
+[비평 및 수정 지침]
+{critique}
+
+위 지침을 반영하여 완성도 높은 최종 원고를 작성해주세요."""
+
+        try:
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt),
+            ]
+            response = await self.llm.ainvoke(messages)
+            return response.content
+        except Exception as e:
+            print(f"[수정 생성 오류]: {e}")
+            return draft # 수정 실패 시 초안 반환
 
     async def _generate_title(
+
         self,
         region: str,
         policy_issues: List[PolicyIssue],
