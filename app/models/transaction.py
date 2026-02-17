@@ -22,6 +22,7 @@ class OfficialLandPrice(PublicDataBase, table=True):
     pnu: str = Field(
         max_length=19,
         description="필지고유번호",
+        index=True
     )
     base_year: int = Field(description="기준연도")
     price_per_sqm: int | None = Field(

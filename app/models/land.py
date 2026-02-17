@@ -19,6 +19,7 @@ class LandCharacteristic(PublicDataBase, table=True):
     pnu: str = Field(
         max_length=19,
         description="필지고유번호",
+        index=True
     )
     data_year: int = Field(description="기준년도")
 
@@ -47,6 +48,7 @@ class LandUsePlan(PublicDataBase, table=True):
     pnu: str = Field(
         max_length=19,
         description="필지고유번호",
+        index=True
     )
     data_year: int = Field(description="기준년도")
 
@@ -67,6 +69,7 @@ class LandAndForestInfo(PublicDataBase, table=True):
     pnu: str = Field(
         max_length=19,
         description="필지고유번호",
+        index=True
     )
     data_year: int = Field(description="기준년도")
 

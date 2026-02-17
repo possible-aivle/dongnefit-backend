@@ -23,8 +23,8 @@ class BuildingRegisterHeader(PublicDataBase, table=True):
     mgm_bldrgst_pk: str = Field(max_length=33, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        index=True,
         description="필지고유번호",
+        index=True,
     )
     building_name: str | None = Field(default=None, max_length=100, description="건물명")
     site_area: float | None = Field(default=None, description="대지면적(㎡)")
@@ -56,8 +56,8 @@ class BuildingRegisterGeneral(PublicDataBase, table=True):
     mgm_bldrgst_pk: str = Field(max_length=33, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        index=True,
         description="필지고유번호",
+        index=True,
     )
     building_name: str | None = Field(default=None, max_length=100, description="건물명")
     site_area: float | None = Field(default=None, description="대지면적(㎡)")
@@ -89,8 +89,8 @@ class BuildingRegisterFloorDetail(PublicDataBase, table=True):
     mgm_bldrgst_pk: str = Field(max_length=33, index=True, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        index=True,
         description="필지고유번호",
+        index=True,
     )
     floor_type_name: str | None = Field(default=None, max_length=100, description="층구분코드명")
     floor_no: int | None = Field(default=None, description="층번호")
@@ -116,8 +116,8 @@ class BuildingRegisterArea(PublicDataBase, table=True):
     mgm_bldrgst_pk: str = Field(max_length=33, index=True, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        index=True,
         description="필지고유번호",
+        index=True,
     )
     dong_name: str | None = Field(default=None, max_length=100, description="동명")
     ho_name: str | None = Field(default=None, max_length=100, description="호명")
@@ -143,8 +143,8 @@ class BuildingRegisterAncillaryLot(PublicDataBase, table=True):
     mgm_bldrgst_pk: str = Field(max_length=33, index=True, description="관리 건축물대장 PK")
     pnu: str = Field(
         max_length=19,
-        index=True,
         description="필지고유번호 (본 건물)",
+        index=True,
     )
     atch_pnu: str | None = Field(
         default=None, max_length=19, description="부속 필지고유번호"
@@ -165,8 +165,8 @@ class GisBuildingIntegrated(PublicDataBase, table=True):
 
     pnu: str = Field(
         max_length=19,
-        index=True,
         description="필지고유번호 (고유번호)",
+        index=True,
     )
     use_name: str | None = Field(default=None, max_length=100, description="건축물용도명")
     building_area: float | None = Field(default=None, description="건축물면적(㎡)")

@@ -26,7 +26,7 @@ class Lot(SQLModel, table=True):
     pnu: str = Field(
         max_length=19,
         primary_key=True,
-        description="필지고유번호 (19자리)",
+        description="필지고유번호",
     )
     jibun_address: str | None = Field(
         default=None,
@@ -49,6 +49,6 @@ class AncillaryLand(PublicDataBase, table=True):
     pnu: str = Field(
         max_length=19,
         # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
-        index=True,
         description="필지고유번호",
+        index=True,
     )
