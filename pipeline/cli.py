@@ -111,7 +111,7 @@ def main_menu() -> None:
                 {"name": "Bin 파일 목록", "value": "list_dumps"},
                 Separator(),
                 {"name": "테이블 데이터 초기화 (TRUNCATE)", "value": "truncate"},
-                {"name": "테이블 삭제 (DROP)", "value": "drop"},
+                {"name": "스왑 임시 테이블 삭제 (DROP)", "value": "drop"},
                 Separator(),
                 {"name": "종료", "value": "exit"},
             ],
@@ -513,7 +513,7 @@ def action_load_public(db: DbManager) -> None:
 
                 from app.database import async_session_maker
 
-                async def do_truncate():
+                async def do_truncate(table_name: str = table_name):
                     async with async_session_maker() as session:
                         await session.execute(text(f"TRUNCATE TABLE {table_name} CASCADE"))
                         await session.commit()
@@ -746,27 +746,33 @@ def action_truncate(db: DbManager) -> None:
         db.truncate_tables(env, tables)
 
 
-# ── 테이블 삭제 ──
+# ── 스왑 임시 테이블 삭제 ──
 
 
 def action_drop(db: DbManager) -> None:
-    """테이블 삭제."""
+    """스왑 임시 테이블 삭제 (_swap_tmp_, _old_, _new_ 접두어만 허용)."""
     env = select_env(db)
-    tables = select_tables(db, env)
-    if not tables:
+    swap_tables = db.get_swap_tables(env)
+
+    if not swap_tables:
+        console.print(f"  [yellow]{env} 환경에 삭제 가능한 스왑 테이블이 없습니다.[/]")
         return
 
-    if env == "prod":
-        console.print("[red bold]Production 환경에서 테이블 삭제는 허용되지 않습니다.[/]")
+    selected = inquirer.checkbox(
+        message="삭제할 스왑 테이블을 선택하세요 (Space로 선택, Enter로 확인):",
+        choices=swap_tables,
+    ).execute()
+
+    if not selected:
         return
 
     confirm = inquirer.confirm(
-        message=f"[경고] {', '.join(tables)} 테이블을 완전히 삭제합니다. 진행하시겠습니까?",
+        message=f"[경고] {', '.join(selected)} 테이블을 삭제합니다. 진행하시겠습니까?",
         default=False,
     ).execute()
 
     if confirm:
-        db.drop_tables(env, tables)
+        db.drop_tables(env, selected)
 
 
 # ── 액션 매핑 ──

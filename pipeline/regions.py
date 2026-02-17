@@ -175,47 +175,47 @@ def _load_regions_from_shp() -> list[Region]:
                         sgg_code = bjcd[:5]
                         sgg_by_sido.setdefault(sido_code, []).append((sgg_code, name))
 
-    # 특별시/광역시 → 시 단위 Region
-    for code in sorted(sido_names):
-        name = sido_names[code]
-        is_metro = code in METRO_CODES
+        # 특별시/광역시 → 시 단위 Region
+        for code in sorted(sido_names):
+            name = sido_names[code]
+            is_metro = code in METRO_CODES
 
-        if is_metro:
-            regions.append(Region(
-                name=name,
-                sido_code=code,
-                sgg_prefixes=[code],
-                parent=None,
-                is_metro=True,
-            ))
-        else:
-            # 도 내 시/군 → 개별 Region
-            sgus = sgg_by_sido.get(code, [])
-            if sgus:
-                # 시 단위로 그룹핑 (같은 시 이름의 구가 여러 개 있을 수 있음)
-                city_groups: dict[str, list[str]] = {}
-                for sgg_code, sgg_name in sgus:
-                    # "수원시 장안구" → "수원시"
-                    base_name = sgg_name.split()[0] if " " in sgg_name else sgg_name
-                    city_groups.setdefault(base_name, []).append(sgg_code)
-
-                for city_name, sgg_codes in sorted(city_groups.items()):
-                    regions.append(Region(
-                        name=city_name,
-                        sido_code=code,
-                        sgg_prefixes=sorted(sgg_codes),
-                        parent=name,
-                        is_metro=False,
-                    ))
-            else:
-                # 시군구 SHP 없으면 시도 단위
+            if is_metro:
                 regions.append(Region(
                     name=name,
                     sido_code=code,
                     sgg_prefixes=[code],
                     parent=None,
-                    is_metro=False,
+                    is_metro=True,
                 ))
+            else:
+                # 도 내 시/군 → 개별 Region
+                sgus = sgg_by_sido.get(code, [])
+                if sgus:
+                    # 시 단위로 그룹핑 (같은 시 이름의 구가 여러 개 있을 수 있음)
+                    city_groups: dict[str, list[str]] = {}
+                    for sgg_code, sgg_name in sgus:
+                        # "수원시 장안구" → "수원시"
+                        base_name = sgg_name.split()[0] if " " in sgg_name else sgg_name
+                        city_groups.setdefault(base_name, []).append(sgg_code)
+
+                    for city_name, sgg_codes in sorted(city_groups.items()):
+                        regions.append(Region(
+                            name=city_name,
+                            sido_code=code,
+                            sgg_prefixes=sorted(sgg_codes),
+                            parent=name,
+                            is_metro=False,
+                        ))
+                else:
+                    # 시군구 SHP 없으면 시도 단위
+                    regions.append(Region(
+                        name=name,
+                        sido_code=code,
+                        sgg_prefixes=[code],
+                        parent=None,
+                        is_metro=False,
+                    ))
 
         return regions if regions else _get_default_regions()
     finally:
@@ -360,38 +360,38 @@ def _build_sigungu_map_from_shp() -> dict[str, str]:
                     sgg_entries[sgg_code] = name
                     sgg_by_sido.setdefault(sido_code, []).append((sgg_code, name))
 
-    # 2단계: 매핑 구축
-    for sido_code, entries in sgg_by_sido.items():
-        sido_name = sido_names.get(sido_code, "")
-        if not sido_name:
-            continue
+        # 2단계: 매핑 구축
+        for sido_code, entries in sgg_by_sido.items():
+            sido_name = sido_names.get(sido_code, "")
+            if not sido_name:
+                continue
 
-        # 시 → 구 관계 파악: 코드 앞 4자리가 같으면 같은 시 소속
-        # 예: 성남시(41130), 수정구(41131), 중원구(41133), 분당구(41135)
-        # 5번째 자리가 0인 것이 시 레벨, 나머지가 구 레벨
-        parent_cities: dict[str, str] = {}  # code_prefix(4자리) → city_name
-        child_gus: list[tuple[str, str, str]] = []  # (sgg_code, gu_name, code_prefix)
+            # 시 → 구 관계 파악: 코드 앞 4자리가 같으면 같은 시 소속
+            # 예: 성남시(41130), 수정구(41131), 중원구(41133), 분당구(41135)
+            # 5번째 자리가 0인 것이 시 레벨, 나머지가 구 레벨
+            parent_cities: dict[str, str] = {}  # code_prefix(4자리) → city_name
+            child_gus: list[tuple[str, str, str]] = []  # (sgg_code, gu_name, code_prefix)
 
-        for sgg_code, sgg_name in entries:
-            code_prefix = sgg_code[:4]
-            if sgg_code[4] == "0" and sgg_name.endswith("시"):
-                # 시 레벨 엔트리 (예: 성남시 41130)
-                parent_cities[code_prefix] = sgg_name
-            elif sgg_name.endswith("구") and code_prefix in parent_cities or sgg_code[4] != "0":
-                # 구 레벨일 수 있음 — 나중에 parent 체크
-                child_gus.append((sgg_code, sgg_name, code_prefix))
+            for sgg_code, sgg_name in entries:
+                code_prefix = sgg_code[:4]
+                if sgg_code[4] == "0" and sgg_name.endswith("시"):
+                    # 시 레벨 엔트리 (예: 성남시 41130)
+                    parent_cities[code_prefix] = sgg_name
+                elif sgg_name.endswith("구") and code_prefix in parent_cities or sgg_code[4] != "0":
+                    # 구 레벨일 수 있음 — 나중에 parent 체크
+                    child_gus.append((sgg_code, sgg_name, code_prefix))
 
-        # 모든 엔트리에 대해 기본 매핑 추가: "시도 시군구명" → code
-        for sgg_code, sgg_name in entries:
-            full_key = f"{sido_name} {sgg_name}"
-            result[full_key] = sgg_code
+            # 모든 엔트리에 대해 기본 매핑 추가: "시도 시군구명" → code
+            for sgg_code, sgg_name in entries:
+                full_key = f"{sido_name} {sgg_name}"
+                result[full_key] = sgg_code
 
-        # 구가 시 하위에 있는 경우 compound 키 추가: "시도 시이름 구이름" → 구code
-        for sgg_code, gu_name, code_prefix in child_gus:
-            city_name = parent_cities.get(code_prefix)
-            if city_name and gu_name.endswith("구"):
-                compound_key = f"{sido_name} {city_name} {gu_name}"
-                result[compound_key] = sgg_code
+            # 구가 시 하위에 있는 경우 compound 키 추가: "시도 시이름 구이름" → 구code
+            for sgg_code, gu_name, code_prefix in child_gus:
+                city_name = parent_cities.get(code_prefix)
+                if city_name and gu_name.endswith("구"):
+                    compound_key = f"{sido_name} {city_name} {gu_name}"
+                    result[compound_key] = sgg_code
 
         return result
     finally:
