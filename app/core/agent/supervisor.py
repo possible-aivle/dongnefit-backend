@@ -19,11 +19,13 @@ except ImportError:
 from app.config import settings
 from app.core.agent.sub_agents.data_classifier import ArticleAnalyzer
 from app.core.agent.sub_agents.data_collector import NewsSearchService
+from app.core.agent.sub_agents.development_event_agent import DevelopmentEventAgent
 from app.core.agent.sub_agents.intent_analyzer import IntentAnalyzer
 from app.core.agent.sub_agents.content_generator import ContentGenerator
 from app.core.agent.tools.geocoding import GeocodingService
 from app.core.agent.models import (
     ANALYZE_DATA,
+    ANALYZE_DEVELOPMENT,
     COLLECT_DATA,
     FINISH,
     GENERATE_CONTENT,
@@ -77,6 +79,7 @@ class SupervisorAgent:
         self.news_search = NewsSearchService()
         self.intent_analyzer = IntentAnalyzer(llm_provider=llm_provider)
         self.analyzer = ArticleAnalyzer(llm_provider=llm_provider)
+        self.dev_event_agent = DevelopmentEventAgent(llm_provider=llm_provider)
         self.content_generator = ContentGenerator(llm_provider=llm_provider)
         self.seo_workflow = build_seo_workflow(llm_provider=llm_provider)
 
@@ -96,6 +99,7 @@ class SupervisorAgent:
         workflow.add_node("analyze_intent", self._analyze_intent_node)
         workflow.add_node(COLLECT_DATA, self._collect_data_node)
         workflow.add_node(ANALYZE_DATA, self._analyze_data_node)
+        workflow.add_node(ANALYZE_DEVELOPMENT, self._analyze_development_node)
         workflow.add_node(GENERATE_CONTENT, self._generate_content_node)
         workflow.add_node(OPTIMIZE_SEO, self._optimize_seo_node)
         workflow.add_node(PUBLISH_CONTENT, self._publish_content_node)
@@ -111,6 +115,7 @@ class SupervisorAgent:
                 "analyze_intent": "analyze_intent",
                 COLLECT_DATA: COLLECT_DATA,
                 ANALYZE_DATA: ANALYZE_DATA,
+                ANALYZE_DEVELOPMENT: ANALYZE_DEVELOPMENT,
                 GENERATE_CONTENT: GENERATE_CONTENT,
                 OPTIMIZE_SEO: OPTIMIZE_SEO,
                 PUBLISH_CONTENT: PUBLISH_CONTENT,
@@ -122,6 +127,7 @@ class SupervisorAgent:
         workflow.add_edge("analyze_intent", "supervisor")
         workflow.add_edge(COLLECT_DATA, "supervisor")
         workflow.add_edge(ANALYZE_DATA, "supervisor")
+        workflow.add_edge(ANALYZE_DEVELOPMENT, "supervisor")
         workflow.add_edge(GENERATE_CONTENT, "supervisor")
         workflow.add_edge(OPTIMIZE_SEO, "supervisor")
         workflow.add_edge(PUBLISH_CONTENT, "supervisor")
@@ -161,6 +167,9 @@ class SupervisorAgent:
         elif state.get("policy_issues") is None:
             next_action = ANALYZE_DATA
             reason = "수집된 데이터의 분석이 필요합니다."
+        elif state.get("development_analysis") is None and has_issues:
+            next_action = ANALYZE_DEVELOPMENT
+            reason = "정책 이슈를 바탕으로 연도별 호재/악재 분석을 수행합니다."
         elif not has_content:
             next_action = GENERATE_CONTENT
             if has_issues:
@@ -346,6 +355,45 @@ class SupervisorAgent:
             print(f"  [FAIL] {error_msg}")
             return {**state, "error": error_msg, "policy_issues": [], "steps_log": steps_log}
 
+    async def _analyze_development_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """Development Event Agent: 연도별 호재/악재를 분석합니다."""
+        print("\n[Development Event Agent] 호재/악재 분석 시작...")
+        steps_log = state.get("steps_log", [])
+
+        try:
+            admin_region = state.get("admin_region")
+            region_name = admin_region.full_address if admin_region else state["user_query"]
+            articles = state.get("raw_articles", [])
+            policy_issues = state.get("policy_issues", [])
+            user_query = state.get("user_query", "")
+
+            analysis = await self.dev_event_agent.analyze(
+                region=region_name,
+                articles=articles,
+                policy_issues=policy_issues,
+                user_query=user_query,
+            )
+
+            log = f"[DevEvent] 호재 {analysis.total_positive}건 / 악재 {analysis.total_negative}건 ({analysis.period})"
+            print(f"  [OK] {log}")
+            steps_log.append(log)
+
+            if analysis.chart_image_path:
+                steps_log.append(f"[DevEvent] 그래프 이미지: {analysis.chart_image_path}")
+
+            return {
+                **state,
+                "development_analysis": analysis,
+                "steps_log": steps_log,
+            }
+
+        except Exception as e:
+            error_msg = f"호재/악재 분석 실패: {e}"
+            steps_log.append(f"[DevEvent] [ERROR] {error_msg}")
+            print(f"  [FAIL] {error_msg}")
+            # 분석 실패 시에도 콘텐츠 생성은 가능 (기존 방식)
+            return {**state, "development_analysis": None, "steps_log": steps_log}
+
     async def _generate_content_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Content Generator: 블로그 초안을 작성합니다."""
         print("\n[Content Generator] 콘텐츠 생성 시작...")
@@ -383,10 +431,20 @@ class SupervisorAgent:
                         custom_title = new_title
                         print(f"제목이 설정되었습니다: {custom_title}")
 
-            # 콘텐츠 생성 (사용자 의도 반영)
-            content = await self.content_generator.generate_content(
-                region_name, policy_issues, user_query=state["user_query"], custom_title=custom_title
-            )
+            # 콘텐츠 생성 (development_analysis가 있으면 구조화 데이터 기반 생성)
+            development_analysis = state.get("development_analysis")
+
+            if development_analysis:
+                print("  [Generator] 호재/악재 분석 데이터 기반 콘텐츠 생성")
+                content = await self.content_generator.generate_content_from_analysis(
+                    region_name, development_analysis, policy_issues,
+                    user_query=state["user_query"], custom_title=custom_title
+                )
+            else:
+                # 기존 방식 (하위 호환)
+                content = await self.content_generator.generate_content(
+                    region_name, policy_issues, user_query=state["user_query"], custom_title=custom_title
+                )
 
             # 인터랙티브 모드: 제목 확인 (사전 설정 안 했을 경우) 및 후처리 (카테고리, 태그)
             if self.interactive:
@@ -592,6 +650,7 @@ class SupervisorAgent:
             "raw_articles": [],
             "classified_articles": [],
             "policy_issues": None,
+            "development_analysis": None,
             "final_content": None,
             "seo_score": None,
             "next_action": "",

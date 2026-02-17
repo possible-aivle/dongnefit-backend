@@ -25,7 +25,13 @@ except ImportError:
     ChatAnthropic = None
 
 from app.config import settings
-from app.core.agent.models import PolicyIssue, RegionalAnalysisContent
+from app.core.agent.models import (
+    CategoryAnalysis,
+    DevelopmentEventAnalysis,
+    PolicyIssue,
+    RegionalAnalysisContent,
+    YearlyEventSummary,
+)
 from app.core.agent.resources.region_prompts import (
     GYEONGGI_CITY_PROMPTS,
     SEOUL_GU_PROMPTS,
@@ -202,19 +208,23 @@ class ContentGenerator:
 
     def _get_region_data(self, region: str) -> Optional[Dict]:
         """지역명을 기반으로 프롬프트 데이터를 조회합니다."""
-        # 1. 서울 자치구 검색
-        if region in SEOUL_GU_PROMPTS:
-            return SEOUL_GU_PROMPTS[region]
 
-        # '구'가 빠진 경우 (예: 강남 -> 강남구)
+        # 1. 서울 자치구 검색
+        for gu_name, data in SEOUL_GU_PROMPTS.items():
+             # 정확히 일치하거나, 입력 문자열에 키가 포함된 경우 (예: "서울 강남구" -> "강남구")
+            if gu_name == region or gu_name in region:
+                return data
+
+        # '구'가 빠진 경우 (예: "강남" -> "강남구")
         if region + "구" in SEOUL_GU_PROMPTS:
             return SEOUL_GU_PROMPTS[region + "구"]
 
         # 2. 경기 주요 도시 검색
-        if region in GYEONGGI_CITY_PROMPTS:
-            return GYEONGGI_CITY_PROMPTS[region]
+        for city_name, data in GYEONGGI_CITY_PROMPTS.items():
+            if city_name == region or city_name in region:
+                return data
 
-        # '시'가 빠진 경우 (예: 수원 -> 수원시)
+        # '시'가 빠진 경우 (예: "수원" -> "수원시")
         if region + "시" in GYEONGGI_CITY_PROMPTS:
             return GYEONGGI_CITY_PROMPTS[region + "시"]
 
@@ -1009,6 +1019,232 @@ III. 결론
                 result_lines.append("")
 
         return "\n".join(result_lines), image_paths
+
+    # ========================================================
+    # Content from DevelopmentEventAnalysis (새 Agent 연동)
+    # ========================================================
+
+    async def generate_content_from_analysis(
+        self,
+        region: str,
+        analysis: DevelopmentEventAnalysis,
+        policy_issues: list,
+        user_query: str = "",
+        custom_title: Optional[str] = None,
+    ) -> RegionalAnalysisContent:
+        """DevelopmentEventAnalysis를 기반으로 블로그 콘텐츠를 생성합니다.
+
+        호재/악재 분석 Agent의 구조화된 데이터를 입력받아:
+        - 연도별 이슈 요약 표
+        - 카테고리별 분석 섹션
+        - 그래프 설명 문단
+        - SEO 최적화 블로그 글
+        을 생성합니다.
+
+        Args:
+            region: 분석 대상 지역
+            analysis: DevelopmentEventAnalysis 구조화 데이터
+            policy_issues: 기존 PolicyIssue 목록 (하위 호환)
+            user_query: 사용자 쿼리
+            custom_title: 사용자 지정 제목
+
+        Returns:
+            RegionalAnalysisContent: 생성된 블로그 콘텐츠
+        """
+        # 지역 데이터 조회
+        region_data = self._get_region_data(region)
+
+        # 연도별 통계 표 생성
+        yearly_table = self._generate_yearly_table(analysis.yearly_summaries)
+
+        # 카테고리별 섹션 포맷
+        category_sections = self._format_category_sections(analysis.category_analyses)
+
+        # 그래프 설명 문단
+        chart_desc = await self._generate_chart_description(analysis)
+
+        # 지역 컨텍스트 구성
+        region_context = ""
+        target_audience = "일반 부동산 관심층"
+        if region_data:
+            desc = region_data.get("description", "")
+            audience = region_data.get("target_audience", "일반 투자자 및 실거주자")
+            target_audience = audience
+            focus_points = region_data.get("focus_points", [])
+            focus_str = "\n".join([f"- {p}" for p in focus_points])
+            region_context = f"\n[지역 전문 정보]\n- 지역 특징: {desc}\n- 타겟 독자: {audience}\n- 핵심 포인트:\n{focus_str}\n"
+
+        # 블로그 본문 생성 (구조화 데이터 기반)
+        system_prompt = f"""당신은 '{region}' 지역 부동산 전문가이자 블로그 작가입니다.
+주독자층: {target_audience}
+
+아래 구조화된 데이터를 바탕으로 SEO 최적화된 블로그 글을 작성하세요.
+
+{region_context}
+
+작성 지침:
+1. Markdown 형식 사용 (H2, H3, 리스트, 표 등)
+2. 서론에서 독자의 흥미를 끄는 훅(Hook) 사용
+3. 연도별 이슈 요약 표를 포함
+4. 카테고리별 호재/악재 분석을 상세히 서술
+5. 그래프 설명 문단을 자연스럽게 삽입
+6. 투자 인사이트와 결론을 포함
+7. 글자 수는 약 2500자 이상으로 작성
+8. 중요한 내용은 **강조** 처리
+9. {target_audience}의 눈높이에 맞게 작성"""
+
+        user_prompt = f"""'{region}' 지역의 개발 이벤트 분석({analysis.period}) 블로그 글을 작성해주세요.
+
+[연도별 통계]
+{yearly_table}
+
+[카테고리별 분석 데이터]
+{category_sections}
+
+[그래프 설명]
+{chart_desc}
+
+[전체 통계]
+- 총 호재: {analysis.total_positive}건
+- 총 악재: {analysis.total_negative}건
+- 가장 활발한 연도: {analysis.most_active_year}년
+
+사용자 요청: "{user_query}"
+
+위 데이터를 활용하여 독자에게 실질적인 도움이 되는 블로그 글을 작성해주세요."""
+
+        try:
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt),
+            ]
+            response = await self.llm.ainvoke(messages)
+            blog_content = response.content
+        except Exception as e:
+            print(f"[콘텐츠 생성 오류]: {e}")
+            # 폴백: 구조화된 데이터를 직접 마크다운으로 변환
+            blog_content = f"# {region} 개발 이벤트 분석\n\n{yearly_table}\n\n{category_sections}\n\n{chart_desc}"
+
+        # 제목 생성
+        if custom_title:
+            blog_title = custom_title
+        else:
+            blog_title = await self._generate_title(
+                region, policy_issues, user_query, needs_classification=True
+            )
+
+        # 카테고리 / 해시태그 / 메타 설명
+        category = await self._classify_category(blog_content)
+        tags = await self._generate_hashtags(blog_content)
+        meta_description = await self._generate_meta_description(
+            region, policy_issues, user_query
+        )
+
+        # 호재/악재 분리 (하위 호환)
+        positive_issues = [i for i in policy_issues if hasattr(i, 'sentiment') and i.sentiment == "positive"]
+        negative_issues = [i for i in policy_issues if hasattr(i, 'sentiment') and i.sentiment == "negative"]
+
+        # 이미지 경로 (그래프 이미지 포함)
+        image_paths = []
+        if analysis.chart_image_path:
+            image_paths.append(analysis.chart_image_path)
+
+        return RegionalAnalysisContent(
+            region=region,
+            analysis_date=datetime.now(),
+            positive_issues=positive_issues,
+            negative_issues=negative_issues,
+            blog_title=blog_title,
+            blog_content=blog_content,
+            category=category,
+            tags=tags,
+            meta_description=meta_description,
+            image_paths=image_paths,
+        )
+
+    async def _generate_chart_description(
+        self, analysis: DevelopmentEventAnalysis
+    ) -> str:
+        """그래프 데이터를 기반으로 설명 문단을 생성합니다."""
+        if not analysis.chart_data:
+            return ""
+
+        chart_summary = "\n".join(
+            [f"- {d['year']}년: 호재 {d['positive']}건, 악재 {d['negative']}건" for d in analysis.chart_data]
+        )
+
+        prompt = f"""다음 연도별 호재/악재 통계를 기반으로 그래프 설명 문단(2~3문장)을 작성하세요.
+
+지역: {analysis.region}
+분석 기간: {analysis.period}
+
+{chart_summary}
+
+총 호재: {analysis.total_positive}건, 총 악재: {analysis.total_negative}건
+가장 활발한 연도: {analysis.most_active_year}년
+
+설명 문단만 반환하세요 (따옴표나 다른 표시 없이)."""
+
+        try:
+            messages = [HumanMessage(content=prompt)]
+            response = await self.llm.ainvoke(messages)
+            return response.content.strip()
+        except Exception as e:
+            print(f"[그래프 설명 생성 오류]: {e}")
+            return f"{analysis.period} 기간 동안 총 {analysis.total_positive}건의 호재와 {analysis.total_negative}건의 악재가 확인되었습니다."
+
+    def _generate_yearly_table(self, yearly_summaries: List[YearlyEventSummary]) -> str:
+        """연도별 통계를 마크다운 표 + 텍스트 형식으로 변환합니다."""
+        if not yearly_summaries:
+            return "(연도별 데이터 없음)"
+
+        lines = []
+
+        # 텍스트 형식 (사용자 요구 형식)
+        lines.append("### 연도별 개발 이슈 요약")
+        lines.append("")
+        for ys in yearly_summaries:
+            event_parts = []
+            pos_count = 0
+            neg_count = 0
+            for event in ys.events:
+                if event.event_type == "positive":
+                    pos_count += 1
+                    event_parts.append(f"{event.event_name}(호재 {pos_count})")
+                else:
+                    neg_count += 1
+                    event_parts.append(f"{event.event_name}(악재 {neg_count})")
+            events_str = ", ".join(event_parts)
+            lines.append(f"- **{ys.year}년**: {events_str}")
+
+        lines.append("")
+
+        # 마크다운 표
+        lines.append("| 연도 | 호재 | 악재 | 합계 |")
+        lines.append("|------|------|------|------|")
+        for ys in yearly_summaries:
+            total = ys.positive + ys.negative
+            lines.append(f"| {ys.year} | {ys.positive}건 | {ys.negative}건 | {total}건 |")
+
+        return "\n".join(lines)
+
+    def _format_category_sections(self, category_analyses: List[CategoryAnalysis]) -> str:
+        """카테고리별 분석을 마크다운 섹션으로 포맷합니다."""
+        if not category_analyses:
+            return "(카테고리별 분석 없음)"
+
+        sections = []
+        for ca in category_analyses:
+            emoji = "✅" if ca.event_type == "positive" else "⚠️"
+            section = f"### {emoji} {ca.category}\n"
+            section += "내용:\n"
+            for desc in ca.descriptions:
+                section += f'\n"{desc}"\n'
+            tags_str = " ".join(ca.tags)
+            section += f"\n태그: {tags_str}\n"
+            sections.append(section)
+
+        return "\n".join(sections)
 
     # ========================================================
     # Fallback
