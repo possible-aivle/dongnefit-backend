@@ -3,7 +3,14 @@
 from app.models.administrative import AdministrativeDivision, AdministrativeEmd
 from app.models.base import PublicDataBase, TimestampMixin
 from app.models.blog import BlogPost, BlogStatus
-from app.models.building import BuildingRegisterFloorDetail, BuildingRegisterHeader
+from app.models.building import (
+    BuildingRegisterAncillaryLot,
+    BuildingRegisterArea,
+    BuildingRegisterFloorDetail,
+    BuildingRegisterGeneral,
+    BuildingRegisterHeader,
+    GisBuildingIntegrated,
+)
 from app.models.discussion import (
     Discussion,
     DiscussionLike,
@@ -18,12 +25,13 @@ from app.models.enums import (
 )
 from app.models.file import FileStorage
 from app.models.land import LandAndForestInfo, LandCharacteristic, LandUsePlan
+from app.models.land_ownership import LandOwnership
 from app.models.lot import AncillaryLand, Lot
 from app.models.neighborhood import Neighborhood
 from app.models.notification import Notification, NotificationSettings, NotificationType
 from app.models.report import Report, ReportCategory, ReportReview, ReportStatus
 from app.models.spatial import RoadCenterLine, UseRegionDistrict
-from app.models.transaction import OfficialLandPrice, RealEstateTransaction
+from app.models.transaction import OfficialLandPrice, RealEstateRental, RealEstateSale
 from app.models.user import AuthProvider, User, UserRole
 
 __all__ = [
@@ -70,12 +78,18 @@ __all__ = [
     "LandCharacteristic",
     "LandUsePlan",
     "LandAndForestInfo",
+    "LandOwnership",
     # Building (건물)
     "BuildingRegisterHeader",
+    "BuildingRegisterGeneral",
     "BuildingRegisterFloorDetail",
+    "BuildingRegisterArea",
+    "BuildingRegisterAncillaryLot",
+    "GisBuildingIntegrated",
     # Transaction (실거래가/공시지가)
     "OfficialLandPrice",
-    "RealEstateTransaction",
+    "RealEstateSale",
+    "RealEstateRental",
     # Spatial (GIS)
     "RoadCenterLine",
     "UseRegionDistrict",

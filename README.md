@@ -97,6 +97,9 @@ backend/
 │   ├── cli.py                   # 인터랙티브 메뉴
 │   ├── clients/                 # 데이터 소스 클라이언트
 │   ├── processors/              # 데이터 변환 프로세서
+│   ├── transaction_crawler/     # 실거래가 엑셀 크롤러
+│   │   ├── __main__.py          # CLI 진입점
+│   │   └── crawler.py           # 크롤러 로직 (httpx 기반)
 │   ├── loader.py                # 동적 모듈 로더
 │   ├── db_manager.py            # DB 매니저
 │   └── registry.py              # 모듈 레지스트리
@@ -180,8 +183,45 @@ uv run uvicorn app.main:app --reload --port 8000
 ### 6. 공공데이터 파이프라인 실행
 
 ```bash
+# CLI 실행 (인터랙티브 메뉴)
 uv run python -m pipeline
+
+# "공공데이터 적재 (파일 → DB)" 선택
+# → 데이터 소스 복수 선택 (토지/건물/공간/거래 19종)
+# → 지역 선택 (시도/시군구 단위 필터링)
+# → UPSERT/TRUNCATE 옵션 → 적재 실행
 ```
+
+`pipeline/public_data/` 디렉토리에 ZIP/CSV/TXT/XLSX 원본 파일이 필요합니다.
+
+### 7. 실거래가 크롤러
+
+국토교통부 실거래가공개시스템(https://rt.molit.go.kr)에서 엑셀 데이터를 월별로 다운로드합니다.
+
+- 대상: 아파트(A), 연립/다세대(B), 단독/다가구(C), 오피스텔(D), 토지(G)
+- 매매 + 전월세 (전월세는 신규 계약만)
+- 전국 단위 다운로드 시 1개월(31일) 제한 → 자동 월별 분할
+- 일일 다운로드 100건 제한 감지 시 자동 중단
+- 이미 받은 파일은 자동 스킵 (재실행 안전)
+
+```bash
+# 전체 다운로드 (기본: 최근 1년)
+uv run python -m pipeline.transaction_crawler
+
+# 기간 지정
+uv run python -m pipeline.transaction_crawler --start 2025-01-01 --end 2025-12-31
+
+# 특정 부동산 유형만 (A=아파트, B=연립다세대, C=단독다가구, D=오피스텔, G=토지)
+uv run python -m pipeline.transaction_crawler --types A B
+
+# 매매만 (전월세 제외)
+uv run python -m pipeline.transaction_crawler --no-rent
+
+# 테스트 (아파트 매매 당월만)
+uv run python -m pipeline.transaction_crawler --test
+```
+
+다운로드 파일 위치: `pipeline/public_data/실거래가/`
 
 ## API 문서
 

@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any
 
-from app.schemas.base import BaseSchema
+from app.schemas.base import BaseSchema, GeoJSON
 
 
 class RoadCenterLineCreate(BaseSchema):
@@ -11,9 +11,8 @@ class RoadCenterLineCreate(BaseSchema):
 
     source_id: str
     road_name: str | None = None
-    admin_code: str | None = None
     geometry: dict[str, Any] | None = None
-    raw_data: dict[str, Any] | None = None
+
 
 
 class RoadCenterLineRead(BaseSchema):
@@ -22,12 +21,10 @@ class RoadCenterLineRead(BaseSchema):
     id: int
     source_id: str
     road_name: str | None
-    admin_code: str | None
-    geometry: dict[str, Any] | None
-    raw_data: dict[str, Any] | None
-    collected_at: datetime
+    geometry: GeoJSON = None
+
+
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class UseRegionDistrictCreate(BaseSchema):
@@ -38,7 +35,7 @@ class UseRegionDistrictCreate(BaseSchema):
     district_code: str | None = None
     admin_code: str | None = None
     geometry: dict[str, Any] | None = None
-    raw_data: dict[str, Any] | None = None
+
 
 
 class UseRegionDistrictRead(BaseSchema):
@@ -49,8 +46,7 @@ class UseRegionDistrictRead(BaseSchema):
     district_name: str | None
     district_code: str | None
     admin_code: str | None
-    geometry: dict[str, Any] | None
-    raw_data: dict[str, Any] | None
-    collected_at: datetime
+    geometry: GeoJSON = None
+
+
     created_at: datetime | None
-    updated_at: datetime | None

@@ -1,7 +1,6 @@
 """토지 관련 스키마."""
 
 from datetime import datetime
-from typing import Any
 
 from app.schemas.base import BaseSchema
 
@@ -11,7 +10,12 @@ class LandCharacteristicCreate(BaseSchema):
 
     pnu: str
     data_year: int
-    raw_data: dict[str, Any] | None = None
+    jimok_name: str | None = None
+    land_area: float | None = None
+    use_zone_name: str | None = None
+    land_use_name: str | None = None
+    official_price: int | None = None
+
 
 
 class LandCharacteristicRead(BaseSchema):
@@ -20,10 +24,14 @@ class LandCharacteristicRead(BaseSchema):
     id: int
     pnu: str
     data_year: int
-    raw_data: dict[str, Any] | None
-    collected_at: datetime
+    jimok_name: str | None
+    land_area: float | None
+    use_zone_name: str | None
+    land_use_name: str | None
+    official_price: int | None
+
+
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class LandUsePlanCreate(BaseSchema):
@@ -31,7 +39,8 @@ class LandUsePlanCreate(BaseSchema):
 
     pnu: str
     data_year: int
-    raw_data: dict[str, Any] | None = None
+    use_district_name: str | None = None
+
 
 
 class LandUsePlanRead(BaseSchema):
@@ -40,10 +49,10 @@ class LandUsePlanRead(BaseSchema):
     id: int
     pnu: str
     data_year: int
-    raw_data: dict[str, Any] | None
-    collected_at: datetime
+    use_district_name: str | None
+
+
     created_at: datetime | None
-    updated_at: datetime | None
 
 
 class LandAndForestInfoCreate(BaseSchema):
@@ -51,7 +60,11 @@ class LandAndForestInfoCreate(BaseSchema):
 
     pnu: str
     data_year: int
-    raw_data: dict[str, Any] | None = None
+    jimok_name: str | None = None
+    area: float | None = None
+    ownership_name: str | None = None
+    owner_count: int | None = None
+
 
 
 class LandAndForestInfoRead(BaseSchema):
@@ -60,7 +73,10 @@ class LandAndForestInfoRead(BaseSchema):
     id: int
     pnu: str
     data_year: int
-    raw_data: dict[str, Any] | None
-    collected_at: datetime
+    jimok_name: str | None
+    area: float | None
+    ownership_name: str | None
+    owner_count: int | None
+
+
     created_at: datetime | None
-    updated_at: datetime | None

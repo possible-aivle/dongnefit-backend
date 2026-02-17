@@ -8,16 +8,27 @@ from app.schemas.administrative import (
 )
 from app.schemas.base import (
     BaseSchema,
+    GeoJSON,
     PaginatedResponse,
     PaginationMeta,
     PaginationParams,
     TimestampSchema,
+    wkb_to_geojson,
+    wkb_to_shapely,
 )
 from app.schemas.building import (
+    BuildingRegisterAncillaryLotCreate,
+    BuildingRegisterAncillaryLotRead,
+    BuildingRegisterAreaCreate,
+    BuildingRegisterAreaRead,
     BuildingRegisterFloorDetailCreate,
     BuildingRegisterFloorDetailRead,
+    BuildingRegisterGeneralCreate,
+    BuildingRegisterGeneralRead,
     BuildingRegisterHeaderCreate,
     BuildingRegisterHeaderRead,
+    GisBuildingIntegratedCreate,
+    GisBuildingIntegratedRead,
 )
 from app.schemas.land import (
     LandAndForestInfoCreate,
@@ -26,6 +37,10 @@ from app.schemas.land import (
     LandCharacteristicRead,
     LandUsePlanCreate,
     LandUsePlanRead,
+)
+from app.schemas.land_ownership import (
+    LandOwnershipCreate,
+    LandOwnershipRead,
 )
 from app.schemas.lot import (
     AncillaryLandCreate,
@@ -42,8 +57,10 @@ from app.schemas.spatial import (
 from app.schemas.transaction import (
     OfficialLandPriceCreate,
     OfficialLandPriceRead,
-    RealEstateTransactionCreate,
-    RealEstateTransactionRead,
+    RealEstateRentalCreate,
+    RealEstateRentalRead,
+    RealEstateSaleCreate,
+    RealEstateSaleRead,
 )
 
 __all__ = [
@@ -53,6 +70,10 @@ __all__ = [
     "PaginationParams",
     "PaginationMeta",
     "PaginatedResponse",
+    # Geometry
+    "GeoJSON",
+    "wkb_to_geojson",
+    "wkb_to_shapely",
     # Lot
     "LotCreate",
     "LotRead",
@@ -70,16 +91,28 @@ __all__ = [
     "LandUsePlanRead",
     "LandAndForestInfoCreate",
     "LandAndForestInfoRead",
+    "LandOwnershipCreate",
+    "LandOwnershipRead",
     # Building
     "BuildingRegisterHeaderCreate",
     "BuildingRegisterHeaderRead",
+    "BuildingRegisterGeneralCreate",
+    "BuildingRegisterGeneralRead",
     "BuildingRegisterFloorDetailCreate",
     "BuildingRegisterFloorDetailRead",
+    "BuildingRegisterAreaCreate",
+    "BuildingRegisterAreaRead",
+    "BuildingRegisterAncillaryLotCreate",
+    "BuildingRegisterAncillaryLotRead",
+    "GisBuildingIntegratedCreate",
+    "GisBuildingIntegratedRead",
     # Transaction
     "OfficialLandPriceCreate",
     "OfficialLandPriceRead",
-    "RealEstateTransactionCreate",
-    "RealEstateTransactionRead",
+    "RealEstateSaleCreate",
+    "RealEstateSaleRead",
+    "RealEstateRentalCreate",
+    "RealEstateRentalRead",
     # Spatial
     "RoadCenterLineCreate",
     "RoadCenterLineRead",
