@@ -10,13 +10,11 @@ from pathlib import Path
 
 from InquirerPy import inquirer
 from InquirerPy.separator import Separator
-from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from app.pipeline import console
 from app.pipeline.db_manager import DbManager
-
-console = Console()
 
 
 def get_db_manager() -> DbManager:
@@ -210,7 +208,7 @@ DATA_SOURCES: dict[str, dict] = {
     "official_land_price": {
         "name": "개별공시지가",
         "category": "토지",
-        "dir": "개발공시지가",
+        "dir": "개별공시지가",
         "processor": "official_land_price",
         "file_type": "sido_code",
     },
@@ -558,6 +556,9 @@ def action_stats(db: DbManager) -> None:
         console.print("[dim]alembic upgrade head 를 먼저 실행하세요.[/]")
         return
 
+    # 단일 쿼리로 모든 행 수 조회
+    row_counts = db._get_all_row_counts(config)
+
     table = Table(title=f"[{env}] 공공데이터 현황 ({config.display_name})")
     table.add_column("#", style="dim")
     table.add_column("테이블", style="cyan")
@@ -565,7 +566,7 @@ def action_stats(db: DbManager) -> None:
     table.add_column("행 수", style="green", justify="right")
 
     for i, tbl in enumerate(matched, 1):
-        count = db._get_row_count(config, tbl)
+        count = row_counts.get(tbl, 0)
         data_type = public_tables[tbl].value
         table.add_row(str(i), tbl, data_type, str(count))
 

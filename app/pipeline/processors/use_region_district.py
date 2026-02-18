@@ -4,12 +4,10 @@
 파일: AL_D131_00_*.zip, AL_D067_00_*.zip 등 (여러 유형).
 """
 
-from pathlib import Path
 from typing import Any
 
-from rich.console import Console
-
 from app.models.enums import PublicDataType
+from app.pipeline import console
 from app.pipeline.file_utils import (
     cleanup_temp_dir,
     extract_zip,
@@ -17,12 +15,8 @@ from app.pipeline.file_utils import (
     geojson_to_wkt,
     read_shp_features,
 )
-from app.pipeline.processors.base import BaseProcessor, ProcessResult
+from app.pipeline.processors.base import PUBLIC_DATA_DIR, BaseProcessor, ProcessResult
 from app.pipeline.registry import Registry
-
-console = Console()
-
-PUBLIC_DATA_DIR = Path(__file__).parent.parent / "public_data"
 
 
 class UseRegionDistrictProcessor(BaseProcessor):

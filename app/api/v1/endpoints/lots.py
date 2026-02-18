@@ -1,6 +1,5 @@
 """필지(Lot) 엔드포인트 - 검색 + 종합 조회."""
 
-import asyncio
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -10,13 +9,12 @@ from app.crud import public_data as crud
 from app.database import get_db
 from app.schemas.base import PaginatedResponse, PaginationMeta
 from app.schemas.public_data import (
-    ForestInfo,
-    LandInfo,
-    LandUsePlanInfo,
+    AncillaryLotItem,
     LotDetailResponse,
     LotSearchResult,
-    OfficialPriceInfo,
-    OwnershipInfo,
+    OfficialPriceItem,
+    OwnershipItem,
+    UsePlanItem,
 )
 
 router = APIRouter()
@@ -37,11 +35,10 @@ def _validate_pnu(pnu: str) -> None:
     "/search",
     response_model=PaginatedResponse[LotSearchResult] | list[LotSearchResult],
     summary="필지 검색",
-    description="주소 키워드, 좌표, 또는 시군구코드로 필지를 검색합니다.",
+    description="좌표 또는 시군구코드로 필지를 검색합니다.",
 )
 async def search_lots(
     db: AsyncSession = Depends(get_db),
-    address: str | None = Query(None, description="주소 키워드 검색"),
     lat: float | None = Query(None, description="위도 (좌표 검색)"),
     lng: float | None = Query(None, description="경도 (좌표 검색)"),
     sgg_code: str | None = Query(None, description="시군구코드 (5자리)"),
@@ -71,14 +68,9 @@ async def search_lots(
             ),
         )
 
-    # 주소 키워드 검색
-    if address:
-        lots = await crud.search_lots_by_address(db, address, limit=limit)
-        return [LotSearchResult.model_validate(lot) for lot in lots]
-
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail="address, lat+lng, 또는 sgg_code 중 하나를 지정해야 합니다.",
+        detail="lat+lng 또는 sgg_code 중 하나를 지정해야 합니다.",
     )
 
 
@@ -86,7 +78,7 @@ async def search_lots(
     "/{pnu}",
     response_model=LotDetailResponse,
     summary="필지 종합 조회",
-    description="PNU로 필지의 토지특성, 이용계획, 임야정보, 공시지가, 소유정보를 종합 조회합니다.",
+    description="PNU로 필지의 토지특성, 이용계획, 공시지가, 소유정보를 종합 조회합니다.",
 )
 async def get_lot_detail(
     pnu: str,
@@ -101,21 +93,26 @@ async def get_lot_detail(
             detail="필지를 찾을 수 없습니다.",
         )
 
-    land, land_use, forest, price, ownerships = await asyncio.gather(
-        crud.get_land_characteristic(db, pnu),
-        crud.get_land_use_plan(db, pnu),
-        crud.get_land_forest_info(db, pnu),
-        crud.get_official_land_price(db, pnu),
-        crud.get_land_ownerships(db, pnu),
-    )
-
     return LotDetailResponse(
         pnu=lot.pnu,
-        jibun_address=lot.jibun_address,
         geometry=lot.geometry,
-        land=LandInfo.model_validate(land) if land else None,
-        land_use_plan=LandUsePlanInfo.model_validate(land_use) if land_use else None,
-        forest_info=ForestInfo.model_validate(forest) if forest else None,
-        official_price=OfficialPriceInfo.model_validate(price) if price else None,
-        ownerships=[OwnershipInfo.model_validate(o) for o in ownerships],
+        jimok=lot.jimok,
+        area=lot.area,
+        use_zone=lot.use_zone,
+        land_use=lot.land_use,
+        official_price=lot.official_price,
+        ownership=lot.ownership,
+        owner_count=lot.owner_count,
+        use_plans=[
+            UsePlanItem.model_validate(p) for p in (lot.use_plans or [])
+        ],
+        ownerships=[
+            OwnershipItem.model_validate(o) for o in (lot.ownerships or [])
+        ],
+        official_prices=[
+            OfficialPriceItem.model_validate(p) for p in (lot.official_prices or [])
+        ],
+        ancillary_lots=[
+            AncillaryLotItem.model_validate(a) for a in (lot.ancillary_lots or [])
+        ],
     )

@@ -21,10 +21,8 @@ from app.models.building import (
     GisBuildingIntegrated,
 )
 from app.models.enums import PropertyType, TransactionType
-from app.models.land import LandAndForestInfo, LandCharacteristic, LandUsePlan
-from app.models.land_ownership import LandOwnership
 from app.models.lot import Lot
-from app.models.transaction import OfficialLandPrice, RealEstateRental, RealEstateSale
+from app.models.transaction import RealEstateRental, RealEstateSale
 
 # ──────────────────────────── 필지(Lot) ────────────────────────────
 
@@ -32,18 +30,6 @@ from app.models.transaction import OfficialLandPrice, RealEstateRental, RealEsta
 async def get_lot_by_pnu(db: AsyncSession, pnu: str) -> Lot | None:
     result = await db.execute(select(Lot).where(Lot.pnu == pnu))
     return result.scalar_one_or_none()
-
-
-async def search_lots_by_address(
-    db: AsyncSession, keyword: str, *, limit: int = 20
-) -> list[Lot]:
-    stmt = (
-        select(Lot)
-        .where(Lot.jibun_address.ilike(f"%{keyword}%"))
-        .limit(limit)
-    )
-    result = await db.execute(stmt)
-    return list(result.scalars().all())
 
 
 async def search_lot_by_point(
@@ -65,67 +51,6 @@ async def search_lots_by_sgg(
     stmt = base.offset(offset).limit(limit)
     result = await db.execute(stmt)
     return list(result.scalars().all()), total
-
-
-# ──────────────────────────── 토지 ────────────────────────────
-
-
-async def get_land_characteristic(
-    db: AsyncSession, pnu: str
-) -> LandCharacteristic | None:
-    stmt = (
-        select(LandCharacteristic)
-        .where(LandCharacteristic.pnu == pnu)
-        .order_by(desc(LandCharacteristic.data_year))
-        .limit(1)
-    )
-    result = await db.execute(stmt)
-    return result.scalar_one_or_none()
-
-
-async def get_land_use_plan(db: AsyncSession, pnu: str) -> LandUsePlan | None:
-    stmt = (
-        select(LandUsePlan)
-        .where(LandUsePlan.pnu == pnu)
-        .order_by(desc(LandUsePlan.data_year))
-        .limit(1)
-    )
-    result = await db.execute(stmt)
-    return result.scalar_one_or_none()
-
-
-async def get_land_forest_info(
-    db: AsyncSession, pnu: str
-) -> LandAndForestInfo | None:
-    stmt = (
-        select(LandAndForestInfo)
-        .where(LandAndForestInfo.pnu == pnu)
-        .order_by(desc(LandAndForestInfo.data_year))
-        .limit(1)
-    )
-    result = await db.execute(stmt)
-    return result.scalar_one_or_none()
-
-
-async def get_official_land_price(
-    db: AsyncSession, pnu: str
-) -> OfficialLandPrice | None:
-    stmt = (
-        select(OfficialLandPrice)
-        .where(OfficialLandPrice.pnu == pnu)
-        .order_by(desc(OfficialLandPrice.base_year))
-        .limit(1)
-    )
-    result = await db.execute(stmt)
-    return result.scalar_one_or_none()
-
-
-async def get_land_ownerships(
-    db: AsyncSession, pnu: str
-) -> list[LandOwnership]:
-    stmt = select(LandOwnership).where(LandOwnership.pnu == pnu)
-    result = await db.execute(stmt)
-    return list(result.scalars().all())
 
 
 # ──────────────────────────── 건축물 ────────────────────────────

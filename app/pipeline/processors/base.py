@@ -6,6 +6,16 @@ from pathlib import Path
 from typing import Any
 
 from app.models.enums import PublicDataType
+from app.pipeline.parsing import safe_float, safe_int
+
+# 모듈 레벨 PNU 캐시 (한 세션 내에서 재사용)
+_valid_pnu_cache: set[str] | None = None
+
+
+def invalidate_pnu_cache() -> None:
+    """PNU 캐시를 무효화합니다. 연속지적도 적재 후 호출하세요."""
+    global _valid_pnu_cache
+    _valid_pnu_cache = None
 
 
 @dataclass
@@ -45,6 +55,36 @@ class BaseProcessor(ABC):
     description: str  # 예: "연속지적도 (vworld)"
     data_type: PublicDataType  # 예: PublicDataType.CONTINUOUS_CADASTRAL
     simplify_tolerance: float | None = None  # geometry 단순화 허용 오차 (도 단위)
+    batch_size: int = 500  # load() 배치 사이즈 (서브클래스에서 오버라이드 가능)
+    jsonb_column: str | None = None  # transform 후 자동 JSONB aggregation 컬럼
+    pnu_field: str | None = None  # PNU 검증 필드명 (설정 시 lots 테이블에 존재하는 PNU만 적재)
+
+    _safe_int = staticmethod(safe_int)
+    _safe_float = staticmethod(safe_float)
+
+    @staticmethod
+    def _aggregate_jsonb(
+        records: list[dict[str, Any]], jsonb_column: str
+    ) -> list[dict[str, Any]]:
+        """1:N 레코드를 PNU별로 그룹핑하여 JSONB 배열로 집계합니다.
+
+        입력: [{pnu: "X", a: 1, b: 2}, {pnu: "X", a: 3, b: 4}]
+        출력: [{pnu: "X", <jsonb_column>: [{a: 1, b: 2}, {a: 3, b: 4}]}]
+        """
+        from collections import defaultdict
+
+        groups: dict[str, list[dict]] = defaultdict(list)
+        for rec in records:
+            pnu = rec.get("pnu")
+            if not pnu:
+                continue
+            item = {k: v for k, v in rec.items() if k != "pnu"}
+            groups[pnu].append(item)
+
+        return [
+            {"pnu": pnu, jsonb_column: items}
+            for pnu, items in groups.items()
+        ]
 
     @abstractmethod
     async def collect(self, params: dict[str, Any]) -> list[dict]:
@@ -62,7 +102,7 @@ class BaseProcessor(ABC):
         ...
 
     async def run(self, params: dict[str, Any] | None = None) -> ProcessResult:
-        """수집 → 변환 → 적재 전체 파이프라인을 실행합니다."""
+        """수집 → 변환 → (PNU 검증) → 적재 전체 파이프라인을 실행합니다."""
         if params is None:
             params = self.get_params_interactive()
 
@@ -71,9 +111,57 @@ class BaseProcessor(ABC):
             return ProcessResult()
 
         records = self.transform(raw)
+        if self.jsonb_column:
+            records = self._aggregate_jsonb(records, self.jsonb_column)
+
+        # PNU 검증: lots 테이블(연속지적도)에 존재하는 PNU만 적재
+        skipped = 0
+        if self.pnu_field and records:
+            valid_pnus = await self._load_valid_pnus()
+            if not valid_pnus:
+                from app.pipeline import console
+
+                console.print(
+                    "[red bold]  ⚠ lots 테이블에 데이터가 없습니다. "
+                    "연속지적도를 먼저 적재해주세요.[/]"
+                )
+                return ProcessResult(collected=len(raw), skipped=len(records))
+
+            before = len(records)
+            records = [r for r in records if r.get(self.pnu_field) in valid_pnus]
+            skipped = before - len(records)
+            if skipped > 0:
+                from app.pipeline import console
+
+                console.print(
+                    f"  PNU 검증: {before}건 중 {skipped}건 스킵 "
+                    f"(연속지적도에 없는 PNU)"
+                )
+
         result = await self.load(records)
         result.collected = len(raw)
+        result.skipped += skipped
         return result
+
+    @staticmethod
+    async def _load_valid_pnus() -> set[str]:
+        """lots 테이블에서 유효한 PNU 집합을 로드합니다 (캐시 사용)."""
+        global _valid_pnu_cache
+        if _valid_pnu_cache is not None:
+            return _valid_pnu_cache
+
+        from sqlalchemy import text
+
+        from app.database import async_session_maker
+        from app.pipeline import console
+
+        console.print("  [dim]연속지적도 PNU 목록 로딩 중...[/]")
+        async with async_session_maker() as session:
+            rows = await session.execute(text("SELECT pnu FROM lots"))
+            _valid_pnu_cache = {row[0] for row in rows}
+
+        console.print(f"  [dim]유효 PNU: {len(_valid_pnu_cache):,}건 로드[/]")
+        return _valid_pnu_cache
 
     async def load(self, records: list[dict[str, Any]]) -> ProcessResult:
         """변환된 데이터를 DB에 적재합니다.
@@ -87,6 +175,7 @@ class BaseProcessor(ABC):
         async with async_session_maker() as session:
             result = await bulk_upsert(
                 session, self.data_type, records,
+                batch_size=self.batch_size,
                 simplify_tolerance=self.simplify_tolerance,
             )
 
@@ -96,46 +185,3 @@ class BaseProcessor(ABC):
 # ── 공공데이터 파일 기반 프로세서 ──
 
 PUBLIC_DATA_DIR = Path(__file__).parent.parent / "public_data"
-
-
-class BaseFileProcessor(BaseProcessor):
-    """파일 기반 공공데이터 프로세서 베이스 클래스.
-
-    public_data/ 디렉토리의 ZIP/CSV/TXT/SHP 파일을 직접 적재하는
-    프로세서의 공통 베이스입니다.
-
-    서브클래스에서 정의:
-        - data_dir_name: str - public_data 하위 디렉토리명
-        - file_pattern: str - ZIP 파일 패턴 (기본 "*.zip")
-    """
-
-    data_dir_name: str = ""
-    file_pattern: str = "*.zip"
-
-    @property
-    def data_dir(self) -> Path:
-        return PUBLIC_DATA_DIR / self.data_dir_name
-
-    async def run_batch(
-        self,
-        sgg_prefixes: list[str] | None = None,
-        sido_codes: set[str] | None = None,
-        province_names: set[str] | None = None,
-        truncate: bool = False,
-    ) -> ProcessResult:
-        """배치 적재 메서드.
-
-        CLI 공공데이터 적재 플로우에서 호출됩니다.
-        기본 구현은 sgg_prefixes를 params에 넣어 run()을 호출합니다.
-        """
-        params: dict[str, Any] = {}
-        if sgg_prefixes:
-            params["sgg_prefixes"] = sgg_prefixes
-        if sido_codes:
-            params["sido_codes"] = sido_codes
-        if province_names:
-            params["province_names"] = list(province_names)
-        if truncate:
-            params["truncate"] = truncate
-
-        return await self.run(params)

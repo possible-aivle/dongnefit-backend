@@ -12,8 +12,22 @@ class LotCreate(BaseSchema):
     """필지 생성 스키마."""
 
     pnu: str
-    jibun_address: str | None = None
     geometry: dict[str, Any] | None = None
+
+    # flat 컬럼
+    jimok: str | None = None
+    area: float | None = None
+    use_zone: str | None = None
+    land_use: str | None = None
+    official_price: int | None = None
+    ownership: str | None = None
+    owner_count: int | None = None
+
+    # JSONB 컬럼
+    use_plans: list[dict[str, Any]] | None = None
+    ownerships: list[dict[str, Any]] | None = None
+    official_prices: list[dict[str, Any]] | None = None
+    ancillary_lots: list[dict[str, Any]] | None = None
 
     @field_validator("pnu")
     @classmethod
@@ -27,22 +41,22 @@ class LotRead(BaseSchema):
     """필지 조회 스키마."""
 
     pnu: str
-    jibun_address: str | None
     geometry: GeoJSON = None
-    created_at: datetime | None
+    created_at: datetime | None = None
+
+    # flat 컬럼
+    jimok: str | None = None
+    area: float | None = None
+    use_zone: str | None = None
+    land_use: str | None = None
+    official_price: int | None = None
+    ownership: str | None = None
+    owner_count: int | None = None
+
+    # JSONB 컬럼
+    use_plans: list[dict[str, Any]] | None = None
+    ownerships: list[dict[str, Any]] | None = None
+    official_prices: list[dict[str, Any]] | None = None
+    ancillary_lots: list[dict[str, Any]] | None = None
 
 
-class AncillaryLandCreate(BaseSchema):
-    """부속필지 생성 스키마."""
-
-    pnu: str
-
-
-
-class AncillaryLandRead(BaseSchema):
-    """부속필지 조회 스키마."""
-
-    id: int
-    pnu: str
-
-    created_at: datetime | None

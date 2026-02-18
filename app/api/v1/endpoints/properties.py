@@ -9,13 +9,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud import public_data as crud
 from app.database import get_db
 from app.schemas.public_data import (
+    AncillaryLotItem,
     BuildingSummary,
-    LandInfo,
-    LotSummary,
-    OfficialPriceInfo,
+    LotDetailResponse,
+    OfficialPriceItem,
+    OwnershipItem,
     PropertySummaryResponse,
     RentalResponse,
     SaleResponse,
+    UsePlanItem,
 )
 
 router = APIRouter()
@@ -27,7 +29,7 @@ PNU_PATTERN = re.compile(r"^\d{19}$")
     "/{pnu}/summary",
     response_model=PropertySummaryResponse,
     summary="부동산 통합 요약 조회",
-    description="PNU로 필지, 토지, 건축물, 최근 실거래가를 통합 조회합니다. AI 콘텐츠 생성에 최적화.",
+    description="PNU로 필지, 건축물, 최근 실거래가를 통합 조회합니다. AI 콘텐츠 생성에 최적화.",
 )
 async def get_property_summary(
     pnu: str,
@@ -49,10 +51,8 @@ async def get_property_summary(
     # PNU에서 sgg_code 추출 (앞 5자리)
     sgg_code = pnu[:5]
 
-    # 6개 쿼리를 병렬 실행
-    land, price, general, headers, recent_sales, recent_rentals = await asyncio.gather(
-        crud.get_land_characteristic(db, pnu),
-        crud.get_official_land_price(db, pnu),
+    # 4개 쿼리를 병렬 실행 (lot은 이미 모든 토지 데이터 포함)
+    general, headers, recent_sales, recent_rentals = await asyncio.gather(
         crud.get_building_general(db, pnu),
         crud.get_building_headers(db, pnu),
         crud.get_recent_sales_by_sgg(db, sgg_code, limit=5),
@@ -73,10 +73,24 @@ async def get_property_summary(
             building_summary.above_ground_floors = first.above_ground_floors
             building_summary.underground_floors = first.underground_floors
 
+    lot_detail = LotDetailResponse(
+        pnu=lot.pnu,
+        geometry=lot.geometry,
+        jimok=lot.jimok,
+        area=lot.area,
+        use_zone=lot.use_zone,
+        land_use=lot.land_use,
+        official_price=lot.official_price,
+        ownership=lot.ownership,
+        owner_count=lot.owner_count,
+        use_plans=[UsePlanItem.model_validate(p) for p in (lot.use_plans or [])],
+        ownerships=[OwnershipItem.model_validate(o) for o in (lot.ownerships or [])],
+        official_prices=[OfficialPriceItem.model_validate(p) for p in (lot.official_prices or [])],
+        ancillary_lots=[AncillaryLotItem.model_validate(a) for a in (lot.ancillary_lots or [])],
+    )
+
     return PropertySummaryResponse(
-        lot=LotSummary(pnu=lot.pnu, jibun_address=lot.jibun_address),
-        land=LandInfo.model_validate(land) if land else None,
-        official_price=OfficialPriceInfo.model_validate(price) if price else None,
+        lot=lot_detail,
         building=building_summary,
         recent_sales=[SaleResponse.model_validate(s) for s in recent_sales],
         recent_rentals=[RentalResponse.model_validate(r) for r in recent_rentals],

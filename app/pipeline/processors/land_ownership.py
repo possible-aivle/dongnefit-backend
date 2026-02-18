@@ -13,6 +13,7 @@ class LandOwnershipProcessor(VworldCsvProcessor):
     name = "land_ownership"
     description = "토지소유정보 (AL_D401)"
     data_type = PublicDataType.LAND_OWNERSHIP
+    jsonb_column = "ownerships"
 
     COLUMN_MAP: dict[str, str] = {
         "고유번호": "pnu",

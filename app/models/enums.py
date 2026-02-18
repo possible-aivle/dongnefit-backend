@@ -25,7 +25,6 @@ class PublicDataType(Enum):
     """공공데이터 유형 (수집 이력 추적용)."""
 
     CONTINUOUS_CADASTRAL = "continuous_cadastral"
-    ANCILLARY_LAND = "ancillary_land"
     LAND_CHARACTERISTIC = "land_characteristic"
     LAND_USE_PLAN = "land_use_plan"
     LAND_AND_FOREST_INFO = "land_and_forest_info"

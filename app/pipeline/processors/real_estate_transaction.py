@@ -16,18 +16,19 @@ Usage:
     uv run python -m app.pipeline.processors.real_estate_transaction
 """
 
+import traceback
+import warnings
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from rich.console import Console
 
+from app.models.base import get_utc_now
 from app.models.enums import PropertyType, PublicDataType, TransactionType
+from app.pipeline import console
 from app.pipeline.processors.base import BaseProcessor, ProcessResult
 from app.pipeline.registry import Registry
-
-console = Console()
 
 SALE_EXCEL_DIR = Path(__file__).parent.parent / "public_data" / "실거래가_매매"
 RENTAL_EXCEL_DIR = Path(__file__).parent.parent / "public_data" / "실거래가_전월세"
@@ -143,13 +144,6 @@ def _parse_date(year_month: Any, day: Any) -> date | None:
         return None
 
 
-def _utc_now() -> datetime:
-    """현재 UTC 시각 (naive)."""
-    from datetime import UTC
-
-    return datetime.now(UTC).replace(tzinfo=None)
-
-
 def _build_address(row: dict[str, Any]) -> str | None:
     """시군구 + 번지를 합쳐 address 문자열을 생성합니다."""
     sigungu = _clean(row.get("시군구"))
@@ -258,6 +252,148 @@ def transform_rental_row(
     )
 
 
+# ── 공통 엑셀 파이프라인 ──
+
+
+async def _run_excel_pipeline(
+    *,
+    excel_dir: Path,
+    table_name: str,
+    transform_fn: Any,
+    target_props: set[str],
+    truncate: bool,
+    sgg_prefixes: list[str] | None,
+    label: str,
+) -> ProcessResult:
+    """매매/전월세 공통 엑셀 적재 파이프라인."""
+    from app.pipeline.regions import build_sigungu_to_sgg_map
+
+    sigungu_map = build_sigungu_to_sgg_map()
+
+    # 대상 파일 수집
+    files = sorted(excel_dir.glob("*.xlsx"))
+    target_files: list[tuple[Path, PropertyType]] = []
+    for f in files:
+        prop_type = parse_filename(f.name)
+        if prop_type is None:
+            continue
+        prop_kr = f.stem.rsplit("_", 2)[0]
+        if prop_kr in target_props:
+            target_files.append((f, prop_type))
+
+    if not target_files:
+        console.print(f"[yellow]대상 {label} 엑셀 파일이 없습니다.[/]")
+        return ProcessResult()
+
+    console.print(f"\n[bold]━━━ {label} 실거래가 데이터 적재 ━━━[/]")
+    console.print(f"  디렉토리: {excel_dir}")
+    console.print(f"  대상 파일: {len(target_files)}개")
+    console.print(f"  부동산 유형: {', '.join(target_props)}")
+    if sgg_prefixes:
+        console.print(f"  지역 필터: {len(sgg_prefixes)}개 시군구 prefix")
+
+    from app.database import async_session_maker
+    from app.pipeline.loader import bulk_insert
+
+    if truncate:
+        async with async_session_maker() as session:
+            from sqlalchemy import text
+
+            await session.execute(text(f"TRUNCATE TABLE {table_name} CASCADE"))
+            await session.commit()
+        console.print(f"  [yellow]기존 {label} 데이터 삭제 완료[/]")
+
+    total_result = ProcessResult()
+    now = get_utc_now()
+
+    console.print()
+    for i, (filepath, prop_type) in enumerate(target_files, 1):
+        file_label = f"  [{i}/{len(target_files)}] {filepath.name}"
+        try:
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message="Workbook contains no default style",
+                    category=UserWarning,
+                )
+                df = pd.read_excel(
+                    filepath, header=HEADER_ROW, engine="openpyxl", dtype=str
+                )
+            if df.empty:
+                console.print(f"{file_label} [dim]빈 파일[/]")
+                continue
+
+            columns = list(df.columns)
+            rows = df.to_dict("records")
+            records = [
+                transform_fn(r, columns, prop_type, now, sigungu_map)
+                for r in rows
+            ]
+
+            # sgg_prefixes 필터링
+            if sgg_prefixes:
+                before_count = len(records)
+                records = [
+                    r for r in records
+                    if r.get("sgg_code")
+                    and any(r["sgg_code"].startswith(p) for p in sgg_prefixes)
+                ]
+                filtered = before_count - len(records)
+                if filtered:
+                    file_label += f" (필터: {filtered:,}건 제외)"
+
+            if records:
+                async with async_session_maker() as session:
+                    count = await bulk_insert(
+                        session,
+                        table_name,
+                        records,
+                        batch_size=1000,
+                    )
+                    total_result.inserted += count
+
+            total_result.collected += len(df)
+            console.print(f"{file_label} [green]{len(records):,}건 완료[/]")
+
+        except Exception as e:
+            console.print(f"{file_label} [red]에러: {e}[/]")
+            traceback.print_exc()
+            total_result.errors += 1
+
+    console.print(f"\n[bold]━━━ {label} 적재 완료 ━━━[/]")
+    console.print(f"  {total_result.summary()}")
+    return total_result
+
+
+# ── 공통 get_params_interactive ──
+
+
+def _get_params_interactive(label: str) -> dict[str, Any]:
+    """매매/전월세 공통 파라미터 입력."""
+    from InquirerPy import inquirer
+
+    prop_choices = [
+        {"name": f"{kr} ({pt.value})", "value": kr}
+        for kr, pt in PROPERTY_TYPE_MAP.items()
+    ]
+    selected_props = inquirer.checkbox(
+        message="부동산 유형 선택 (Space 선택, Enter 확인, 미선택시 전체):",
+        choices=prop_choices,
+    ).execute()
+    if not selected_props:
+        selected_props = list(PROPERTY_TYPE_MAP.keys())
+
+    truncate = inquirer.confirm(
+        message=f"기존 {label} 데이터 삭제 후 적재? (TRUNCATE)",
+        default=False,
+    ).execute()
+
+    return {
+        "property_types": selected_props,
+        "truncate": truncate,
+    }
+
+
 class RealEstateSaleProcessor(BaseProcessor):
     """부동산 매매 실거래가 엑셀 프로세서.
 
@@ -278,131 +414,22 @@ class RealEstateSaleProcessor(BaseProcessor):
         return []
 
     def get_params_interactive(self) -> dict[str, Any]:
-        """CLI에서 파라미터를 입력받습니다."""
-        from InquirerPy import inquirer
-
-        prop_choices = [
-            {"name": f"{kr} ({pt.value})", "value": kr}
-            for kr, pt in PROPERTY_TYPE_MAP.items()
-        ]
-        selected_props = inquirer.checkbox(
-            message="부동산 유형 선택 (Space 선택, Enter 확인, 미선택시 전체):",
-            choices=prop_choices,
-        ).execute()
-        if not selected_props:
-            selected_props = list(PROPERTY_TYPE_MAP.keys())
-
-        truncate = inquirer.confirm(
-            message="기존 매매 데이터 삭제 후 적재? (TRUNCATE)",
-            default=False,
-        ).execute()
-
-        return {
-            "property_types": selected_props,
-            "truncate": truncate,
-        }
+        return _get_params_interactive("매매")
 
     async def run(self, params: dict[str, Any] | None = None) -> ProcessResult:
         """매매 엑셀 파일을 읽어 DB에 적재합니다."""
         if params is None:
             params = self.get_params_interactive()
 
-        excel_dir = Path(params.get("excel_dir", str(SALE_EXCEL_DIR)))
-        target_props = set(params.get("property_types", list(PROPERTY_TYPE_MAP.keys())))
-        truncate = params.get("truncate", False)
-        sgg_prefixes: list[str] | None = params.get("sgg_prefixes")
-
-        # 시군구 매핑 로드 (sgg_code 추출용)
-        from app.pipeline.regions import build_sigungu_to_sgg_map
-
-        sigungu_map = build_sigungu_to_sgg_map()
-
-        # 대상 파일 수집
-        files = sorted(excel_dir.glob("*.xlsx"))
-        target_files: list[tuple[Path, PropertyType]] = []
-        for f in files:
-            prop_type = parse_filename(f.name)
-            if prop_type is None:
-                continue
-            prop_kr = f.stem.rsplit("_", 2)[0]
-            if prop_kr in target_props:
-                target_files.append((f, prop_type))
-
-        if not target_files:
-            console.print("[yellow]대상 매매 엑셀 파일이 없습니다.[/]")
-            return ProcessResult()
-
-        console.print("\n[bold]━━━ 매매 실거래가 데이터 적재 ━━━[/]")
-        console.print(f"  디렉토리: {excel_dir}")
-        console.print(f"  대상 파일: {len(target_files)}개")
-        console.print(f"  부동산 유형: {', '.join(target_props)}")
-        if sgg_prefixes:
-            console.print(f"  지역 필터: {len(sgg_prefixes)}개 시군구 prefix")
-
-        from app.database import async_session_maker
-        from app.pipeline.loader import bulk_insert
-
-        if truncate:
-            async with async_session_maker() as session:
-                from sqlalchemy import text
-
-                await session.execute(text("TRUNCATE TABLE real_estate_sales CASCADE"))
-                await session.commit()
-            console.print("  [yellow]기존 매매 데이터 삭제 완료[/]")
-
-        total_result = ProcessResult()
-        now = _utc_now()
-
-        console.print()
-        for i, (filepath, prop_type) in enumerate(target_files, 1):
-            label = f"  [{i}/{len(target_files)}] {filepath.name}"
-            try:
-                df = pd.read_excel(
-                    filepath, header=HEADER_ROW, engine="openpyxl", dtype=str
-                )
-                if df.empty:
-                    console.print(f"{label} [dim]빈 파일[/]")
-                    continue
-
-                columns = list(df.columns)
-                rows = df.to_dict("records")
-                records = [
-                    transform_sale_row(r, columns, prop_type, now, sigungu_map)
-                    for r in rows
-                ]
-
-                # sgg_prefixes 필터링
-                if sgg_prefixes:
-                    before_count = len(records)
-                    records = [
-                        r for r in records
-                        if r.get("sgg_code")
-                        and any(r["sgg_code"].startswith(p) for p in sgg_prefixes)
-                    ]
-                    filtered = before_count - len(records)
-                    if filtered:
-                        label += f" (필터: {filtered:,}건 제외)"
-
-                if records:
-                    async with async_session_maker() as session:
-                        count = await bulk_insert(
-                            session,
-                            "real_estate_sales",
-                            records,
-                            batch_size=1000,
-                        )
-                        total_result.inserted += count
-
-                total_result.collected += len(df)
-                console.print(f"{label} [green]{len(records):,}건 완료[/]")
-
-            except Exception as e:
-                console.print(f"{label} [red]에러: {e}[/]")
-                total_result.errors += 1
-
-        console.print("\n[bold]━━━ 매매 적재 완료 ━━━[/]")
-        console.print(f"  {total_result.summary()}")
-        return total_result
+        return await _run_excel_pipeline(
+            excel_dir=Path(params.get("excel_dir", str(SALE_EXCEL_DIR))),
+            table_name="real_estate_sales",
+            transform_fn=transform_sale_row,
+            target_props=set(params.get("property_types", list(PROPERTY_TYPE_MAP.keys()))),
+            truncate=params.get("truncate", False),
+            sgg_prefixes=params.get("sgg_prefixes"),
+            label="매매",
+        )
 
 
 class RealEstateRentalProcessor(BaseProcessor):
@@ -425,131 +452,22 @@ class RealEstateRentalProcessor(BaseProcessor):
         return []
 
     def get_params_interactive(self) -> dict[str, Any]:
-        """CLI에서 파라미터를 입력받습니다."""
-        from InquirerPy import inquirer
-
-        prop_choices = [
-            {"name": f"{kr} ({pt.value})", "value": kr}
-            for kr, pt in PROPERTY_TYPE_MAP.items()
-        ]
-        selected_props = inquirer.checkbox(
-            message="부동산 유형 선택 (Space 선택, Enter 확인, 미선택시 전체):",
-            choices=prop_choices,
-        ).execute()
-        if not selected_props:
-            selected_props = list(PROPERTY_TYPE_MAP.keys())
-
-        truncate = inquirer.confirm(
-            message="기존 전월세 데이터 삭제 후 적재? (TRUNCATE)",
-            default=False,
-        ).execute()
-
-        return {
-            "property_types": selected_props,
-            "truncate": truncate,
-        }
+        return _get_params_interactive("전월세")
 
     async def run(self, params: dict[str, Any] | None = None) -> ProcessResult:
         """전월세 엑셀 파일을 읽어 DB에 적재합니다."""
         if params is None:
             params = self.get_params_interactive()
 
-        excel_dir = Path(params.get("excel_dir", str(RENTAL_EXCEL_DIR)))
-        target_props = set(params.get("property_types", list(PROPERTY_TYPE_MAP.keys())))
-        truncate = params.get("truncate", False)
-        sgg_prefixes: list[str] | None = params.get("sgg_prefixes")
-
-        # 시군구 매핑 로드 (sgg_code 추출용)
-        from app.pipeline.regions import build_sigungu_to_sgg_map
-
-        sigungu_map = build_sigungu_to_sgg_map()
-
-        # 대상 파일 수집
-        files = sorted(excel_dir.glob("*.xlsx"))
-        target_files: list[tuple[Path, PropertyType]] = []
-        for f in files:
-            prop_type = parse_filename(f.name)
-            if prop_type is None:
-                continue
-            prop_kr = f.stem.rsplit("_", 2)[0]
-            if prop_kr in target_props:
-                target_files.append((f, prop_type))
-
-        if not target_files:
-            console.print("[yellow]대상 전월세 엑셀 파일이 없습니다.[/]")
-            return ProcessResult()
-
-        console.print("\n[bold]━━━ 전월세 실거래가 데이터 적재 ━━━[/]")
-        console.print(f"  디렉토리: {excel_dir}")
-        console.print(f"  대상 파일: {len(target_files)}개")
-        console.print(f"  부동산 유형: {', '.join(target_props)}")
-        if sgg_prefixes:
-            console.print(f"  지역 필터: {len(sgg_prefixes)}개 시군구 prefix")
-
-        from app.database import async_session_maker
-        from app.pipeline.loader import bulk_insert
-
-        if truncate:
-            async with async_session_maker() as session:
-                from sqlalchemy import text
-
-                await session.execute(text("TRUNCATE TABLE real_estate_rentals CASCADE"))
-                await session.commit()
-            console.print("  [yellow]기존 전월세 데이터 삭제 완료[/]")
-
-        total_result = ProcessResult()
-        now = _utc_now()
-
-        console.print()
-        for i, (filepath, prop_type) in enumerate(target_files, 1):
-            label = f"  [{i}/{len(target_files)}] {filepath.name}"
-            try:
-                df = pd.read_excel(
-                    filepath, header=HEADER_ROW, engine="openpyxl", dtype=str
-                )
-                if df.empty:
-                    console.print(f"{label} [dim]빈 파일[/]")
-                    continue
-
-                columns = list(df.columns)
-                rows = df.to_dict("records")
-                records = [
-                    transform_rental_row(r, columns, prop_type, now, sigungu_map)
-                    for r in rows
-                ]
-
-                # sgg_prefixes 필터링
-                if sgg_prefixes:
-                    before_count = len(records)
-                    records = [
-                        r for r in records
-                        if r.get("sgg_code")
-                        and any(r["sgg_code"].startswith(p) for p in sgg_prefixes)
-                    ]
-                    filtered = before_count - len(records)
-                    if filtered:
-                        label += f" (필터: {filtered:,}건 제외)"
-
-                if records:
-                    async with async_session_maker() as session:
-                        count = await bulk_insert(
-                            session,
-                            "real_estate_rentals",
-                            records,
-                            batch_size=1000,
-                        )
-                        total_result.inserted += count
-
-                total_result.collected += len(df)
-                console.print(f"{label} [green]{len(records):,}건 완료[/]")
-
-            except Exception as e:
-                console.print(f"{label} [red]에러: {e}[/]")
-                total_result.errors += 1
-
-        console.print("\n[bold]━━━ 전월세 적재 완료 ━━━[/]")
-        console.print(f"  {total_result.summary()}")
-        return total_result
+        return await _run_excel_pipeline(
+            excel_dir=Path(params.get("excel_dir", str(RENTAL_EXCEL_DIR))),
+            table_name="real_estate_rentals",
+            transform_fn=transform_rental_row,
+            target_props=set(params.get("property_types", list(PROPERTY_TYPE_MAP.keys()))),
+            truncate=params.get("truncate", False),
+            sgg_prefixes=params.get("sgg_prefixes"),
+            label="전월세",
+        )
 
 
 Registry.register(RealEstateSaleProcessor())

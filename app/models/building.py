@@ -1,4 +1,4 @@
-"""건물 관련 모델 (건축물대장 표제부, 총괄표제부, 층별개요, 전유공용면적, 부속지번, GIS건물통합정보)."""
+"""건물 관련 모델 (건축물대장 표제부, 총괄표제부, 층별개요, 전유공용면적, GIS건물통합정보)."""
 
 from typing import Any
 
@@ -126,30 +126,6 @@ class BuildingRegisterArea(PublicDataBase, table=True):
         default=None, max_length=1, description="전유공용구분코드 (1:전유, 2:공용)"
     )
     area: float | None = Field(default=None, description="면적(㎡)")
-
-
-class BuildingRegisterAncillaryLot(PublicDataBase, table=True):
-    """건축물대장 부속지번 테이블.
-
-    공공데이터포털 대용량 제공 서비스 > 건축물대장 > 부속지번 (mart_djy_05.txt).
-    건축물에 소속된 부속 필지 정보를 관리합니다.
-    """
-
-    __tablename__ = "building_register_ancillary_lots"
-    __table_args__ = (
-        UniqueConstraint("mgm_bldrgst_pk", "atch_pnu", name="uq_bldrgst_ancillary_lot"),
-    )
-
-    mgm_bldrgst_pk: str = Field(max_length=33, index=True, description="관리 건축물대장 PK")
-    pnu: str = Field(
-        max_length=19,
-        description="필지고유번호 (본 건물)",
-        index=True,
-    )
-    atch_pnu: str | None = Field(
-        default=None, max_length=19, description="부속 필지고유번호"
-    )
-    created_date: str | None = Field(default=None, max_length=8, description="생성일자")
 
 
 class GisBuildingIntegrated(PublicDataBase, table=True):

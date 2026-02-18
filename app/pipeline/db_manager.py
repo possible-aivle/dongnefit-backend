@@ -10,10 +10,9 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
-from rich.console import Console
 from rich.table import Table
 
-console = Console()
+from app.pipeline import console
 
 DUMP_DIR = Path("dumps")
 DOCKER_CONTAINER = "realestate-db"
@@ -171,23 +170,6 @@ class DbManager:
                     parts = line.split("|")
                     counts[parts[0].strip()] = int(parts[1].strip())
         return counts
-
-    def _get_row_count(self, config: DbConfig, table_name: str) -> int:
-        result = subprocess.run(
-            [
-                "psql",
-                *config.conn_args,
-                "-t", "-A",
-                "-c", f"SELECT COUNT(*) FROM \"{table_name}\";",
-            ],
-            capture_output=True,
-            text=True,
-            env=dict(os.environ) | config.env_dict,
-            check=False,
-        )
-        if result.returncode == 0:
-            return int(result.stdout.strip())
-        return -1
 
     # ── Bin 파일 (pg_dump custom format) 추출/복원 ──
 

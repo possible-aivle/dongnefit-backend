@@ -19,8 +19,6 @@ from app.schemas.base import (
     wkb_to_shapely,
 )
 from app.schemas.building import (
-    BuildingRegisterAncillaryLotCreate,
-    BuildingRegisterAncillaryLotRead,
     BuildingRegisterAreaCreate,
     BuildingRegisterAreaRead,
     BuildingRegisterFloorDetailCreate,
@@ -32,21 +30,7 @@ from app.schemas.building import (
     GisBuildingIntegratedCreate,
     GisBuildingIntegratedRead,
 )
-from app.schemas.land import (
-    LandAndForestInfoCreate,
-    LandAndForestInfoRead,
-    LandCharacteristicCreate,
-    LandCharacteristicRead,
-    LandUsePlanCreate,
-    LandUsePlanRead,
-)
-from app.schemas.land_ownership import (
-    LandOwnershipCreate,
-    LandOwnershipRead,
-)
 from app.schemas.lot import (
-    AncillaryLandCreate,
-    AncillaryLandRead,
     LotCreate,
     LotRead,
 )
@@ -57,8 +41,6 @@ from app.schemas.spatial import (
     UseRegionDistrictRead,
 )
 from app.schemas.transaction import (
-    OfficialLandPriceCreate,
-    OfficialLandPriceRead,
     RealEstateRentalCreate,
     RealEstateRentalRead,
     RealEstateSaleCreate,
@@ -79,8 +61,6 @@ __all__ = [
     # Lot
     "LotCreate",
     "LotRead",
-    "AncillaryLandCreate",
-    "AncillaryLandRead",
     # Administrative
     "AdministrativeSidoCreate",
     "AdministrativeSidoRead",
@@ -88,15 +68,6 @@ __all__ = [
     "AdministrativeSggRead",
     "AdministrativeEmdCreate",
     "AdministrativeEmdRead",
-    # Land
-    "LandCharacteristicCreate",
-    "LandCharacteristicRead",
-    "LandUsePlanCreate",
-    "LandUsePlanRead",
-    "LandAndForestInfoCreate",
-    "LandAndForestInfoRead",
-    "LandOwnershipCreate",
-    "LandOwnershipRead",
     # Building
     "BuildingRegisterHeaderCreate",
     "BuildingRegisterHeaderRead",
@@ -106,13 +77,9 @@ __all__ = [
     "BuildingRegisterFloorDetailRead",
     "BuildingRegisterAreaCreate",
     "BuildingRegisterAreaRead",
-    "BuildingRegisterAncillaryLotCreate",
-    "BuildingRegisterAncillaryLotRead",
     "GisBuildingIntegratedCreate",
     "GisBuildingIntegratedRead",
     # Transaction
-    "OfficialLandPriceCreate",
-    "OfficialLandPriceRead",
     "RealEstateSaleCreate",
     "RealEstateSaleRead",
     "RealEstateRentalCreate",

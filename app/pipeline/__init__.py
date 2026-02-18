@@ -1,1 +1,5 @@
 """DongneFit 공공데이터 파이프라인 패키지."""
+
+from rich.console import Console
+
+console = Console()

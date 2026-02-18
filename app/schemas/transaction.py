@@ -1,30 +1,9 @@
-"""실거래가(매매/전월세) 및 공시지가 스키마."""
+"""실거래가(매매/전월세) 스키마."""
 
 from datetime import date, datetime
 
 from app.models.enums import PropertyType, TransactionType
 from app.schemas.base import BaseSchema
-
-
-class OfficialLandPriceCreate(BaseSchema):
-    """개별공시지가 생성 스키마."""
-
-    pnu: str
-    base_year: int
-    price_per_sqm: int | None = None
-
-
-
-class OfficialLandPriceRead(BaseSchema):
-    """개별공시지가 조회 스키마."""
-
-    id: int
-    pnu: str
-    base_year: int
-    price_per_sqm: int | None
-
-
-    created_at: datetime | None
 
 
 class RealEstateSaleCreate(BaseSchema):

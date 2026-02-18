@@ -10,8 +10,6 @@ from sqlmodel import select
 
 from app.database import async_session_maker
 from app.models import (
-    BlogPost,
-    BlogStatus,
     Discussion,
     DiscussionReply,
     DiscussionType,
@@ -215,23 +213,7 @@ async def seed_data():
                 reports.append(report)
             await session.flush()
 
-            # 5. Blog Posts
-            logger.info("Creating blog posts...")
-            for i in range(10):
-                blog = BlogPost(
-                    author_id=admin_user.id,
-                    title=fake.sentence(),
-                    slug=f"{fake.slug()}-{i}",
-                    content="\n\n".join(fake.paragraphs(nb=5)),
-                    excerpt=fake.sentence(),
-                    status=BlogStatus.PUBLISHED.value,
-                    published_at=datetime.now(UTC).replace(tzinfo=None)
-                    - timedelta(days=random.randint(1, 30)),
-                )
-                session.add(blog)
-            await session.flush()
-
-            # 6. File Storages
+            # 5. File Storages
             logger.info("Creating file storages...")
             for _ in range(5):
                 user = random.choice(users)
@@ -249,7 +231,7 @@ async def seed_data():
                 session.add(file)
             await session.flush()
 
-            # 7. Notifications
+            # 6. Notifications
             logger.info("Creating notifications...")
             for _ in range(10):
                 user = random.choice(users)
@@ -263,7 +245,7 @@ async def seed_data():
                 session.add(notif)
             await session.flush()
 
-            # 8. Discussions
+            # 7. Discussions
             logger.info("Creating discussions...")
             discussions = []
             for _ in range(15):
@@ -280,7 +262,7 @@ async def seed_data():
                 discussions.append(discussion)
             await session.flush()
 
-            # 9. Discussion Replies
+            # 8. Discussion Replies
             logger.info("Creating discussion replies...")
             for _ in range(30):
                 discussion = random.choice(discussions)
@@ -293,7 +275,7 @@ async def seed_data():
                 session.add(reply)
             await session.flush()
 
-            # 10. Report Reviews
+            # 9. Report Reviews
             logger.info("Creating report reviews...")
             for _ in range(15):
                 report = random.choice(reports)

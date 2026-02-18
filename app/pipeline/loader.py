@@ -4,6 +4,7 @@
 공공데이터 모델 타입에 따라 적절한 테이블에 삽입/업데이트합니다.
 """
 
+import json
 from typing import Any
 
 from sqlalchemy import text
@@ -12,7 +13,6 @@ from sqlmodel import SQLModel
 
 from app.models.administrative import AdministrativeEmd, AdministrativeSgg, AdministrativeSido
 from app.models.building import (
-    BuildingRegisterAncillaryLot,
     BuildingRegisterArea,
     BuildingRegisterFloorDetail,
     BuildingRegisterGeneral,
@@ -20,16 +20,9 @@ from app.models.building import (
     GisBuildingIntegrated,
 )
 from app.models.enums import PublicDataType
-from app.models.land import (
-    LandAndForestInfo,
-    LandCharacteristic,
-    LandUsePlan,
-)
-from app.models.land_ownership import LandOwnership
-from app.models.lot import AncillaryLand, Lot
+from app.models.lot import Lot
 from app.models.spatial import RoadCenterLine, UseRegionDistrict
 from app.models.transaction import (
-    OfficialLandPrice,
     RealEstateRental,
     RealEstateSale,
 )
@@ -39,34 +32,35 @@ from app.pipeline.processors.base import ProcessResult
 
 MODEL_MAP: dict[PublicDataType, type[SQLModel]] = {
     PublicDataType.CONTINUOUS_CADASTRAL: Lot,
-    PublicDataType.ANCILLARY_LAND: AncillaryLand,
-    PublicDataType.LAND_CHARACTERISTIC: LandCharacteristic,
-    PublicDataType.LAND_USE_PLAN: LandUsePlan,
-    PublicDataType.LAND_AND_FOREST_INFO: LandAndForestInfo,
-    PublicDataType.OFFICIAL_LAND_PRICE: OfficialLandPrice,
+    PublicDataType.LAND_CHARACTERISTIC: Lot,
+    PublicDataType.LAND_USE_PLAN: Lot,
+    PublicDataType.LAND_AND_FOREST_INFO: Lot,
+    PublicDataType.OFFICIAL_LAND_PRICE: Lot,
+    PublicDataType.LAND_OWNERSHIP: Lot,
+    PublicDataType.BUILDING_REGISTER_ANCILLARY_LOT: Lot,
     PublicDataType.REAL_ESTATE_SALE: RealEstateSale,
     PublicDataType.REAL_ESTATE_RENTAL: RealEstateRental,
     PublicDataType.BUILDING_REGISTER_HEADER: BuildingRegisterHeader,
     PublicDataType.BUILDING_REGISTER_GENERAL: BuildingRegisterGeneral,
     PublicDataType.BUILDING_REGISTER_FLOOR_DETAIL: BuildingRegisterFloorDetail,
     PublicDataType.BUILDING_REGISTER_AREA: BuildingRegisterArea,
-    PublicDataType.BUILDING_REGISTER_ANCILLARY_LOT: BuildingRegisterAncillaryLot,
     PublicDataType.ADMINISTRATIVE_SIDO: AdministrativeSido,
     PublicDataType.ADMINISTRATIVE_SGG: AdministrativeSgg,
     PublicDataType.ADMINISTRATIVE_EMD: AdministrativeEmd,
     PublicDataType.ROAD_CENTER_LINE: RoadCenterLine,
     PublicDataType.USE_REGION_DISTRICT: UseRegionDistrict,
     PublicDataType.GIS_BUILDING_INTEGRATED: GisBuildingIntegrated,
-    PublicDataType.LAND_OWNERSHIP: LandOwnership,
 }
 
 # PNU 기반 테이블의 upsert 키 (unique constraint 기준)
 UPSERT_KEYS: dict[PublicDataType, list[str]] = {
     PublicDataType.CONTINUOUS_CADASTRAL: ["pnu"],
-    PublicDataType.LAND_CHARACTERISTIC: ["pnu", "data_year"],
-    PublicDataType.LAND_USE_PLAN: ["pnu", "data_year", "use_district_name"],
-    PublicDataType.LAND_AND_FOREST_INFO: ["pnu", "data_year"],
-    PublicDataType.OFFICIAL_LAND_PRICE: ["pnu", "base_year"],
+    PublicDataType.LAND_CHARACTERISTIC: ["pnu"],
+    PublicDataType.LAND_USE_PLAN: ["pnu"],
+    PublicDataType.LAND_AND_FOREST_INFO: ["pnu"],
+    PublicDataType.OFFICIAL_LAND_PRICE: ["pnu"],
+    PublicDataType.LAND_OWNERSHIP: ["pnu"],
+    PublicDataType.BUILDING_REGISTER_ANCILLARY_LOT: ["pnu"],
     PublicDataType.ADMINISTRATIVE_SIDO: ["sido_code"],
     PublicDataType.ADMINISTRATIVE_SGG: ["sgg_code"],
     PublicDataType.ADMINISTRATIVE_EMD: ["emd_code"],
@@ -74,12 +68,15 @@ UPSERT_KEYS: dict[PublicDataType, list[str]] = {
     PublicDataType.BUILDING_REGISTER_GENERAL: ["mgm_bldrgst_pk"],
     PublicDataType.BUILDING_REGISTER_FLOOR_DETAIL: ["mgm_bldrgst_pk", "floor_type_name", "floor_no"],
     PublicDataType.BUILDING_REGISTER_AREA: ["mgm_bldrgst_pk", "dong_name", "ho_name", "floor_no", "exclu_common_type"],
-    PublicDataType.BUILDING_REGISTER_ANCILLARY_LOT: ["mgm_bldrgst_pk", "atch_pnu"],
     PublicDataType.GIS_BUILDING_INTEGRATED: ["pnu", "building_id"],
-    PublicDataType.LAND_OWNERSHIP: ["pnu", "co_owner_seq"],
     PublicDataType.ROAD_CENTER_LINE: ["source_id"],
     PublicDataType.USE_REGION_DISTRICT: ["source_id"],
 }
+
+# JSONB 컬럼 (값 표현식에서 ::jsonb 캐스팅 필요)
+JSONB_COLUMNS: frozenset[str] = frozenset({
+    "use_plans", "ownerships", "official_prices", "ancillary_lots",
+})
 
 
 def get_model_for_type(data_type: PublicDataType) -> type[SQLModel]:
@@ -108,12 +105,15 @@ def _build_val_expr(col: str, *, simplify_tolerance: float | None = None) -> str
 
     geometry 컬럼은 WKT 문자열을 PostGIS Geometry로 변환합니다.
     simplify_tolerance가 지정되면 ST_Simplify로 좌표를 단순화합니다.
+    JSONB 컬럼은 ::jsonb 캐스팅을 추가합니다.
     """
     if col == "geometry":
         expr = f"ST_GeomFromText(:{col}, 4326)"
         if simplify_tolerance is not None:
             expr = f"ST_Simplify({expr}, {simplify_tolerance})"
         return expr
+    if col in JSONB_COLUMNS:
+        return f"CAST(:{col} AS jsonb)"
     return f":{col}"
 
 
@@ -121,6 +121,7 @@ def _serialize_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """레코드를 DB 삽입에 맞게 전처리합니다.
 
     - created_at 자동 추가 (NOT NULL 보장)
+    - list/dict 값은 JSON 문자열로 직렬화 (JSONB 컬럼용)
     """
     from app.models.base import get_utc_now
 
@@ -132,6 +133,10 @@ def _serialize_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if "created_at" not in new_record:
             new_record["created_at"] = now
         new_record.pop("updated_at", None)
+        # JSONB 컬럼: list/dict → JSON 문자열
+        for col in JSONB_COLUMNS:
+            if col in new_record and isinstance(new_record[col], (list, dict)):
+                new_record[col] = json.dumps(new_record[col], ensure_ascii=False)
         serialized.append(new_record)
     return serialized
 

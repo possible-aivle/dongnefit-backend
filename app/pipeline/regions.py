@@ -92,9 +92,11 @@ PROVINCE_FILE_NAME_MAP: dict[str, str] = {
     "세종시": "36",
     "경기": "41",
     "강원특별자치도": "42",
+    "강원": "42",
     "충북": "43",
     "충남": "44",
     "전북특별자치도": "45",
+    "전북": "45",
     "전남": "46",
     "경북": "47",
     "경남": "48",
@@ -121,7 +123,9 @@ def load_regions() -> list[Region]:
     """
     try:
         return _load_regions_from_shp()
-    except Exception:
+    except Exception as e:
+        from app.pipeline import console
+        console.print(f"[yellow]경고: SHP에서 지역 로드 실패, 기본 목록 사용: {e}[/]")
         return _get_default_regions()
 
 
@@ -296,7 +300,9 @@ def build_sigungu_to_sgg_map() -> dict[str, str]:
     """
     try:
         return _build_sigungu_map_from_shp()
-    except Exception:
+    except Exception as e:
+        from app.pipeline import console
+        console.print(f"[yellow]경고: 시군구 매핑 구축 실패: {e}[/]")
         return {}
 
 

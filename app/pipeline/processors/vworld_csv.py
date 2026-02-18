@@ -11,18 +11,15 @@ from pathlib import Path
 from typing import Any
 
 from InquirerPy import inquirer
-from rich.console import Console
 
+from app.pipeline import console
 from app.pipeline.file_utils import (
     cleanup_temp_dir,
     extract_zip,
     find_csv_in_dir,
     read_csv_filtered,
 )
-from app.pipeline.parsing import safe_float, safe_int
 from app.pipeline.processors.base import BaseProcessor
-
-console = Console()
 
 
 class VworldCsvProcessor(BaseProcessor):
@@ -39,6 +36,7 @@ class VworldCsvProcessor(BaseProcessor):
     """
 
     COLUMN_MAP: dict[str, str] = {}
+    pnu_field = "pnu"  # 연속지적도 PNU 검증 활성화
 
     async def collect(self, params: dict[str, Any]) -> list[dict]:
         """CSV 파일을 읽어 raw dict 리스트를 반환합니다.
@@ -168,9 +166,6 @@ class VworldCsvProcessor(BaseProcessor):
         ).execute()
 
         return {"file_path": file_path}
-
-    _safe_int = staticmethod(safe_int)
-    _safe_float = staticmethod(safe_float)
 
     @staticmethod
     def _extract_pnu(row: dict) -> str | None:

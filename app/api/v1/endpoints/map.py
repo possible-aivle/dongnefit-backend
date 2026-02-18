@@ -46,7 +46,6 @@ def _lot_to_feature(lot) -> dict:
         "type": "Feature",
         "properties": {
             "pnu": lot.pnu,
-            "jibunAddress": lot.jibun_address,
         },
         "geometry": wkb_to_geojson(lot.geometry),
     }

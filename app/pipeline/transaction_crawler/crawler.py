@@ -10,6 +10,7 @@ https://rt.molit.go.kr/pt/xls/xls.do?mobileAt=
 import time
 from datetime import date, timedelta
 from pathlib import Path
+from typing import Literal
 
 import httpx
 from rich.console import Console
@@ -131,7 +132,7 @@ def download_excel(
     output_path: Path,
     new_ron_secd: str = "",
     retries: int = MAX_RETRIES,
-) -> str:
+) -> Literal["success", "no_data", "failed"]:
     """엑셀 파일을 다운로드합니다.
 
     Returns:
