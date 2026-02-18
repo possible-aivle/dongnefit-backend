@@ -2,7 +2,6 @@
 
 from app.models.administrative import AdministrativeEmd, AdministrativeSgg, AdministrativeSido
 from app.models.base import PublicDataBase, TimestampMixin
-from app.models.blog import BlogPost, BlogStatus
 from app.models.building import (
     BuildingRegisterArea,
     BuildingRegisterFloorDetail,
@@ -60,9 +59,6 @@ __all__ = [
     "Notification",
     "NotificationSettings",
     "NotificationType",
-    # Blog
-    "BlogPost",
-    "BlogStatus",
     # File
     "FileStorage",
     # Lot (필지 + 토지 통합)
