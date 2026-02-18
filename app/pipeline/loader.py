@@ -114,7 +114,7 @@ def _build_val_expr(col: str, *, simplify_tolerance: float | None = None) -> str
             expr = f"ST_Simplify({expr}, {simplify_tolerance})"
         return expr
     if col in JSONB_COLUMNS:
-        return f":{col}::jsonb"
+        return f"CAST(:{col} AS jsonb)"
     return f":{col}"
 
 
