@@ -100,12 +100,9 @@ async def get_lot_detail(
         jimok_code=lot.jimok_code,
         area=lot.area,
         use_zone=lot.use_zone,
-        use_zone_code=lot.use_zone_code,
         land_use=lot.land_use,
-        land_use_code=lot.land_use_code,
         official_price=lot.official_price,
         ownership=lot.ownership,
-        ownership_code=lot.ownership_code,
         owner_count=lot.owner_count,
         use_plans=[
             UsePlanItem.model_validate(p) for p in (lot.use_plans or [])

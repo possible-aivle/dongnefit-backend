@@ -31,6 +31,7 @@ class GisBuildingIntegratedProcessor(BaseProcessor):
     name = "gis_building_integrated"
     description = "GIS건물통합정보 (AL_D010, SHP)"
     data_type = PublicDataType.GIS_BUILDING_INTEGRATED
+    pnu_field = "pnu"  # 연속지적도 PNU 검증 활성화
 
     # SHP 속성명(A0~A28) → DB 컬럼명 매핑 (유지 필드만)
     FIELD_MAP: dict[str, str] = {

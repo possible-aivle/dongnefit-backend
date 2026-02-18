@@ -36,6 +36,7 @@ class VworldCsvProcessor(BaseProcessor):
     """
 
     COLUMN_MAP: dict[str, str] = {}
+    pnu_field = "pnu"  # 연속지적도 PNU 검증 활성화
 
     async def collect(self, params: dict[str, Any]) -> list[dict]:
         """CSV 파일을 읽어 raw dict 리스트를 반환합니다.

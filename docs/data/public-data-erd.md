@@ -14,12 +14,9 @@ erDiagram
         string jimok_code "지목코드"
         float area "면적(m2)"
         string use_zone "용도지역명"
-        string use_zone_code "용도지역코드"
-        string land_use "토지이용현황"
-        string land_use_code "토지이용현황코드"
+        string land_use "토지이용상황"
         bigint official_price "공시지가(원)"
         string ownership "소유구분명"
-        string ownership_code "소유구분코드"
         int owner_count "소유(공유)인수"
 
         jsonb use_plans "토지이용계획 [{use_district_name}]"
@@ -224,33 +221,33 @@ erDiagram
 
 ## 요약
 
-| 구분   | 테이블                            | 설명                           | Lot FK | UQ 제약                                        |
-| ------ | --------------------------------- | ------------------------------ | ------ | ---------------------------------------------- |
-| 중심   | `lots`                            | 필지 + 토지 통합 (PNU 기준)    | -      | pnu (PK)                                       |
-| 매매   | `real_estate_sales`               | 부동산 매매 실거래             | X      | -                                              |
-| 전월세 | `real_estate_rentals`             | 부동산 전월세 실거래           | X      | -                                              |
-| 건물   | `building_register_headers`       | 건축물대장 표제부              | O      | mgm_bldrgst_pk                                 |
-| 건물   | `building_register_generals`      | 건축물대장 총괄표제부          | O      | mgm_bldrgst_pk                                 |
-| 건물   | `building_register_floor_details` | 건축물대장 층별개요            | O      | mgm_bldrgst_pk + floor_type_name + floor_no    |
-| 건물   | `building_register_areas`         | 건축물대장 전유공용면적        | O      | mgm_bldrgst_pk + dong/ho/floor/exclu_common    |
-| 건물   | `gis_building_integrated`         | GIS건물통합정보 (AL_D010, SHP) | O      | pnu + building_id                              |
-| 행정   | `administrative_sidos`            | 행정경계 시도                  | X      | sido_code                                      |
-| 행정   | `administrative_sggs`             | 행정경계 시군구                | X      | sgg_code                                       |
-| 행정   | `administrative_emds`             | 행정경계 읍면동                | X      | emd_code                                       |
-| 공간   | `road_center_lines`               | 도로중심선                     | X      | source_id                                      |
-| 공간   | `use_region_districts`            | 용도지역지구                   | X      | source_id                                      |
+| 구분   | 테이블                            | 설명                           | Lot FK | UQ 제약                                     |
+| ------ | --------------------------------- | ------------------------------ | ------ | ------------------------------------------- |
+| 중심   | `lots`                            | 필지 + 토지 통합 (PNU 기준)    | -      | pnu (PK)                                    |
+| 매매   | `real_estate_sales`               | 부동산 매매 실거래             | X      | -                                           |
+| 전월세 | `real_estate_rentals`             | 부동산 전월세 실거래           | X      | -                                           |
+| 건물   | `building_register_headers`       | 건축물대장 표제부              | O      | mgm_bldrgst_pk                              |
+| 건물   | `building_register_generals`      | 건축물대장 총괄표제부          | O      | mgm_bldrgst_pk                              |
+| 건물   | `building_register_floor_details` | 건축물대장 층별개요            | O      | mgm_bldrgst_pk + floor_type_name + floor_no |
+| 건물   | `building_register_areas`         | 건축물대장 전유공용면적        | O      | mgm_bldrgst_pk + dong/ho/floor/exclu_common |
+| 건물   | `gis_building_integrated`         | GIS건물통합정보 (AL_D010, SHP) | O      | pnu + building_id                           |
+| 행정   | `administrative_sidos`            | 행정경계 시도                  | X      | sido_code                                   |
+| 행정   | `administrative_sggs`             | 행정경계 시군구                | X      | sgg_code                                    |
+| 행정   | `administrative_emds`             | 행정경계 읍면동                | X      | emd_code                                    |
+| 공간   | `road_center_lines`               | 도로중심선                     | X      | source_id                                   |
+| 공간   | `use_region_districts`            | 용도지역지구                   | X      | source_id                                   |
 
 ### Lot 통합 구조
 
-| 구분        | 원본 테이블                        | 통합 방식     | 컬럼/키                                                                              |
-| ----------- | ---------------------------------- | ------------- | ------------------------------------------------------------------------------------ |
-| 연속지적도  | (기반 데이터)                      | PK + geometry | pnu, geometry                                                                        |
-| 토지특성    | land_characteristics               | flat 컬럼     | jimok, jimok_code, area, use_zone, use_zone_code, land_use, land_use_code, official_price |
-| 토지임야    | land_and_forest_infos              | flat 컬럼     | ownership, ownership_code, owner_count                                               |
-| 토지이용계획 | land_use_plans                    | JSONB         | use_plans `[{use_district_name}]`                                                    |
-| 토지소유    | land_ownerships                    | JSONB         | ownerships `[{base_year_month, co_owner_seq, ...}]`                                  |
-| 공시지가    | official_land_prices               | JSONB         | official_prices `[{base_year, price_per_sqm}]`                                       |
-| 부속지번    | building_register_ancillary_lots   | JSONB         | ancillary_lots `[{mgm_bldrgst_pk, atch_pnu, created_date}]`                         |
+| 구분         | 원본 테이블                      | 통합 방식     | 컬럼/키                                                                                   |
+| ------------ | -------------------------------- | ------------- | ----------------------------------------------------------------------------------------- |
+| 연속지적도   | (기반 데이터)                    | PK + geometry | pnu, geometry                                                                             |
+| 토지특성     | land_characteristics             | flat 컬럼     | jimok, jimok_code, area, use_zone, land_use, official_price                               |
+| 토지임야     | land_and_forest_infos            | flat 컬럼     | ownership, owner_count                                                                    |
+| 토지이용계획 | land_use_plans                   | JSONB         | use_plans `[{use_district_name}]`                                                         |
+| 토지소유     | land_ownerships                  | JSONB         | ownerships `[{base_year_month, co_owner_seq, ...}]`                                       |
+| 공시지가     | official_land_prices             | JSONB         | official_prices `[{base_year, price_per_sqm}]`                                            |
+| 부속지번     | building_register_ancillary_lots | JSONB         | ancillary_lots `[{mgm_bldrgst_pk, atch_pnu, created_date}]`                               |
 
 ### 핵심 관계
 
@@ -265,10 +262,10 @@ erDiagram
 
 ### 복합 인덱스
 
-| 테이블               | 인덱스                    | 컬럼                      |
-| -------------------- | ------------------------- | ------------------------- |
-| `real_estate_sales`  | ix_sales_sgg_txdate       | sgg_code, transaction_date |
-| `real_estate_rentals`| ix_rentals_sgg_txdate     | sgg_code, transaction_date |
+| 테이블                | 인덱스                | 컬럼                       |
+| --------------------- | --------------------- | -------------------------- |
+| `real_estate_sales`   | ix_sales_sgg_txdate   | sgg_code, transaction_date |
+| `real_estate_rentals` | ix_rentals_sgg_txdate | sgg_code, transaction_date |
 
 ### Enum 타입
 
@@ -279,11 +276,11 @@ erDiagram
 
 ### 데이터 소스
 
-| 소스           | 포맷        | 테이블                                                                              |
-| -------------- | ----------- | ----------------------------------------------------------------------------------- |
-| 연속지적도     | shp         | Lot (기반 PNU + geometry)                                                            |
-| vworld CSV     | csv (cp949) | Lot (토지특성, 토지이용계획, 토지임야, 공시지가 → flat/JSONB 통합)                   |
-| vworld SHP     | shp         | GisBuildingIntegrated, RoadCenterLine, UseRegionDistrict, AdministrativeSido/Sgg/Emd |
+| 소스           | 포맷        | 테이블                                                                                             |
+| -------------- | ----------- | -------------------------------------------------------------------------------------------------- |
+| 연속지적도     | shp         | Lot (기반 PNU + geometry)                                                                          |
+| vworld CSV     | csv (cp949) | Lot (토지특성, 토지이용계획, 토지임야, 공시지가 → flat/JSONB 통합)                                 |
+| vworld SHP     | shp         | GisBuildingIntegrated, RoadCenterLine, UseRegionDistrict, AdministrativeSido/Sgg/Emd               |
 | 공공데이터포털 | txt         | BuildingRegisterHeader, BuildingRegisterGeneral, BuildingRegisterFloorDetail, BuildingRegisterArea |
-| 공공데이터포털 | API         | Lot (토지소유 → JSONB 통합)                                                         |
-| rt.molit.go.kr | csv/api     | RealEstateSale, RealEstateRental                                                    |
+| 공공데이터포털 | API         | Lot (토지소유 → JSONB 통합)                                                                        |
+| rt.molit.go.kr | csv/api     | RealEstateSale, RealEstateRental                                                                   |

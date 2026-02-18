@@ -56,6 +56,7 @@ class BuildingRegisterTxtProcessor(BaseProcessor):
     # 시군구코드 필드 인덱스 (PNU_INDICES의 첫 번째: 시군구)
     SGG_FIELD_INDEX: int = 0
 
+    pnu_field = "pnu"  # 연속지적도 PNU 검증 활성화
     batch_size = 2000
 
     async def collect(self, params: dict[str, Any]) -> list[dict]:

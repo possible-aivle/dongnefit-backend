@@ -45,15 +45,12 @@ class Lot(SQLModel, table=True):
     jimok_code: str | None = Field(default=None, max_length=10, description="지목코드")
     area: float | None = Field(default=None, description="면적(㎡)")
     use_zone: str | None = Field(default=None, max_length=50, description="용도지역명")
-    use_zone_code: str | None = Field(default=None, max_length=10, description="용도지역코드")
-    land_use: str | None = Field(default=None, max_length=30, description="토지이용현황")
-    land_use_code: str | None = Field(default=None, max_length=10, description="토지이용현황코드")
+    land_use: str | None = Field(default=None, max_length=30, description="토지이용상황")
     official_price: int | None = Field(
         default=None, sa_column=Column(BigInteger, nullable=True),
         description="공시지가(원)",
     )
     ownership: str | None = Field(default=None, max_length=20, description="소유구분명")
-    ownership_code: str | None = Field(default=None, max_length=10, description="소유구분코드")
     owner_count: int | None = Field(default=None, description="소유(공유)인수")
 
     # ── JSONB 컬럼 (1:N) ──

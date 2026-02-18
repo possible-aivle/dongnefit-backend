@@ -20,9 +20,7 @@ class LandCharacteristicProcessor(VworldCsvProcessor):
         "지목코드": "jimok_code",
         "토지면적": "area",
         "용도지역명1": "use_zone",
-        "용도지역코드1": "use_zone_code",
-        "토지이용현황": "land_use",
-        "토지이용현황코드": "land_use_code",
+        "토지이용상황": "land_use",
         "공시지가": "official_price",
     }
 

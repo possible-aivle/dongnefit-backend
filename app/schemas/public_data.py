@@ -58,12 +58,9 @@ class LotDetailResponse(BaseSchema):
     jimok_code: str | None = None
     area: float | None = None
     use_zone: str | None = None
-    use_zone_code: str | None = None
     land_use: str | None = None
-    land_use_code: str | None = None
     official_price: int | None = None
     ownership: str | None = None
-    ownership_code: str | None = None
     owner_count: int | None = None
 
     # JSONB 필드

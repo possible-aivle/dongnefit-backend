@@ -16,7 +16,7 @@ from app.pipeline.file_utils import (
     geojson_to_wkt,
     read_shp_features,
 )
-from app.pipeline.processors.base import PUBLIC_DATA_DIR, BaseProcessor
+from app.pipeline.processors.base import PUBLIC_DATA_DIR, BaseProcessor, ProcessResult
 from app.pipeline.regions import PROVINCE_FILE_NAME_MAP
 from app.pipeline.registry import Registry
 
@@ -117,6 +117,16 @@ class CadastralProcessor(BaseProcessor):
             return {"province_names": list(province_names)}
 
         return {}
+
+
+    async def run(self, params: dict[str, Any] | None = None) -> ProcessResult:
+        """연속지적도 적재 후 PNU 캐시를 무효화합니다."""
+        result = await super().run(params)
+        if result.inserted > 0:
+            from app.pipeline.processors.base import invalidate_pnu_cache
+
+            invalidate_pnu_cache()
+        return result
 
 
 Registry.register(CadastralProcessor())

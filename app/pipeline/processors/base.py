@@ -8,6 +8,15 @@ from typing import Any
 from app.models.enums import PublicDataType
 from app.pipeline.parsing import safe_float, safe_int
 
+# 모듈 레벨 PNU 캐시 (한 세션 내에서 재사용)
+_valid_pnu_cache: set[str] | None = None
+
+
+def invalidate_pnu_cache() -> None:
+    """PNU 캐시를 무효화합니다. 연속지적도 적재 후 호출하세요."""
+    global _valid_pnu_cache
+    _valid_pnu_cache = None
+
 
 @dataclass
 class ProcessResult:
@@ -48,6 +57,7 @@ class BaseProcessor(ABC):
     simplify_tolerance: float | None = None  # geometry 단순화 허용 오차 (도 단위)
     batch_size: int = 500  # load() 배치 사이즈 (서브클래스에서 오버라이드 가능)
     jsonb_column: str | None = None  # transform 후 자동 JSONB aggregation 컬럼
+    pnu_field: str | None = None  # PNU 검증 필드명 (설정 시 lots 테이블에 존재하는 PNU만 적재)
 
     _safe_int = staticmethod(safe_int)
     _safe_float = staticmethod(safe_float)
@@ -92,7 +102,7 @@ class BaseProcessor(ABC):
         ...
 
     async def run(self, params: dict[str, Any] | None = None) -> ProcessResult:
-        """수집 → 변환 → 적재 전체 파이프라인을 실행합니다."""
+        """수집 → 변환 → (PNU 검증) → 적재 전체 파이프라인을 실행합니다."""
         if params is None:
             params = self.get_params_interactive()
 
@@ -103,9 +113,55 @@ class BaseProcessor(ABC):
         records = self.transform(raw)
         if self.jsonb_column:
             records = self._aggregate_jsonb(records, self.jsonb_column)
+
+        # PNU 검증: lots 테이블(연속지적도)에 존재하는 PNU만 적재
+        skipped = 0
+        if self.pnu_field and records:
+            valid_pnus = await self._load_valid_pnus()
+            if not valid_pnus:
+                from app.pipeline import console
+
+                console.print(
+                    "[red bold]  ⚠ lots 테이블에 데이터가 없습니다. "
+                    "연속지적도를 먼저 적재해주세요.[/]"
+                )
+                return ProcessResult(collected=len(raw), skipped=len(records))
+
+            before = len(records)
+            records = [r for r in records if r.get(self.pnu_field) in valid_pnus]
+            skipped = before - len(records)
+            if skipped > 0:
+                from app.pipeline import console
+
+                console.print(
+                    f"  PNU 검증: {before}건 중 {skipped}건 스킵 "
+                    f"(연속지적도에 없는 PNU)"
+                )
+
         result = await self.load(records)
         result.collected = len(raw)
+        result.skipped += skipped
         return result
+
+    @staticmethod
+    async def _load_valid_pnus() -> set[str]:
+        """lots 테이블에서 유효한 PNU 집합을 로드합니다 (캐시 사용)."""
+        global _valid_pnu_cache
+        if _valid_pnu_cache is not None:
+            return _valid_pnu_cache
+
+        from sqlalchemy import text
+
+        from app.database import async_session_maker
+        from app.pipeline import console
+
+        console.print("  [dim]연속지적도 PNU 목록 로딩 중...[/]")
+        async with async_session_maker() as session:
+            rows = await session.execute(text("SELECT pnu FROM lots"))
+            _valid_pnu_cache = {row[0] for row in rows}
+
+        console.print(f"  [dim]유효 PNU: {len(_valid_pnu_cache):,}건 로드[/]")
+        return _valid_pnu_cache
 
     async def load(self, records: list[dict[str, Any]]) -> ProcessResult:
         """변환된 데이터를 DB에 적재합니다.
