@@ -1,6 +1,5 @@
 """실거래가 엔드포인트 - 매매/전월세 조회."""
 
-import asyncio
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -17,12 +16,14 @@ from app.schemas.public_data import (
 
 router = APIRouter()
 
+MAX_ITEMS = 10
+
 
 @router.get(
     "",
     response_model=TransactionListResponse,
     summary="실거래가 조회",
-    description="시군구코드 기반으로 매매/전월세 실거래가를 조회합니다.",
+    description="시군구코드 기반으로 최근 매매/전월세 실거래가를 조회합니다. 각 최대 10건.",
 )
 async def get_transactions(
     sgg_code: str = Query(..., description="시군구코드 (5자리)", min_length=5, max_length=5),
@@ -32,8 +33,6 @@ async def get_transactions(
     ),
     from_date: date | None = Query(None, description="시작일 (YYYY-MM-DD)"),
     to_date: date | None = Query(None, description="종료일 (YYYY-MM-DD)"),
-    page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
 ) -> TransactionListResponse:
     # 날짜 범위 검증
@@ -43,34 +42,27 @@ async def get_transactions(
             detail="시작일(from_date)은 종료일(to_date)보다 이전이어야 합니다.",
         )
 
-    offset = (page - 1) * limit
-
-    # 매매/전월세 쿼리를 병렬 실행
-    (sales, total_sales), (rentals, total_rentals) = await asyncio.gather(
-        crud.get_sales(
-            db,
-            sgg_code,
-            property_type=property_type,
-            from_date=from_date,
-            to_date=to_date,
-            offset=offset,
-            limit=limit,
-        ),
-        crud.get_rentals(
-            db,
-            sgg_code,
-            property_type=property_type,
-            transaction_type=transaction_type,
-            from_date=from_date,
-            to_date=to_date,
-            offset=offset,
-            limit=limit,
-        ),
+    sales, _ = await crud.get_sales(
+        db,
+        sgg_code,
+        property_type=property_type,
+        from_date=from_date,
+        to_date=to_date,
+        offset=0,
+        limit=MAX_ITEMS,
+    )
+    rentals, _ = await crud.get_rentals(
+        db,
+        sgg_code,
+        property_type=property_type,
+        transaction_type=transaction_type,
+        from_date=from_date,
+        to_date=to_date,
+        offset=0,
+        limit=MAX_ITEMS,
     )
 
     return TransactionListResponse(
         sales=[SaleResponse.model_validate(s) for s in sales],
         rentals=[RentalResponse.model_validate(r) for r in rentals],
-        total_sales=total_sales,
-        total_rentals=total_rentals,
     )

@@ -1,6 +1,5 @@
 """통합 요약 엔드포인트 - AI 콘텐츠 생성용."""
 
-import asyncio
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -13,7 +12,6 @@ from app.schemas.public_data import (
     BuildingSummary,
     LotDetailResponse,
     OfficialPriceItem,
-    OwnershipItem,
     PropertySummaryResponse,
     RentalResponse,
     SaleResponse,
@@ -51,13 +49,10 @@ async def get_property_summary(
     # PNU에서 sgg_code 추출 (앞 5자리)
     sgg_code = pnu[:5]
 
-    # 4개 쿼리를 병렬 실행 (lot은 이미 모든 토지 데이터 포함)
-    general, headers, recent_sales, recent_rentals = await asyncio.gather(
-        crud.get_building_general(db, pnu),
-        crud.get_building_headers(db, pnu),
-        crud.get_recent_sales_by_sgg(db, sgg_code, limit=5),
-        crud.get_recent_rentals_by_sgg(db, sgg_code, limit=5),
-    )
+    general = await crud.get_building_general(db, pnu)
+    headers = await crud.get_building_headers(db, pnu)
+    recent_sales = await crud.get_recent_sales_by_sgg(db, sgg_code, limit=5)
+    recent_rentals = await crud.get_recent_rentals_by_sgg(db, sgg_code, limit=5)
 
     building_summary = None
     if general:
@@ -75,6 +70,7 @@ async def get_property_summary(
 
     lot_detail = LotDetailResponse(
         pnu=lot.pnu,
+        address=lot.address,
         geometry=lot.geometry,
         jimok=lot.jimok,
         area=lot.area,
@@ -84,7 +80,6 @@ async def get_property_summary(
         ownership=lot.ownership,
         owner_count=lot.owner_count,
         use_plans=[UsePlanItem.model_validate(p) for p in (lot.use_plans or [])],
-        ownerships=[OwnershipItem.model_validate(o) for o in (lot.ownerships or [])],
         official_prices=[OfficialPriceItem.model_validate(p) for p in (lot.official_prices or [])],
         ancillary_lots=[AncillaryLotItem.model_validate(a) for a in (lot.ancillary_lots or [])],
     )

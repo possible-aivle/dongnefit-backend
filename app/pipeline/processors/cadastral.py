@@ -120,12 +120,21 @@ class CadastralProcessor(BaseProcessor):
 
 
     async def run(self, params: dict[str, Any] | None = None) -> ProcessResult:
-        """연속지적도 적재 후 PNU 캐시를 무효화합니다."""
+        """연속지적도 적재 후 PNU 캐시 무효화 및 주소 채우기."""
         result = await super().run(params)
         if result.inserted > 0:
+            from app.database import async_session_maker
             from app.pipeline.processors.base import invalidate_pnu_cache
 
             invalidate_pnu_cache()
+
+            # 새로 삽입된 lots의 address를 행정경계 테이블에서 채우기
+            from app.pipeline.loader import populate_lot_addresses
+
+            async with async_session_maker() as session:
+                updated = await populate_lot_addresses(session)
+            if updated:
+                console.print(f"  주소 채우기 완료: {updated}건")
         return result
 
 

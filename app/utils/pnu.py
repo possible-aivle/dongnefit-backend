@@ -30,11 +30,24 @@ def is_mountain(pnu: str) -> bool:
     return pnu[10] == "2"
 
 
-def main_number(pnu: str) -> str:
+def bonbun_number(pnu: str) -> str:
     """PNU에서 본번(4자리)을 추출합니다."""
     return pnu[11:15]
 
 
-def sub_number(pnu: str) -> str:
+def bubun_number(pnu: str) -> str:
     """PNU에서 부번(4자리)을 추출합니다."""
     return pnu[15:19]
+
+
+def format_pnu_to_jibun(pnu: str) -> str:
+    """PNU에서 지번 문자열을 생성합니다.
+
+    예: '산 527-3', '939-10', '123'
+    """
+    prefix = "산 " if is_mountain(pnu) else ""
+    main = str(int(bonbun_number(pnu)))
+    sub = int(bubun_number(pnu))
+    if sub:
+        return f"{prefix}{main}-{sub}"
+    return f"{prefix}{main}"

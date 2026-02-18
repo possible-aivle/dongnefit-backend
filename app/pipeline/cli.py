@@ -212,13 +212,6 @@ DATA_SOURCES: dict[str, dict] = {
         "processor": "official_land_price",
         "file_type": "sido_code",
     },
-    "land_ownership": {
-        "name": "토지소유정보",
-        "category": "토지",
-        "dir": "토지소유정보",
-        "processor": "land_ownership",
-        "file_type": "sido_code",
-    },
     # 건물
     "building_register_header": {
         "name": "건축물대장 표제부",
