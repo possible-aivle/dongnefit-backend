@@ -68,17 +68,3 @@ class LotRead(BaseSchema):
     ancillary_lots: list[dict[str, Any]] | None = None
 
 
-class AncillaryLandCreate(BaseSchema):
-    """부속필지 생성 스키마."""
-
-    pnu: str
-
-
-
-class AncillaryLandRead(BaseSchema):
-    """부속필지 조회 스키마."""
-
-    id: int
-    pnu: str
-
-    created_at: datetime | None

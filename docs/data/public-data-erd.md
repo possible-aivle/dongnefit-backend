@@ -29,15 +29,6 @@ erDiagram
     }
 
     %% ============================================
-    %% 부속필지 (lot.py)
-    %% ============================================
-    AncillaryLand {
-        int id PK
-        string pnu "필지고유번호"
-        datetime created_at
-    }
-
-    %% ============================================
     %% 실거래 - 매매 (transaction.py)
     %% ============================================
     RealEstateSale {
@@ -221,7 +212,6 @@ erDiagram
     Lot ||--o{ BuildingRegisterFloorDetail : "pnu"
     Lot ||--o{ BuildingRegisterArea : "pnu"
     Lot ||--o{ GisBuildingIntegrated : "pnu"
-    Lot ||--o{ AncillaryLand : "pnu"
 
     %% 행정경계 계층 관계
     AdministrativeSido ||--o{ AdministrativeSgg : "sido_code"
@@ -237,7 +227,6 @@ erDiagram
 | 구분   | 테이블                            | 설명                           | Lot FK | UQ 제약                                        |
 | ------ | --------------------------------- | ------------------------------ | ------ | ---------------------------------------------- |
 | 중심   | `lots`                            | 필지 + 토지 통합 (PNU 기준)    | -      | pnu (PK)                                       |
-| 필지   | `ancillary_lands`                 | 부속필지                       | O      | -                                              |
 | 매매   | `real_estate_sales`               | 부동산 매매 실거래             | X      | -                                              |
 | 전월세 | `real_estate_rentals`             | 부동산 전월세 실거래           | X      | -                                              |
 | 건물   | `building_register_headers`       | 건축물대장 표제부              | O      | mgm_bldrgst_pk                                 |
@@ -255,7 +244,7 @@ erDiagram
 
 | 구분        | 원본 테이블                        | 통합 방식     | 컬럼/키                                                                              |
 | ----------- | ---------------------------------- | ------------- | ------------------------------------------------------------------------------------ |
-| 연속지적도  | (신규)                             | PK + geometry | pnu, geometry                                                                        |
+| 연속지적도  | (기반 데이터)                      | PK + geometry | pnu, geometry                                                                        |
 | 토지특성    | land_characteristics               | flat 컬럼     | jimok, jimok_code, area, use_zone, use_zone_code, land_use, land_use_code, official_price |
 | 토지임야    | land_and_forest_infos              | flat 컬럼     | ownership, ownership_code, owner_count                                               |
 | 토지이용계획 | land_use_plans                    | JSONB         | use_plans `[{use_district_name}]`                                                    |
@@ -265,7 +254,7 @@ erDiagram
 
 ### 핵심 관계
 
-- **Lot**이 PNU 기반 중심 테이블로, 6개 건물/필지 테이블이 pnu로 연결 (FK 없이 인덱스 기반)
+- **Lot**이 PNU 기반 중심 테이블로, 5개 건물 테이블이 pnu로 연결 (FK 없이 인덱스 기반)
 - **Lot**에 토지 관련 6개 테이블 데이터가 flat 컬럼 + JSONB로 통합됨
 - **RealEstateSale, RealEstateRental**: sgg_code 기반 위치 연결 (pnu 없음)
 - **AdministrativeSido → AdministrativeSgg → AdministrativeEmd**: 시도 → 시군구 → 읍면동 3단계 계층
@@ -292,7 +281,7 @@ erDiagram
 
 | 소스           | 포맷        | 테이블                                                                              |
 | -------------- | ----------- | ----------------------------------------------------------------------------------- |
-| 연속지적도     | shp         | Lot (기반 PNU + geometry), AncillaryLand                                            |
+| 연속지적도     | shp         | Lot (기반 PNU + geometry)                                                            |
 | vworld CSV     | csv (cp949) | Lot (토지특성, 토지이용계획, 토지임야, 공시지가 → flat/JSONB 통합)                   |
 | vworld SHP     | shp         | GisBuildingIntegrated, RoadCenterLine, UseRegionDistrict, AdministrativeSido/Sgg/Emd |
 | 공공데이터포털 | txt         | BuildingRegisterHeader, BuildingRegisterGeneral, BuildingRegisterFloorDetail, BuildingRegisterArea |

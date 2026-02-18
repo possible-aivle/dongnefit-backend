@@ -20,7 +20,7 @@ from app.models.building import (
     GisBuildingIntegrated,
 )
 from app.models.enums import PublicDataType
-from app.models.lot import AncillaryLand, Lot
+from app.models.lot import Lot
 from app.models.spatial import RoadCenterLine, UseRegionDistrict
 from app.models.transaction import (
     RealEstateRental,
@@ -32,7 +32,6 @@ from app.pipeline.processors.base import ProcessResult
 
 MODEL_MAP: dict[PublicDataType, type[SQLModel]] = {
     PublicDataType.CONTINUOUS_CADASTRAL: Lot,
-    PublicDataType.ANCILLARY_LAND: AncillaryLand,
     PublicDataType.LAND_CHARACTERISTIC: Lot,
     PublicDataType.LAND_USE_PLAN: Lot,
     PublicDataType.LAND_AND_FOREST_INFO: Lot,

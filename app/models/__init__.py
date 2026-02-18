@@ -22,7 +22,7 @@ from app.models.enums import (
     TransactionType,
 )
 from app.models.file import FileStorage
-from app.models.lot import AncillaryLand, Lot
+from app.models.lot import Lot
 from app.models.neighborhood import Neighborhood
 from app.models.notification import Notification, NotificationSettings, NotificationType
 from app.models.report import Report, ReportCategory, ReportReview, ReportStatus
@@ -63,7 +63,6 @@ __all__ = [
     "FileStorage",
     # Lot (필지 + 토지 통합)
     "Lot",
-    "AncillaryLand",
     # Administrative (행정경계)
     "AdministrativeSido",
     "AdministrativeSgg",

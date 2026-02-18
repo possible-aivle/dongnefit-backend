@@ -31,8 +31,6 @@ from app.schemas.building import (
     GisBuildingIntegratedRead,
 )
 from app.schemas.lot import (
-    AncillaryLandCreate,
-    AncillaryLandRead,
     LotCreate,
     LotRead,
 )
@@ -63,8 +61,6 @@ __all__ = [
     # Lot
     "LotCreate",
     "LotRead",
-    "AncillaryLandCreate",
-    "AncillaryLandRead",
     # Administrative
     "AdministrativeSidoCreate",
     "AdministrativeSidoRead",

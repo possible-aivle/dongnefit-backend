@@ -15,7 +15,6 @@ from app.models import (  # noqa: F401 - Import all models for autogenerate
     AdministrativeEmd,
     AdministrativeSgg,
     AdministrativeSido,
-    AncillaryLand,
     BuildingRegisterArea,
     BuildingRegisterFloorDetail,
     BuildingRegisterGeneral,

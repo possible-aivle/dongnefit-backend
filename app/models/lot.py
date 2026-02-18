@@ -19,7 +19,7 @@ from sqlalchemy import BigInteger, Column
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
 
-from app.models.base import PublicDataBase, geometry_column, get_utc_now
+from app.models.base import geometry_column, get_utc_now
 
 
 # pnu 가 primary_key 여서 SQLModel 상속
@@ -79,18 +79,3 @@ class Lot(SQLModel, table=True):
     )
 
 
-class AncillaryLand(PublicDataBase, table=True):
-    """부속필지 테이블.
-
-    부속필지 데이터 업로드 → Lot 테이블 업데이트 기반 데이터.
-    건축물대장 > 부속지번 데이터.
-    """
-
-    __tablename__ = "ancillary_lands"
-
-    pnu: str = Field(
-        max_length=19,
-        # lots.pnu 참조: FK 대신 인덱스로 관리 (파이프라인 독립 적재 지원)
-        description="필지고유번호",
-        index=True,
-    )
