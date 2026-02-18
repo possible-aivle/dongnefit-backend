@@ -13,6 +13,7 @@ class LandUsePlanProcessor(VworldCsvProcessor):
     name = "land_use_plan"
     description = "토지이용계획정보 (AL_D155)"
     data_type = PublicDataType.LAND_USE_PLAN
+    jsonb_column = "use_plans"
 
     COLUMN_MAP: dict[str, str] = {
         "고유번호": "pnu",
@@ -28,11 +29,6 @@ class LandUsePlanProcessor(VworldCsvProcessor):
         mapped.pop("data_base_date", None)
 
         return mapped
-
-    def transform(self, raw_data: list[dict]) -> list[dict[str, Any]]:
-        """1:N 레코드를 PNU별 JSONB 배열로 집계합니다."""
-        records = super().transform(raw_data)
-        return self._aggregate_jsonb(records, "use_plans")
 
 
 Registry.register(LandUsePlanProcessor())

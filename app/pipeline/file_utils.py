@@ -12,9 +12,7 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
-from rich.console import Console
-
-console = Console()
+from app.pipeline import console
 
 # WGS84 (EPSG:4326) - 네이버지도, 카카오맵, Google Maps 공통 좌표계
 TARGET_CRS = "EPSG:4326"

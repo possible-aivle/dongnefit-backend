@@ -9,11 +9,11 @@
 | Package Manager | uv                                      |
 | Web Framework   | FastAPI, Uvicorn                        |
 | ORM             | SQLAlchemy 2.0 (async), SQLModel        |
-| Database        | PostgreSQL 17, asyncpg, Alembic         |
+| Database        | PostgreSQL 17, asyncpg, PostGIS, Alembic |
 | Validation      | Pydantic v2 (+ email)                   |
 | Authentication  | OAuth2 (Google, Kakao), Session-based   |
-| AI/LLM          | LangGraph, LangChain, OpenAI, Anthropic |
-| Web Scraping    | Selenium, krwordrank                    |
+| AI/LLM          | LangGraph 멀티에이전트, LangChain, OpenAI, Anthropic |
+| Data Pipeline   | httpx, fiona (SHP), openpyxl (Excel)    |
 | Code Quality    | Ruff (lint + format), mypy (strict)     |
 | Testing         | pytest, pytest-asyncio, pytest-cov      |
 
@@ -31,9 +31,14 @@ backend/
 │   │   └── v1/endpoints/        # API v1 엔드포인트
 │   │       ├── users.py         # 사용자 관리
 │   │       ├── neighborhoods.py # 동네 정보
+│   │       ├── lots.py          # 필지/토지 조회
+│   │       ├── buildings.py     # 건축물 조회
+│   │       ├── transactions.py  # 실거래가 조회
+│   │       ├── properties.py    # 부동산 종합 조회
 │   │       ├── reports.py       # 부동산 리포트
 │   │       ├── discussions.py   # 커뮤니티 게시판
-│   │       └── notifications.py # 알림
+│   │       ├── notifications.py # 알림
+│   │       └── map.py           # 지도 서비스
 │   │
 │   ├── auth/                    # 인증
 │   │   ├── deps.py              # get_current_user 등
@@ -47,70 +52,98 @@ backend/
 │   │   ├── discussion.py        # 게시글, 댓글, 좋아요
 │   │   ├── notification.py      # 알림, 알림설정
 │   │   ├── neighborhood.py      # 동네 정보
-│   │   ├── blog.py              # 블로그 포스트
-│   │   ├── lot.py               # 필지 (토지대장)
-│   │   ├── land.py              # 토지특성, 용도지역, 임야
-│   │   ├── building.py          # 건축물대장 (표제부, 층별)
-│   │   ├── administrative.py    # 행정경계 (시군구, 읍면동)
-│   │   ├── transaction.py       # 공시지가, 실거래가
+│   │   ├── lot.py               # 필지 통합 (지적도 + 6개 토지 데이터 JSONB)
+│   │   ├── building.py          # 건축물대장 (표제부, 총괄, 층별, 면적)
+│   │   ├── administrative.py    # 행정경계 (시도, 시군구, 읍면동)
+│   │   ├── transaction.py       # 실거래가 (매매, 전월세)
 │   │   ├── spatial.py           # 도로중심선, 용도지역지구
 │   │   └── file.py              # 파일 저장소
 │   │
 │   ├── schemas/                 # Pydantic 요청/응답 스키마
 │   │   ├── base.py              # 공통 응답, 페이지네이션
-│   │   ├── user.py              # UserCreate, UserUpdate, UserQuery
-│   │   ├── report.py            # ReportCreate, ReportUpdate
-│   │   ├── discussion.py        # DiscussionCreate, DiscussionUpdate
-│   │   ├── content.py           # ContentRequest, ContentResponse
-│   │   └── ...                  # neighborhood, notification, blog 등
+│   │   ├── user.py, admin.py    # 사용자/관리자 스키마
+│   │   ├── lot.py               # 필지 조회 스키마
+│   │   ├── building.py          # 건축물 조회 스키마
+│   │   ├── transaction.py       # 실거래가 스키마
+│   │   ├── administrative.py    # 행정경계 스키마
+│   │   ├── spatial.py           # 공간 데이터 스키마
+│   │   ├── public_data.py       # 공공데이터 통합 스키마
+│   │   └── ...                  # report, discussion, notification, content, map 등
 │   │
 │   ├── crud/                    # 데이터베이스 CRUD
 │   │   ├── base.py              # CRUDBase[ModelType] (Generic CRUD)
-│   │   ├── user.py              # 이메일 검색, 필터링, 역할 관리
-│   │   ├── report.py            # 리포트 CRUD + 발행
-│   │   ├── discussion.py        # 게시판 CRUD
-│   │   ├── notification.py      # 알림 CRUD
-│   │   └── neighborhood.py      # 동네 CRUD
+│   │   └── ...                  # user, report, discussion, notification, neighborhood
 │   │
 │   ├── services/                # 비즈니스 로직
 │   │   ├── content/             # 콘텐츠 생성
-│   │   │   ├── generator.py     # ContentGenerator (LangGraph 워크플로우)
+│   │   │   ├── generator.py     # ContentGenerator
 │   │   │   └── scraper.py       # RealEstateScraper (Selenium)
 │   │   └── map/                 # 지도 서비스 (Naver/Google)
 │   │
-│   ├── core/                    # 핵심 기능
-│   │   ├── langgraph/           # LangGraph 콘텐츠 생성 워크플로우
-│   │   │   └── workflow.py      # ContentGenerationWorkflow
-│   │   └── tistory/             # 티스토리 블로그 자동화
-│   │       ├── config.py        # 티스토리 설정
-│   │       ├── content_generator.py
-│   │       ├── data_processor.py
-│   │       ├── tistory_writer.py
-│   │       └── main.py          # 오케스트레이션
+│   ├── core/                    # AI 에이전트 시스템
+│   │   ├── agent/               # LangGraph 멀티에이전트
+│   │   │   ├── agent.py         # 메인 에이전트 오케스트레이터
+│   │   │   ├── supervisor.py    # 멀티에이전트 수퍼바이저
+│   │   │   ├── sub_agents/      # 서브 에이전트
+│   │   │   │   ├── intent_analyzer.py    # 의도 분석
+│   │   │   │   ├── data_collector.py     # 데이터 수집
+│   │   │   │   ├── data_classifier.py    # 데이터 분류
+│   │   │   │   ├── content_generator.py  # 콘텐츠 생성
+│   │   │   │   └── seo/                  # SEO 최적화 에이전트
+│   │   │   ├── tools/           # 에이전트 도구
+│   │   │   └── resources/       # 프롬프트 템플릿
+│   │   └── langgraph/           # LangGraph 워크플로우
 │   │
-│   └── scripts/                 # 유틸리티 스크립트
-│       ├── seed_data.py         # 더미 데이터 시딩 (Faker)
-│       └── clear_data.py        # 데이터 초기화 (admin 보존)
-│
-├── app/pipeline/                    # 공공데이터 수집 CLI
-│   ├── __main__.py              # CLI 진입점
-│   ├── cli.py                   # 인터랙티브 메뉴
-│   ├── clients/                 # 데이터 소스 클라이언트
-│   ├── processors/              # 데이터 변환 프로세서
-│   ├── transaction_crawler/     # 실거래가 엑셀 크롤러
-│   │   ├── __main__.py          # CLI 진입점
-│   │   └── crawler.py           # 크롤러 로직 (httpx 기반)
-│   ├── loader.py                # 동적 모듈 로더
-│   ├── db_manager.py            # DB 매니저
-│   └── registry.py              # 모듈 레지스트리
+│   ├── utils/                   # 유틸리티
+│   │   └── pnu.py               # PNU 코드 파싱 (sido_code, sgg_code 등)
+│   │
+│   ├── scripts/                 # 유틸리티 스크립트
+│   │   ├── seed_data.py         # 더미 데이터 시딩 (Faker)
+│   │   └── clear_data.py        # 데이터 초기화 (admin 보존)
+│   │
+│   └── pipeline/                # 공공데이터 수집 CLI 파이프라인
+│       ├── __main__.py          # CLI 진입점
+│       ├── cli.py               # 인터랙티브 메뉴
+│       ├── registry.py          # 프로세서 자동 등록 레지스트리
+│       ├── loader.py            # bulk_upsert / bulk_insert (JSONB aggregation)
+│       ├── db_manager.py        # DB 관리 (테이블 통계, truncate)
+│       ├── regions.py           # 시도/시군구 지역 데이터
+│       ├── parsing.py           # safe_int(), safe_float() 공통 파싱
+│       ├── file_utils.py        # ZIP 추출, SHP 읽기, CRS 변환, NFC 정규화
+│       ├── processors/          # 데이터 변환 프로세서 (14개 파일, 19종 데이터)
+│       │   ├── base.py          # BaseProcessor (batch_size, jsonb_column, simplify_tolerance)
+│       │   ├── cadastral.py     # 연속지적도 (SHP)
+│       │   ├── land_characteristic.py  # 토지특성 (CSV)
+│       │   ├── land_use_plan.py        # 토지이용계획 (CSV → JSONB)
+│       │   ├── land_forest.py          # 토지임야 (CSV)
+│       │   ├── land_ownership.py       # 토지소유 (CSV → JSONB)
+│       │   ├── official_land_price.py  # 개별공시지가 (CSV → JSONB)
+│       │   ├── vworld_csv.py           # VWorld CSV 공통 프로세서
+│       │   ├── building_register.py    # 건축물대장 5종 (TXT, pipe-delimited)
+│       │   ├── gis_building_integrated.py  # GIS건물통합 (SHP)
+│       │   ├── administrative_boundary.py  # 행정경계 3종 (SHP)
+│       │   ├── road_center_line.py     # 도로중심선 (SHP)
+│       │   ├── use_region_district.py  # 용도지역지구 (SHP)
+│       │   └── real_estate_transaction.py  # 실거래가 매매/전월세 (Excel)
+│       ├── transaction_crawler/ # 실거래가 엑셀 크롤러
+│       │   ├── __main__.py      # CLI 진입점
+│       │   └── crawler.py       # 크롤러 로직 (httpx 기반)
+│       └── public_data/         # 원본 데이터 파일 (ZIP/CSV/TXT/XLSX)
 │
 ├── alembic/                     # DB 마이그레이션
 │   ├── env.py
 │   └── versions/
 │
 ├── docs/                        # 문서
-│   ├── public_data_erd.md       # 공공데이터 ERD
-│   ├── tistory.md               # 티스토리 연동 문서
+│   ├── agent/                   # 에이전트 시스템 문서
+│   │   ├── README.md            # 에이전트 개요
+│   │   ├── structure.md         # 아키텍처 구조
+│   │   ├── workflow.md          # 워크플로우
+│   │   └── sub_agents.md        # 서브 에이전트 명세
+│   ├── data/                    # 공공데이터 문서
+│   │   ├── public-data-erd.md   # ERD
+│   │   ├── geometry-handling.md # 공간 데이터 처리
+│   │   └── ...                  # DB 적재 시나리오, SHP 전처리 등
 │   └── uv.md                    # uv 사용법
 │
 ├── tests/                       # 테스트
@@ -221,7 +254,41 @@ uv run python -m app.pipeline.transaction_crawler --no-rent
 uv run python -m app.pipeline.transaction_crawler --test
 ```
 
-다운로드 파일 위치: `app/pipeline/public_data/실거래가/`
+다운로드 파일 위치: `app/pipeline/public_data/실거래가_매매/`, `실거래가_전월세/`
+
+## DB 스키마
+
+### 공공데이터 테이블 (13개)
+
+| 테이블 | PK/Unique | 설명 |
+|--------|-----------|------|
+| `lots` | pnu + data_type | 필지 통합 (지적도 + JSONB: use_plans, ownerships, official_prices, ancillary_lots) |
+| `building_register_mains` | mgm_bldrgst_pk | 건축물대장 표제부 |
+| `building_register_generals` | mgm_bldrgst_pk | 건축물대장 총괄표제부 |
+| `building_register_floor_details` | mgm_bldrgst_pk + floor_no + floor_type | 건축물대장 층별개요 |
+| `building_register_areas` | mgm_bldrgst_pk + area_type + area_name | 건축물대장 전유공용면적 |
+| `gis_building_integrated` | pnu + building_id | GIS건물통합정보 |
+| `administrative_sidos` | sido_code | 시도 행정경계 |
+| `administrative_sggs` | sgg_code | 시군구 행정경계 |
+| `administrative_emds` | emd_code | 읍면동 행정경계 |
+| `road_center_lines` | source_id | 도로중심선 |
+| `use_region_districts` | source_id | 용도지역지구 |
+| `real_estate_sales` | composite | 실거래가 매매 |
+| `real_estate_rentals` | composite | 실거래가 전월세 |
+
+### 파이프라인 아키텍처
+
+```
+수집 (collect)     →  변환 (transform)    →  적재 (load)
+ZIP/CSV/TXT/XLSX      컬럼 매핑              bulk_upsert
+SHP → fiona           타입 변환              batch_size별 처리
+Excel → openpyxl      PNU 생성              JSONB 집계 (jsonb_column)
+                      geometry → WKT         ST_Simplify (simplify_tolerance)
+```
+
+- **BaseProcessor**: `batch_size`, `jsonb_column`, `simplify_tolerance` 클래스 속성으로 프로세서별 동작 제어
+- **자동 등록**: `registry.py`가 processors/ 하위 모듈을 자동 탐색하여 등록 (19종)
+- **JSONB 집계**: 1:N 관계 데이터(이용계획, 소유, 공시지가 등)를 PNU 기준으로 그룹화하여 JSONB 배열로 저장
 
 ## API 문서
 
@@ -251,6 +318,15 @@ uv run python -m app.pipeline.transaction_crawler --test
 | GET    | `/api/v1/users/me`   | 내 정보                                |
 | POST   | `/api/v1/users`      | 사용자 생성                            |
 | PATCH  | `/api/v1/users/{id}` | 사용자 수정                            |
+
+### 부동산 데이터
+
+| Method | Endpoint                           | 설명                            |
+| ------ | ---------------------------------- | ------------------------------- |
+| GET    | `/api/v1/lots/{pnu}`               | 필지 상세 (토지 통합 데이터)    |
+| GET    | `/api/v1/buildings/{pnu}`          | 건축물 정보                     |
+| GET    | `/api/v1/transactions/{sgg_code}`  | 실거래가 조회                   |
+| GET    | `/api/v1/properties/{pnu}/summary` | 부동산 종합 요약 (필지+건물+거래) |
 
 ### 동네
 
@@ -293,7 +369,8 @@ uv run python -m app.pipeline.transaction_crawler --test
 - **Async-first**: AsyncSession, async generators 전면 사용
 - **Schema Validation**: Pydantic v2 + SQLModel 통합
 - **Service Layer**: 비즈니스 로직 분리 (content, map)
-- **LangGraph Workflow**: 콘텐츠 생성 파이프라인 (research → outline → draft → final)
+- **Multi-Agent System**: LangGraph 수퍼바이저 → 서브 에이전트 (의도분석, 데이터수집, 콘텐츠생성, SEO)
+- **Pipeline Pattern**: collect → transform → load (BaseProcessor 추상 클래스, 자동 등록 레지스트리)
 
 ## 개발
 

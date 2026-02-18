@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from app.models.enums import PublicDataType
+from app.pipeline.parsing import safe_float, safe_int
 
 
 @dataclass
@@ -45,6 +46,11 @@ class BaseProcessor(ABC):
     description: str  # 예: "연속지적도 (vworld)"
     data_type: PublicDataType  # 예: PublicDataType.CONTINUOUS_CADASTRAL
     simplify_tolerance: float | None = None  # geometry 단순화 허용 오차 (도 단위)
+    batch_size: int = 500  # load() 배치 사이즈 (서브클래스에서 오버라이드 가능)
+    jsonb_column: str | None = None  # transform 후 자동 JSONB aggregation 컬럼
+
+    _safe_int = staticmethod(safe_int)
+    _safe_float = staticmethod(safe_float)
 
     @staticmethod
     def _aggregate_jsonb(
@@ -95,6 +101,8 @@ class BaseProcessor(ABC):
             return ProcessResult()
 
         records = self.transform(raw)
+        if self.jsonb_column:
+            records = self._aggregate_jsonb(records, self.jsonb_column)
         result = await self.load(records)
         result.collected = len(raw)
         return result
@@ -111,6 +119,7 @@ class BaseProcessor(ABC):
         async with async_session_maker() as session:
             result = await bulk_upsert(
                 session, self.data_type, records,
+                batch_size=self.batch_size,
                 simplify_tolerance=self.simplify_tolerance,
             )
 
@@ -120,46 +129,3 @@ class BaseProcessor(ABC):
 # ── 공공데이터 파일 기반 프로세서 ──
 
 PUBLIC_DATA_DIR = Path(__file__).parent.parent / "public_data"
-
-
-class BaseFileProcessor(BaseProcessor):
-    """파일 기반 공공데이터 프로세서 베이스 클래스.
-
-    public_data/ 디렉토리의 ZIP/CSV/TXT/SHP 파일을 직접 적재하는
-    프로세서의 공통 베이스입니다.
-
-    서브클래스에서 정의:
-        - data_dir_name: str - public_data 하위 디렉토리명
-        - file_pattern: str - ZIP 파일 패턴 (기본 "*.zip")
-    """
-
-    data_dir_name: str = ""
-    file_pattern: str = "*.zip"
-
-    @property
-    def data_dir(self) -> Path:
-        return PUBLIC_DATA_DIR / self.data_dir_name
-
-    async def run_batch(
-        self,
-        sgg_prefixes: list[str] | None = None,
-        sido_codes: set[str] | None = None,
-        province_names: set[str] | None = None,
-        truncate: bool = False,
-    ) -> ProcessResult:
-        """배치 적재 메서드.
-
-        CLI 공공데이터 적재 플로우에서 호출됩니다.
-        기본 구현은 sgg_prefixes를 params에 넣어 run()을 호출합니다.
-        """
-        params: dict[str, Any] = {}
-        if sgg_prefixes:
-            params["sgg_prefixes"] = sgg_prefixes
-        if sido_codes:
-            params["sido_codes"] = sido_codes
-        if province_names:
-            params["province_names"] = list(province_names)
-        if truncate:
-            params["truncate"] = truncate
-
-        return await self.run(params)

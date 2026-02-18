@@ -13,6 +13,7 @@ class LandOwnershipProcessor(VworldCsvProcessor):
     name = "land_ownership"
     description = "토지소유정보 (AL_D401)"
     data_type = PublicDataType.LAND_OWNERSHIP
+    jsonb_column = "ownerships"
 
     COLUMN_MAP: dict[str, str] = {
         "고유번호": "pnu",
@@ -34,11 +35,6 @@ class LandOwnershipProcessor(VworldCsvProcessor):
         mapped["owner_count"] = self._safe_int(mapped.get("owner_count"))
 
         return mapped
-
-    def transform(self, raw_data: list[dict]) -> list[dict[str, Any]]:
-        """1:N 레코드를 PNU별 JSONB 배열로 집계합니다."""
-        records = super().transform(raw_data)
-        return self._aggregate_jsonb(records, "ownerships")
 
 
 Registry.register(LandOwnershipProcessor())

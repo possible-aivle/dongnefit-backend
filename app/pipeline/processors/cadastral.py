@@ -4,12 +4,10 @@
 파일: LSMD_CONT_LDREG_{province_name}.zip (시도 이름 기반 파일명).
 """
 
-from pathlib import Path
 from typing import Any
 
-from rich.console import Console
-
 from app.models.enums import PublicDataType
+from app.pipeline import console
 from app.pipeline.file_utils import (
     cleanup_temp_dir,
     extract_zip,
@@ -18,13 +16,9 @@ from app.pipeline.file_utils import (
     geojson_to_wkt,
     read_shp_features,
 )
-from app.pipeline.processors.base import BaseProcessor, ProcessResult
+from app.pipeline.processors.base import PUBLIC_DATA_DIR, BaseProcessor
 from app.pipeline.regions import PROVINCE_FILE_NAME_MAP
 from app.pipeline.registry import Registry
-
-console = Console()
-
-PUBLIC_DATA_DIR = Path(__file__).parent.parent / "public_data"
 
 
 class CadastralProcessor(BaseProcessor):
@@ -36,6 +30,7 @@ class CadastralProcessor(BaseProcessor):
     name = "cadastral"
     description = "연속지적도 (LSMD_CONT_LDREG)"
     data_type = PublicDataType.CONTINUOUS_CADASTRAL
+    batch_size = 2000
 
     async def collect(self, params: dict[str, Any]) -> list[dict]:
         data_dir = PUBLIC_DATA_DIR / "연속지적도"
@@ -122,16 +117,6 @@ class CadastralProcessor(BaseProcessor):
             return {"province_names": list(province_names)}
 
         return {}
-
-    async def load(self, records: list[dict[str, Any]]) -> ProcessResult:
-        """연속지적도 대용량 데이터 적재 (배치 사이즈 증가)."""
-        from app.database import async_session_maker
-        from app.pipeline.loader import bulk_upsert
-
-        async with async_session_maker() as session:
-            result = await bulk_upsert(session, self.data_type, records, batch_size=2000)
-
-        return result
 
 
 Registry.register(CadastralProcessor())

@@ -19,6 +19,7 @@ class OfficialLandPriceProcessor(VworldCsvProcessor):
     name = "official_land_price"
     description = "개별공시지가정보 (AL_D151)"
     data_type = PublicDataType.OFFICIAL_LAND_PRICE
+    jsonb_column = "official_prices"
 
     COLUMN_MAP: dict[str, str] = {
         "고유번호": "pnu",
@@ -36,11 +37,6 @@ class OfficialLandPriceProcessor(VworldCsvProcessor):
         mapped["price_per_sqm"] = self._safe_int(mapped.get("price_per_sqm"))
 
         return mapped
-
-    def transform(self, raw_data: list[dict]) -> list[dict[str, Any]]:
-        """1:N 레코드를 PNU별 JSONB 배열로 집계합니다."""
-        records = super().transform(raw_data)
-        return self._aggregate_jsonb(records, "official_prices")
 
 
 Registry.register(OfficialLandPriceProcessor())

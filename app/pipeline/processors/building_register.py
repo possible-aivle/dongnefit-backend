@@ -7,14 +7,35 @@
 from pathlib import Path
 from typing import Any
 
-from rich.console import Console
-
 from app.models.enums import PublicDataType
-from app.pipeline.parsing import safe_float, safe_int
+from app.pipeline import console
 from app.pipeline.processors.base import BaseProcessor, ProcessResult
 from app.pipeline.registry import Registry
 
-console = Console()
+
+def _build_pnu_from_indices(fields: list[str], indices: tuple[int, int, int, int, int]) -> str | None:
+    """필드 리스트와 인덱스 튜플에서 PNU(19자리)를 생성합니다."""
+    si, bj, dg, bon, bu = indices
+    try:
+        sigungu = (fields[si] if si < len(fields) else "").strip()
+        bjdong = (fields[bj] if bj < len(fields) else "").strip()
+        daeji = (fields[dg] if dg < len(fields) else "").strip()
+        bon_val = (fields[bon] if bon < len(fields) else "").strip()
+        bu_val = (fields[bu] if bu < len(fields) else "").strip()
+
+        if not sigungu or not bjdong:
+            return None
+
+        pnu = (
+            sigungu.zfill(5)
+            + bjdong.zfill(5)
+            + daeji.zfill(1)
+            + bon_val.zfill(4)
+            + bu_val.zfill(4)
+        )
+        return pnu if len(pnu) == 19 else None
+    except (IndexError, ValueError):
+        return None
 
 
 class BuildingRegisterTxtProcessor(BaseProcessor):
@@ -34,6 +55,8 @@ class BuildingRegisterTxtProcessor(BaseProcessor):
 
     # 시군구코드 필드 인덱스 (PNU_INDICES의 첫 번째: 시군구)
     SGG_FIELD_INDEX: int = 0
+
+    batch_size = 2000
 
     async def collect(self, params: dict[str, Any]) -> list[dict]:
         """txt 파일을 읽어 raw 필드 리스트를 반환합니다.
@@ -114,27 +137,7 @@ class BuildingRegisterTxtProcessor(BaseProcessor):
 
     def _build_pnu(self, fields: list[str]) -> str | None:
         """시군구+법정동+대지구분+번+지에서 PNU(19자리)를 생성합니다."""
-        si, bj, dg, bon, bu = self.PNU_INDICES
-        try:
-            sigungu = (fields[si] if si < len(fields) else "").strip()
-            bjdong = (fields[bj] if bj < len(fields) else "").strip()
-            daeji = (fields[dg] if dg < len(fields) else "").strip()
-            bon_val = (fields[bon] if bon < len(fields) else "").strip()
-            bu_val = (fields[bu] if bu < len(fields) else "").strip()
-
-            if not sigungu or not bjdong:
-                return None
-
-            pnu = (
-                sigungu.zfill(5)
-                + bjdong.zfill(5)
-                + daeji.zfill(1)
-                + bon_val.zfill(4)
-                + bu_val.zfill(4)
-            )
-            return pnu if len(pnu) == 19 else None
-        except (IndexError, ValueError):
-            return None
+        return _build_pnu_from_indices(fields, self.PNU_INDICES)
 
     def transform_row(
         self, mapped: dict[str, Any], fields: list[str]
@@ -153,22 +156,6 @@ class BuildingRegisterTxtProcessor(BaseProcessor):
         ).execute()
 
         return {"file_path": file_path}
-
-    async def load(self, records: list[dict[str, Any]]) -> ProcessResult:
-        """변환된 데이터를 DB에 적재합니다.
-
-        대용량 txt 데이터는 배치 사이즈를 크게 설정합니다.
-        """
-        from app.database import async_session_maker
-        from app.pipeline.loader import bulk_upsert
-
-        async with async_session_maker() as session:
-            result = await bulk_upsert(session, self.data_type, records, batch_size=2000)
-
-        return result
-
-    _safe_int = staticmethod(safe_int)
-    _safe_float = staticmethod(safe_float)
 
 
 # ── 표제부 프로세서 ──
@@ -356,6 +343,7 @@ class BuildingRegisterAncillaryLotProcessor(BuildingRegisterTxtProcessor):
     name = "building_register_ancillary_lot"
     description = "건축물대장 부속지번"
     data_type = PublicDataType.BUILDING_REGISTER_ANCILLARY_LOT
+    jsonb_column = "ancillary_lots"
 
     # PNU 구성 인덱스 (본 건물): (시군구=8, 법정동=9, 대지구분=10, 번=11, 지=12)
     PNU_INDICES = (8, 9, 10, 11, 12)
@@ -375,41 +363,12 @@ class BuildingRegisterAncillaryLotProcessor(BuildingRegisterTxtProcessor):
             return None
 
         # 부속지번 PNU 생성
-        atch_pnu = self._build_atch_pnu(fields)
+        atch_pnu = _build_pnu_from_indices(fields, self.ATCH_PNU_INDICES)
 
         mapped["pnu"] = pnu
         mapped["atch_pnu"] = atch_pnu
 
         return mapped
-
-    def transform(self, raw_data: list[dict]) -> list[dict[str, Any]]:
-        """1:N 레코드를 PNU별 JSONB 배열로 집계합니다."""
-        records = super().transform(raw_data)
-        return self._aggregate_jsonb(records, "ancillary_lots")
-
-    def _build_atch_pnu(self, fields: list[str]) -> str | None:
-        """부속지번에서 PNU를 생성합니다."""
-        si, bj, dg, bon, bu = self.ATCH_PNU_INDICES
-        try:
-            sigungu = (fields[si] if si < len(fields) else "").strip()
-            bjdong = (fields[bj] if bj < len(fields) else "").strip()
-            daeji = (fields[dg] if dg < len(fields) else "").strip()
-            bon_val = (fields[bon] if bon < len(fields) else "").strip()
-            bu_val = (fields[bu] if bu < len(fields) else "").strip()
-
-            if not sigungu or not bjdong:
-                return None
-
-            pnu = (
-                sigungu.zfill(5)
-                + bjdong.zfill(5)
-                + daeji.zfill(1)
-                + bon_val.zfill(4)
-                + bu_val.zfill(4)
-            )
-            return pnu if len(pnu) == 19 else None
-        except (IndexError, ValueError):
-            return None
 
 
 # ── 레지스트리 등록 ──
