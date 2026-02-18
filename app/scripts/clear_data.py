@@ -5,7 +5,6 @@ from sqlmodel import delete
 
 from app.database import async_session_maker
 from app.models import (
-    BlogPost,
     Discussion,
     DiscussionLike,
     DiscussionReply,
@@ -41,7 +40,6 @@ async def clear_database():
                 NotificationSettings,
                 FileStorage,
                 Discussion,
-                BlogPost,
             ]
 
             for table in tables_to_clear:
