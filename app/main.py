@@ -1,5 +1,6 @@
 """FastAPI application entry point."""
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -11,11 +12,24 @@ from app.api.v1 import router as api_v1_router
 from app.auth.oauth import oauth_router
 from app.config import settings
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan handler for startup and shutdown events."""
-    # Startup
+    # Startup — ML 모델 로딩
+    from app.services.prediction.service import PredictionService
+
+    prediction_service = PredictionService()
+    prediction_service.load(settings.ml_model_dir)
+    app.state.prediction_service = prediction_service
+
+    if prediction_service.is_loaded:
+        logger.info("ML prediction models loaded successfully")
+    else:
+        logger.warning("ML prediction models not available — prediction endpoint will return 503")
+
     yield
     # Shutdown
 
@@ -51,6 +65,7 @@ Session-based authentication is used for subsequent requests.
             {"name": "orders", "description": "Order management"},
             {"name": "coupons", "description": "Coupon management"},
             {"name": "notifications", "description": "User notifications"},
+            {"name": "predictions", "description": "jiga prediction"},
         ],
     )
 

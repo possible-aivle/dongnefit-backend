@@ -92,3 +92,8 @@ app/core/tistory/images/
 dumps/
 public_data/
 api_data/
+
+# ML models (trained artifacts)
+ml_models/*.joblib
+ml_models/*.json
+!ml_models/.gitkeep

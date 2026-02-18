@@ -9,6 +9,7 @@ from app.api.v1.endpoints import (
     map,
     neighborhoods,
     notifications,
+    predictions,
     properties,
     reports,
     transactions,
@@ -29,3 +30,4 @@ router.include_router(buildings.router, prefix="/buildings", tags=["buildings"])
 router.include_router(transactions.router, prefix="/transactions", tags=["transactions"])
 router.include_router(properties.router, prefix="/properties", tags=["properties"])
 router.include_router(map.router, prefix="/map", tags=["map"])
+router.include_router(predictions.router, prefix="/predictions", tags=["predictions"])

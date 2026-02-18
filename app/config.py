@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     # 데이터 저장 경로 (기본값: ./pipeline/public_data)
     data_dir: str = './pipeline/public_data'
 
+    # ML 모델 저장 경로 (기본값: ./ml_models)
+    ml_model_dir: str = './ml_models'
+
     # -----------------------------------------
     # 부동산(로컬 데이터/RTMS)
     # -----------------------------------------
