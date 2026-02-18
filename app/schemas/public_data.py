@@ -55,7 +55,6 @@ class LotDetailResponse(BaseSchema):
 
     # flat 필드 (토지특성/토지임야)
     jimok: str | None = None
-    jimok_code: str | None = None
     area: float | None = None
     use_zone: str | None = None
     land_use: str | None = None

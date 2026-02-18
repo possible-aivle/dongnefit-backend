@@ -17,7 +17,6 @@ class LandForestProcessor(VworldCsvProcessor):
     COLUMN_MAP: dict[str, str] = {
         "고유번호": "pnu",
         "지목명": "jimok",
-        "지목코드": "jimok_code",
         "면적": "area",
         "소유구분명": "ownership",
         "소유(공유)인수": "owner_count",

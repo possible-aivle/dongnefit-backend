@@ -17,7 +17,6 @@ class LandCharacteristicProcessor(VworldCsvProcessor):
     COLUMN_MAP: dict[str, str] = {
         "고유번호": "pnu",
         "지목명": "jimok",
-        "지목코드": "jimok_code",
         "토지면적": "area",
         "용도지역명1": "use_zone",
         "토지이용상황": "land_use",

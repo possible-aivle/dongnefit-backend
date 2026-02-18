@@ -42,10 +42,10 @@ class Lot(SQLModel, table=True):
 
     # ── flat 컬럼 (1:1 from 토지특성/토지임야) ──
     jimok: str | None = Field(default=None, max_length=20, description="지목명")
-    jimok_code: str | None = Field(default=None, max_length=10, description="지목코드")
+
     area: float | None = Field(default=None, description="면적(㎡)")
     use_zone: str | None = Field(default=None, max_length=50, description="용도지역명")
-    land_use: str | None = Field(default=None, max_length=30, description="토지이용상황")
+    land_use: str | None = Field(default=None, max_length=30, description="토지이용현황")
     official_price: int | None = Field(
         default=None, sa_column=Column(BigInteger, nullable=True),
         description="공시지가(원)",

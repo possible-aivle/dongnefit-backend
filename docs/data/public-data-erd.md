@@ -11,7 +11,7 @@ erDiagram
         datetime created_at
 
         string jimok "지목명"
-        string jimok_code "지목코드"
+
         float area "면적(m2)"
         string use_zone "용도지역명"
         string land_use "토지이용상황"
@@ -242,7 +242,7 @@ erDiagram
 | 구분         | 원본 테이블                      | 통합 방식     | 컬럼/키                                                                                   |
 | ------------ | -------------------------------- | ------------- | ----------------------------------------------------------------------------------------- |
 | 연속지적도   | (기반 데이터)                    | PK + geometry | pnu, geometry                                                                             |
-| 토지특성     | land_characteristics             | flat 컬럼     | jimok, jimok_code, area, use_zone, land_use, official_price                               |
+| 토지특성     | land_characteristics             | flat 컬럼     | jimok, area, use_zone, land_use, official_price                                           |
 | 토지임야     | land_and_forest_infos            | flat 컬럼     | ownership, owner_count                                                                    |
 | 토지이용계획 | land_use_plans                   | JSONB         | use_plans `[{use_district_name}]`                                                         |
 | 토지소유     | land_ownerships                  | JSONB         | ownerships `[{base_year_month, co_owner_seq, ...}]`                                       |

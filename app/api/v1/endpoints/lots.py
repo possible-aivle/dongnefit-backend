@@ -97,7 +97,6 @@ async def get_lot_detail(
         pnu=lot.pnu,
         geometry=lot.geometry,
         jimok=lot.jimok,
-        jimok_code=lot.jimok_code,
         area=lot.area,
         use_zone=lot.use_zone,
         land_use=lot.land_use,
