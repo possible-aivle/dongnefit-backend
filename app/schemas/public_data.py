@@ -18,17 +18,6 @@ class UsePlanItem(BaseSchema):
     use_district_name: str | None = None
 
 
-class OwnershipItem(BaseSchema):
-    """토지소유 항목 (JSONB 배열 원소)."""
-
-    base_year_month: str | None = None
-    co_owner_seq: str | None = None
-    ownership_type: str | None = None
-    ownership_change_reason: str | None = None
-    ownership_change_date: str | None = None
-    owner_count: int | None = None
-
-
 class OfficialPriceItem(BaseSchema):
     """개별공시지가 항목 (JSONB 배열 원소)."""
 
@@ -51,6 +40,7 @@ class LotDetailResponse(BaseSchema):
     """
 
     pnu: str
+    address: str | None = None
     geometry: GeoJSON = None
 
     # flat 필드 (토지특성/토지임야)
@@ -64,7 +54,6 @@ class LotDetailResponse(BaseSchema):
 
     # JSONB 필드
     use_plans: list[UsePlanItem] = []
-    ownerships: list[OwnershipItem] = []
     official_prices: list[OfficialPriceItem] = []
     ancillary_lots: list[AncillaryLotItem] = []
 
@@ -205,12 +194,10 @@ class RentalResponse(BaseSchema):
 
 
 class TransactionListResponse(BaseSchema):
-    """실거래가 목록 응답."""
+    """실거래가 목록 응답 (각 최대 10건)."""
 
     sales: list[SaleResponse] = []
     rentals: list[RentalResponse] = []
-    total_sales: int = 0
-    total_rentals: int = 0
 
 
 # ──────────────────────────── 통합 요약 ────────────────────────────

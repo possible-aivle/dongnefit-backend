@@ -7,7 +7,6 @@ PNU(19자리): 시도(2) + 시군구(3) + 읍면동(3) + 리(2) + 산구분(1) +
 - land_characteristics (토지특성) → flat 컬럼
 - land_and_forest_infos (토지임야) → flat 컬럼
 - land_use_plans (토지이용계획) → JSONB
-- land_ownerships (토지소유) → JSONB
 - official_land_prices (공시지가) → JSONB
 - building_register_ancillary_lots (부속지번) → JSONB
 """
@@ -37,6 +36,7 @@ class Lot(SQLModel, table=True):
         primary_key=True,
         description="필지고유번호",
     )
+    address: str | None = Field(default=None, max_length=200, description="전체 주소")
     geometry: Any = geometry_column(description="필지 경계 (Polygon/MultiPolygon)")
     created_at: datetime | None = Field(default_factory=get_utc_now)
 
@@ -58,11 +58,6 @@ class Lot(SQLModel, table=True):
         default=None,
         sa_column=Column(JSONB, nullable=True),
         description='토지이용계획 [{"use_district_name": "..."}]',
-    )
-    ownerships: Any = Field(
-        default=None,
-        sa_column=Column(JSONB, nullable=True),
-        description='토지소유 [{"base_year_month", "co_owner_seq", ...}]',
     )
     official_prices: Any = Field(
         default=None,

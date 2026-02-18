@@ -12,6 +12,7 @@ class LotCreate(BaseSchema):
     """필지 생성 스키마."""
 
     pnu: str
+    address: str | None = None
     geometry: dict[str, Any] | None = None
 
     # flat 컬럼
@@ -25,7 +26,6 @@ class LotCreate(BaseSchema):
 
     # JSONB 컬럼
     use_plans: list[dict[str, Any]] | None = None
-    ownerships: list[dict[str, Any]] | None = None
     official_prices: list[dict[str, Any]] | None = None
     ancillary_lots: list[dict[str, Any]] | None = None
 
@@ -50,6 +50,7 @@ class LotRead(BaseSchema):
     """필지 조회 스키마."""
 
     pnu: str
+    address: str | None = None
     geometry: GeoJSON = None
     created_at: datetime | None = None
 
@@ -64,7 +65,6 @@ class LotRead(BaseSchema):
 
     # JSONB 컬럼
     use_plans: list[dict[str, Any]] | None = None
-    ownerships: list[dict[str, Any]] | None = None
     official_prices: list[dict[str, Any]] | None = None
     ancillary_lots: list[dict[str, Any]] | None = None
 

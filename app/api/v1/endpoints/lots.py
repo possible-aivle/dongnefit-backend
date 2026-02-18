@@ -14,7 +14,6 @@ from app.schemas.public_data import (
     LotDetailResponse,
     LotSearchResult,
     OfficialPriceItem,
-    OwnershipItem,
     UsePlanItem,
 )
 
@@ -109,6 +108,7 @@ async def get_lot_detail(
 
     return LotDetailResponse(
         pnu=lot.pnu,
+        address=lot.address,
         geometry=lot.geometry,
         jimok=lot.jimok,
         area=lot.area,
@@ -119,9 +119,6 @@ async def get_lot_detail(
         owner_count=lot.owner_count,
         use_plans=[
             UsePlanItem.model_validate(p) for p in (lot.use_plans or [])
-        ],
-        ownerships=[
-            OwnershipItem.model_validate(o) for o in (lot.ownerships or [])
         ],
         official_prices=[
             OfficialPriceItem.model_validate(p) for p in (lot.official_prices or [])

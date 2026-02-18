@@ -36,7 +36,6 @@ MODEL_MAP: dict[PublicDataType, type[SQLModel]] = {
     PublicDataType.LAND_USE_PLAN: Lot,
     PublicDataType.LAND_AND_FOREST_INFO: Lot,
     PublicDataType.OFFICIAL_LAND_PRICE: Lot,
-    PublicDataType.LAND_OWNERSHIP: Lot,
     PublicDataType.BUILDING_REGISTER_ANCILLARY_LOT: Lot,
     PublicDataType.REAL_ESTATE_SALE: RealEstateSale,
     PublicDataType.REAL_ESTATE_RENTAL: RealEstateRental,
@@ -59,7 +58,6 @@ UPSERT_KEYS: dict[PublicDataType, list[str]] = {
     PublicDataType.LAND_USE_PLAN: ["pnu"],
     PublicDataType.LAND_AND_FOREST_INFO: ["pnu"],
     PublicDataType.OFFICIAL_LAND_PRICE: ["pnu"],
-    PublicDataType.LAND_OWNERSHIP: ["pnu"],
     PublicDataType.BUILDING_REGISTER_ANCILLARY_LOT: ["pnu"],
     PublicDataType.ADMINISTRATIVE_SIDO: ["sido_code"],
     PublicDataType.ADMINISTRATIVE_SGG: ["sgg_code"],
@@ -75,7 +73,7 @@ UPSERT_KEYS: dict[PublicDataType, list[str]] = {
 
 # JSONB 컬럼 (값 표현식에서 ::jsonb 캐스팅 필요)
 JSONB_COLUMNS: frozenset[str] = frozenset({
-    "use_plans", "ownerships", "official_prices", "ancillary_lots",
+    "use_plans", "official_prices", "ancillary_lots",
 })
 
 
@@ -240,3 +238,34 @@ async def bulk_upsert(
     await session.commit()
 
     return ProcessResult(inserted=inserted)
+
+
+# ── Address Population ──
+
+_POPULATE_ADDRESS_SQL = text("""
+    UPDATE lots l
+    SET address = CONCAT_WS(' ',
+        s.name,
+        g.name,
+        e.name,
+        CASE WHEN SUBSTRING(l.pnu, 11, 1) = '2' THEN '산 ' ELSE '' END ||
+        CAST(SUBSTRING(l.pnu, 12, 4) AS INTEGER)::TEXT ||
+        CASE WHEN CAST(SUBSTRING(l.pnu, 16, 4) AS INTEGER) > 0
+             THEN '-' || CAST(SUBSTRING(l.pnu, 16, 4) AS INTEGER)::TEXT
+             ELSE ''
+        END
+    )
+    FROM administrative_sidos s, administrative_sggs g, administrative_emds e
+    WHERE s.sido_code = SUBSTRING(l.pnu, 1, 2)
+      AND g.sgg_code = SUBSTRING(l.pnu, 1, 5)
+      AND (e.emd_code = SUBSTRING(l.pnu, 1, 8)
+           OR e.emd_code = SUBSTRING(l.pnu, 1, 10))
+      AND l.address IS NULL
+""")
+
+
+async def populate_lot_addresses(session: AsyncSession) -> int:
+    """address가 NULL인 lots 레코드의 주소를 행정경계 테이블에서 채웁니다."""
+    result = await session.execute(_POPULATE_ADDRESS_SQL)
+    await session.commit()
+    return result.rowcount or 0
