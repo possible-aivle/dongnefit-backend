@@ -1,5 +1,6 @@
 """공공데이터 CRUD - PNU 기반 조회 함수들."""
 
+import asyncio
 from datetime import date
 
 from geoalchemy2.functions import (
@@ -51,6 +52,28 @@ async def search_lots_by_sgg(
     stmt = base.offset(offset).limit(limit)
     result = await db.execute(stmt)
     return list(result.scalars().all()), total
+
+
+async def get_lot_filter_options(db: AsyncSession) -> dict[str, list[str]]:
+    """필터 옵션용 고유값 조회 (병렬)."""
+
+    async def _distinct(col):
+        stmt = select(col).where(col.is_not(None)).distinct().order_by(col)
+        result = await db.execute(stmt)
+        return [row[0] for row in result.all()]
+
+    jimok, ownership, use_zone, land_use = await asyncio.gather(
+        _distinct(Lot.jimok),
+        _distinct(Lot.ownership),
+        _distinct(Lot.use_zone),
+        _distinct(Lot.land_use),
+    )
+    return {
+        "jimok": jimok,
+        "ownership": ownership,
+        "use_zone": use_zone,
+        "land_use": land_use,
+    }
 
 
 # ──────────────────────────── 건축물 ────────────────────────────
@@ -203,13 +226,34 @@ async def get_lots_in_bbox(
     max_lat: float,
     *,
     limit: int = 500,
+    jimok: list[str] | None = None,
+    min_area: float | None = None,
+    max_area: float | None = None,
+    ownership: list[str] | None = None,
+    land_use: list[str] | None = None,
+    use_zone: list[str] | None = None,
+    min_official_price: int | None = None,
+    max_official_price: int | None = None,
 ) -> list[Lot]:
     envelope = ST_MakeEnvelope(min_lng, min_lat, max_lng, max_lat, 4326)
-    stmt = (
-        select(Lot)
-        .where(ST_Intersects(Lot.geometry, envelope))
-        .limit(limit)
-    )
+    stmt = select(Lot).where(ST_Intersects(Lot.geometry, envelope))
+    if jimok:
+        stmt = stmt.where(Lot.jimok.in_(jimok))
+    if min_area is not None:
+        stmt = stmt.where(Lot.area >= min_area)
+    if max_area is not None:
+        stmt = stmt.where(Lot.area <= max_area)
+    if ownership:
+        stmt = stmt.where(Lot.ownership.in_(ownership))
+    if land_use:
+        stmt = stmt.where(Lot.land_use.in_(land_use))
+    if use_zone:
+        stmt = stmt.where(Lot.use_zone.in_(use_zone))
+    if min_official_price is not None:
+        stmt = stmt.where(Lot.official_price >= min_official_price)
+    if max_official_price is not None:
+        stmt = stmt.where(Lot.official_price <= max_official_price)
+    stmt = stmt.limit(limit)
     result = await db.execute(stmt)
     return list(result.scalars().all())
 

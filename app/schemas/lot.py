@@ -37,6 +37,15 @@ class LotCreate(BaseSchema):
         return v
 
 
+class LotFilterOptions(BaseSchema):
+    """필터 옵션 응답 스키마."""
+
+    jimok: list[str] = []
+    ownership: list[str] = []
+    use_zone: list[str] = []
+    land_use: list[str] = []
+
+
 class LotRead(BaseSchema):
     """필지 조회 스키마."""
 

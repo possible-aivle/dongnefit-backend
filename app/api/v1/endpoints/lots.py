@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud import public_data as crud
 from app.database import get_db
 from app.schemas.base import PaginatedResponse, PaginationMeta
+from app.schemas.lot import LotFilterOptions
 from app.schemas.public_data import (
     AncillaryLotItem,
     LotDetailResponse,
@@ -29,6 +30,19 @@ def _validate_pnu(pnu: str) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="PNU는 19자리 숫자여야 합니다.",
         )
+
+
+@router.get(
+    "/filter-options",
+    response_model=LotFilterOptions,
+    summary="필지 필터 옵션 조회",
+    description="필터에 사용할 지목, 소유구분, 용도지역, 이용현황의 고유값 목록을 반환합니다.",
+)
+async def get_lot_filter_options(
+    db: AsyncSession = Depends(get_db),
+) -> LotFilterOptions:
+    options = await crud.get_lot_filter_options(db)
+    return LotFilterOptions(**options)
 
 
 @router.get(
