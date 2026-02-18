@@ -16,6 +16,7 @@ sys.path.append(
 
 from app.core.agent.agent import RegionalPolicyAgent
 from app.core.agent.models import AddressInput, DevelopmentEventAnalysis, SupervisorState
+from InquirerPy import inquirer
 
 
 async def run_analysis_only(agent: RegionalPolicyAgent, region: str):
@@ -107,21 +108,19 @@ async def main():
         return
 
     while True:
-        print("\n" + "-" * 60)
-        print("1. 호재/악재 분석 전용 모드 (결과 확인 후 저장/블로그 생성 선택)")
-        print("2. 블로그 자동 생성 모드 (전체 자동화)")
-        print("q. 종료")
-        print("-" * 60)
+        mode = await inquirer.select(
+            message="실행할 모드를 선택하세요:",
+            choices=[
+                {"name": "- 호재/악재 분석 전용 모드 (결과 확인 후 저장/블로그 생성 선택)", "value": "1"},
+                {"name": "- 블로그 자동 생성 모드 (전체 자동화)", "value": "2"},
+                {"name": "- 종료", "value": "q"},
+            ],
+            default="1",
+        ).execute_async()
 
-        mode = input("실행할 모드를 선택하세요: ").strip().lower()
-
-        if mode in ('q', 'quit', 'exit'):
+        if mode == 'q':
             print("종료합니다.")
             break
-
-        if mode not in ('1', '2'):
-            print("잘못된 입력입니다.")
-            continue
 
         region = input("\n분석할 지역/주제를 입력하세요: ").strip()
         if not region:
@@ -136,12 +135,15 @@ async def main():
 
                 # 사용자 선택 루프
                 while True:
-                    print("\n[선택]")
-                    print("1. 결과 파일로 저장")
-                    print("2. 이어서 블로그 콘텐츠 생성")
-                    print("3. 메인 메뉴로 돌아가기")
-
-                    choice = input("선택하세요: ").strip()
+                    choice = await inquirer.select(
+                        message="선택하세요:",
+                        choices=[
+                            {"name": "- 결과 파일로 저장", "value": "1"},
+                            {"name": "- 이어서 블로그 콘텐츠 생성", "value": "2"},
+                            {"name": "- 메인 메뉴로 돌아가기", "value": "3"},
+                        ],
+                        default="1",
+                    ).execute_async()
 
                     if choice == '1':
                         save_analysis_to_file(analysis)
