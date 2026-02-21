@@ -12,6 +12,7 @@ from typing import Any, Literal
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.tools import tool
+from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 
 from app.config import settings
@@ -594,17 +595,47 @@ async def run_talk(
     messages: list[dict[str, Any]],
     *,
     context: dict[str, Any] | None = None,
-    model: str = "gpt-4o-mini",
+    provider: str | None = None,
+    model: str | None = None,
     temperature: float = 0.0,
 ) -> dict[str, Any]:
-    if not settings.openai_api_key:
-        raise ValueError("OPENAI_API_KEY가 설정되어 있지 않습니다 (settings.openai_api_key).")
+    # Provider가 지정되지 않으면 설정에서 가져옴
+    if provider is None:
+        provider = settings.llm_provider or "gpt"
+
+    # Provider 값 정리 (공백 및 주석 제거)
+    provider = provider.strip().split("#")[0].strip() if provider else "gpt"
 
     tools = build_tools()
     tool_names = [t.name for t in tools]
     system = _build_system_prompt(context, tool_names)
 
-    llm = ChatOpenAI(model=model, temperature=temperature, api_key=settings.openai_api_key)
+    # Provider에 따라 LLM 선택
+    if provider == "local_llm":
+        # Ollama 사용
+        if model is None:
+            model = settings.ollama_model or "llama3.2"
+        if not model:
+            raise ValueError("Ollama 모델명이 설정되지 않았습니다. model 파라미터를 지정하거나 OLLAMA_MODEL 환경변수를 설정하세요.")
+
+        llm = ChatOllama(
+            model=model,
+            temperature=temperature,
+            base_url=settings.ollama_base_url,
+        )
+    else:
+        # OpenAI GPT 사용
+        if not settings.openai_api_key:
+            raise ValueError("OPENAI_API_KEY가 설정되어 있지 않습니다 (settings.openai_api_key).")
+
+        if model is None:
+            model = "gpt-4o-mini"
+
+        llm = ChatOpenAI(
+            model=model,
+            temperature=temperature,
+            api_key=settings.openai_api_key,
+        )
 
     # LangGraph prebuilt agent (tool-calling)
     from langgraph.prebuilt import create_react_agent

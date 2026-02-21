@@ -91,6 +91,13 @@ class Settings(BaseSettings):
     # Anthropic
     anthropic_api_key: str = ""
 
+    # Ollama
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = ""
+    
+    # LLM Provider (기본값: "gpt" 또는 "local_llm")
+    llm_provider: str = "gpt"
+
     # Naver API
     naver_map_provider: str = "naver"
     naver_client_id: str = ""

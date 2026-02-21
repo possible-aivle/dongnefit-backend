@@ -12,7 +12,7 @@
 | Database        | PostgreSQL 17, asyncpg, PostGIS, Alembic |
 | Validation      | Pydantic v2 (+ email)                   |
 | Authentication  | OAuth2 (Google, Kakao), Session-based   |
-| AI/LLM          | LangGraph 멀티에이전트, LangChain, OpenAI, Anthropic |
+| AI/LLM          | LangGraph 멀티에이전트, LangChain, OpenAI, Anthropic, Ollama |
 | Data Pipeline   | httpx, fiona (SHP), openpyxl (Excel)    |
 | Code Quality    | Ruff (lint + format), mypy (strict)     |
 | Testing         | pytest, pytest-asyncio, pytest-cov      |
@@ -200,6 +200,11 @@ KAKAO_CLIENT_SECRET=...
 OPENAI_API_KEY=...
 ANTHROPIC_API_KEY=...
 
+# Local LLM (Ollama) - Talk API에서 local_llm provider 사용 시
+OLLAMA_BASE_URL=http://localhost:11434  # Ollama 서버 URL (기본값)
+OLLAMA_MODEL=llama3.2                   # 사용할 Ollama 모델명
+LLM_PROVIDER=gpt                         # LLM 제공자: "gpt" 또는 "local_llm"
+
 # 공공데이터 (Talk API 사용 시 필수)
 DATA_GO_KR_API_DECODE_KEY=...  # 공공데이터포털 API 키 (RTMS 실거래가)
 VWORLD_API_KEY=...              # VWorld API 키 (주소→좌표 변환)
@@ -273,6 +278,59 @@ uv run python -m app.pipeline.transaction_crawler --test
 ```
 
 다운로드 파일 위치: `app/pipeline/public_data/실거래가_매매/`, `실거래가_전월세/`
+
+### 8. Local LLM (Ollama) 설정
+
+Talk API에서 로컬 LLM을 사용하려면 Ollama를 설치하고 모델을 다운로드해야 합니다.
+
+#### Ollama 설치
+
+```bash
+# macOS
+brew install ollama
+
+# Linux
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Windows
+# https://ollama.com/download 에서 다운로드
+```
+
+#### Ollama 서버 실행
+
+```bash
+# Ollama 서버 시작 (백그라운드)
+ollama serve
+
+# 또는 포그라운드에서 실행
+ollama serve
+```
+
+기본적으로 `http://localhost:11434`에서 서버가 실행됩니다.
+
+#### 모델 다운로드 (Pull)
+
+```bash
+# 기본 모델 (llama3.2)
+ollama pull llama3.2
+
+# 다른 모델 예시
+ollama pull llama3.1
+ollama pull mistral
+ollama pull qwen2.5
+```
+
+#### 환경변수 설정
+
+`.env` 파일에 다음 설정을 추가하세요:
+
+```env
+# Ollama 설정
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2
+LLM_PROVIDER=local_llm  # "gpt" 또는 "local_llm"
+```
+또는 요청에서 `provider`를 지정하지 않으면 환경변수 `LLM_PROVIDER`의 값이 사용됩니다.
 
 ## DB 스키마
 
@@ -386,6 +444,8 @@ Excel → openpyxl      PNU 생성              JSONB 집계 (jsonb_column)
 | POST | `/api/v1/talk` | 실거래가/법정동코드/좌표 변환 도구를 사용하는 대화형 API |
 
 **사용 예시:**
+
+OpenAI GPT 사용:
 ```bash
 curl -X POST "http://localhost:8000/api/v1/talk" \
   -H "Content-Type: application/json" \
@@ -393,8 +453,21 @@ curl -X POST "http://localhost:8000/api/v1/talk" \
     "messages": [
       {"role": "user", "content": "판교 202401 아파트 매매 동별로 요약 해줘"}
     ],
-    "context": {},
+    "context": {"provider": "gpt"},
     "options": {"model": "gpt-4o-mini", "temperature": 0.0}
+  }'
+```
+
+Local LLM (Ollama) 사용:
+```bash
+curl -X POST "http://localhost:8000/api/v1/talk" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "판교 202401 아파트 매매 동별로 요약 해줘"}
+    ],
+    "context": {"provider": "local_llm"},
+    "options": {"model": "llama3.2", "temperature": 0.0}
   }'
 ```
 
