@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.core.public_data.school import SchoolRepository
+from app.core.repositories.school import SchoolRepository
 
 
 class SchoolToolService:
@@ -17,7 +17,7 @@ class SchoolToolService:
         self,
         region_keyword: str,
         school_type: str | None = None,
-        limit: int = 20,
+        limit: int = 10,
     ) -> dict[str, Any]:
         schools = self.repo.search_by_region(region_keyword, school_type=school_type, limit=limit)
         return {
@@ -78,9 +78,11 @@ class SchoolToolService:
         lng: float,
         radius_km: float = 1.0,
         school_type: str | None = None,
-        limit: int = 20,
+        limit: int = 10,
     ) -> dict[str, Any]:
-        results = self.repo.search_near(lat, lng, radius_km=radius_km, school_type=school_type, limit=limit)
+        results = self.repo.search_near(
+            lat, lng, radius_km=radius_km, school_type=school_type, limit=limit
+        )
         return {
             "ok": True,
             "center": {"lat": lat, "lng": lng},
@@ -128,7 +130,7 @@ class SchoolToolService:
         self,
         level: str,
         query: str,
-        limit: int = 20,
+        limit: int = 10,
     ) -> dict[str, Any]:
         results = self.repo.search_zones(level, query, limit=limit)
         return {
@@ -144,7 +146,7 @@ class SchoolToolService:
         self,
         school_name: str,
         school_type: str | None = None,
-        limit: int = 20,
+        limit: int = 10,
     ) -> dict[str, Any]:
         results = self.repo.zone_by_school(school_name, school_type=school_type, limit=limit)
         return {
