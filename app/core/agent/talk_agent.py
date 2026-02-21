@@ -15,7 +15,17 @@ from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 
 from app.config import settings
-from app.core.agent.tools import ConvenienceToolService, HospitalToolService, AnimalHospitalToolService, LawdToolService, ParkToolService, RiverToolService, RtmsToolService, SchoolToolService
+from app.core.agent.tools import (
+    AnimalHospitalToolService,
+    ConvenienceToolService,
+    GroceryToolService,
+    HospitalToolService,
+    LawdToolService,
+    ParkToolService,
+    RiverToolService,
+    RtmsToolService,
+    SchoolToolService,
+)
 from app.core.public_data.vworld import VWorldClient
 
 
@@ -75,6 +85,7 @@ def build_tools() -> list[Any]:
     hospital = HospitalToolService()
     animal = AnimalHospitalToolService()
     convenience = ConvenienceToolService()
+    grocery = GroceryToolService()
 
     @tool("lawd_resolve_code")
     def lawd_resolve_code(region_name: str) -> dict[str, Any]:
@@ -174,6 +185,16 @@ def build_tools() -> list[Any]:
         """좌표(lat, lng) 기준 반경(radius_km) 내 생활편의시설을 거리순으로 반환합니다. 반드시 vworld_get_coord로 좌표를 먼저 구한 뒤 호출하세요."""
         return convenience.near(lat, lng, radius_km=radius_km, category=category, limit=limit)
 
+    @tool("grocery_search")
+    def grocery_search(query: str, category: str | None = None, region: str | None = None, limit: int = 20) -> dict[str, Any]:
+        """사업장명/주소 키워드로 식품점(일반음식점/제과점영업/휴게음식점)을 검색합니다(로컬 데이터). category: '일반음식점'|'제과점영업'|'휴게음식점'. region으로 지역 필터 가능."""
+        return grocery.search(query, category=category, region=region, limit=limit)
+
+    @tool("grocery_near")
+    def grocery_near(lat: float, lng: float, radius_km: float = 3.0, category: str | None = None, limit: int = 20) -> dict[str, Any]:
+        """좌표(lat, lng) 기준 반경(radius_km) 내 식품점을 거리순으로 반환합니다. 반드시 vworld_get_coord로 좌표를 먼저 구한 뒤 호출하세요."""
+        return grocery.near(lat, lng, radius_km=radius_km, category=category, limit=limit)
+
     @tool("river_search")
     def river_search(query: str, limit: int = 20) -> dict[str, Any]:
         """하천명으로 전국 하천(로컬 JSON)을 검색합니다. 시점/종점/중점 위경도 포함."""
@@ -184,7 +205,7 @@ def build_tools() -> list[Any]:
         """좌표(lat, lng) 기준 반경(radius_km) 내 하천을 실제 경로 기준 거리순으로 반환합니다. 반드시 vworld_get_coord로 좌표를 먼저 구한 뒤 호출하세요."""
         return await river.near(lat, lng, radius_km=radius_km, limit=limit)
 
-    return [lawd_resolve_code, lawd_search, rtms_apt_trade_detail, vworld_get_coord, school_search, school_near, school_near_grouped, school_zone_search, school_zone_by_school, park_search, park_near, hospital_search, hospital_near, animal_search, animal_near, convenience_search, convenience_near, river_search, river_near]
+    return [lawd_resolve_code, lawd_search, rtms_apt_trade_detail, vworld_get_coord, school_search, school_near, school_near_grouped, school_zone_search, school_zone_by_school, park_search, park_near, hospital_search, hospital_near, animal_search, animal_near, convenience_search, convenience_near, grocery_search, grocery_near, river_search, river_near]
 
 
 def _parse_tool_content(content: Any) -> Any:
@@ -425,6 +446,53 @@ def _extract_convenience_json(trace: list[dict[str, Any]]) -> dict[str, Any] | N
     }
 
 
+def _extract_grocery_json(trace: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """trace에서 grocery_near 결과를 찾아 구조화된 JSON으로 변환."""
+    vworld: dict[str, Any] | None = None
+    result: dict[str, Any] | None = None
+
+    for item in trace:
+        name = item.get("name")
+        content = _parse_tool_content(item.get("content"))
+        if name == "vworld_get_coord" and isinstance(content, dict):
+            vworld = content
+        elif name == "grocery_near" and isinstance(content, dict):
+            result = content
+
+    if result is None:
+        return None
+
+    center = result.get("center", {})
+    property_lat = (vworld or {}).get("lat") or center.get("lat")
+    property_lng = (vworld or {}).get("lng") or center.get("lng")
+    property_name = (vworld or {}).get("refined_text") or (vworld or {}).get("address") or ""
+
+    grouped = result.get("restaurants", {})
+    restaurants_by_type: dict[str, list[dict[str, Any]]] = {}
+    for biz_type, items in grouped.items():
+        entries: list[dict[str, Any]] = []
+        for r in items:
+            entry = {
+                "name": r["name"],
+                "category": r["category"],
+                "lat": r["lat"],
+                "lng": r["lng"],
+            }
+            if r.get("phone"):
+                entry["phone"] = r["phone"]
+            if r.get("website"):
+                entry["website"] = r["website"]
+            entries.append(entry)
+        restaurants_by_type[biz_type] = entries
+
+    return {
+        "property_name": property_name,
+        "property_lat": property_lat,
+        "property_lng": property_lng,
+        "restaurants": restaurants_by_type,
+    }
+
+
 def _extract_river_json(trace: list[dict[str, Any]]) -> dict[str, Any] | None:
     """
     trace에서 river_near 결과를 찾아 구조화된 JSON으로 변환.
@@ -535,6 +603,11 @@ async def run_talk(
     convenience_json = _extract_convenience_json(trace)
     if convenience_json is not None:
         answer = json.dumps(convenience_json, ensure_ascii=False, indent=2)
+
+    # grocery_near가 호출된 경우 tool 결과에서 직접 JSON 조립
+    grocery_json = _extract_grocery_json(trace)
+    if grocery_json is not None:
+        answer = json.dumps(grocery_json, ensure_ascii=False, indent=2)
 
     # river_near가 호출된 경우 tool 결과에서 직접 JSON 조립
     river_json = _extract_river_json(trace)
