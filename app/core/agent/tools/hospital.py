@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.core.public_data.hospital import HospitalRepository
+from app.core.repositories.hospital import HospitalRepository
 
 
 class HospitalToolService:
@@ -13,7 +13,9 @@ class HospitalToolService:
     def __init__(self, repo: HospitalRepository | None = None):
         self.repo = repo or HospitalRepository()
 
-    def search(self, query: str, category: str | None = None, region: str | None = None, limit: int = 20) -> dict[str, Any]:
+    def search(
+        self, query: str, category: str | None = None, region: str | None = None, limit: int = 20
+    ) -> dict[str, Any]:
         grouped = self.repo.search(query, category=category, region=region, limit_per_group=limit)
         total = sum(len(v) for v in grouped.values())
         return {
@@ -30,7 +32,9 @@ class HospitalToolService:
         category: str | None = None,
         limit: int = 10,
     ) -> dict[str, Any]:
-        grouped = self.repo.search_near(lat, lng, radius_km=radius_km, category=category, limit_per_group=limit)
+        grouped = self.repo.search_near(
+            lat, lng, radius_km=radius_km, category=category, limit_per_group=limit
+        )
         total = sum(len(v) for v in grouped.values())
         return {
             "ok": True,

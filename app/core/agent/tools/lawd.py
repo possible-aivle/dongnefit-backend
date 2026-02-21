@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app.core.public_data.lawd import LawdRepository
+from app.core.repositories.lawd import LawdRepository
 
 
 class LawdToolService:
@@ -25,5 +25,3 @@ class LawdToolService:
             }
             for c in self.repo.search(query, limit=limit)
         ]
-
-

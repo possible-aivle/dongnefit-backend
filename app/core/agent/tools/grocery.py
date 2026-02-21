@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.core.public_data.grocery import GroceryRepository
+from app.core.repositories.grocery import GroceryRepository
 
 
 class GroceryToolService:
@@ -36,7 +36,9 @@ class GroceryToolService:
         category: str | None = None,
         limit: int = 10,
     ) -> dict[str, Any]:
-        grouped = self.repo.search_near(lat, lng, radius_km=radius_km, category=category, limit_per_group=limit)
+        grouped = self.repo.search_near(
+            lat, lng, radius_km=radius_km, category=category, limit_per_group=limit
+        )
         total = sum(len(v) for v in grouped.values())
         return {
             "ok": True,
@@ -46,4 +48,3 @@ class GroceryToolService:
             "distance_note": "직선거리 기반(도보시간 추정치)",
             "restaurants": grouped,
         }
-

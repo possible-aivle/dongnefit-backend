@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.core.public_data.school import SchoolRepository
+from app.core.repositories.school import SchoolRepository
 
 
 class SchoolToolService:
@@ -80,7 +80,9 @@ class SchoolToolService:
         school_type: str | None = None,
         limit: int = 10,
     ) -> dict[str, Any]:
-        results = self.repo.search_near(lat, lng, radius_km=radius_km, school_type=school_type, limit=limit)
+        results = self.repo.search_near(
+            lat, lng, radius_km=radius_km, school_type=school_type, limit=limit
+        )
         return {
             "ok": True,
             "center": {"lat": lat, "lng": lng},

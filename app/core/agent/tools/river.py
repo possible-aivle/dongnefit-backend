@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.core.public_data.river import RiverRepository, feature_to_river_dict
-from app.core.public_data.vworld import VWorldClient
+from app.core.repositories.river import RiverRepository, feature_to_river_dict
+from app.core.repositories.vworld import VWorldClient
 
 
 class RiverToolService:
