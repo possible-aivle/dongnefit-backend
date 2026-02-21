@@ -5,22 +5,29 @@ from typing import Any
 
 from pydantic import field_validator
 
-from app.schemas.base import BaseSchema
+from app.schemas.base import BaseSchema, GeoJSON
 
 
 class LotCreate(BaseSchema):
     """필지 생성 스키마."""
 
     pnu: str
-    sido_code: str
-    sgg_code: str
-    emd_code: str
-    ri_code: str
-    is_mountain: bool = False
-    main_number: str
-    sub_number: str
-    jibun_address: str | None = None
-    raw_data: dict[str, Any] | None = None
+    address: str | None = None
+    geometry: dict[str, Any] | None = None
+
+    # flat 컬럼
+    jimok: str | None = None
+    area: float | None = None
+    use_zone: str | None = None
+    land_use: str | None = None
+    official_price: int | None = None
+    ownership: str | None = None
+    owner_count: int | None = None
+
+    # JSONB 컬럼
+    use_plans: list[dict[str, Any]] | None = None
+    official_prices: list[dict[str, Any]] | None = None
+    ancillary_lots: list[dict[str, Any]] | None = None
 
     @field_validator("pnu")
     @classmethod
@@ -30,36 +37,35 @@ class LotCreate(BaseSchema):
         return v
 
 
+class LotFilterOptions(BaseSchema):
+    """필터 옵션 응답 스키마."""
+
+    jimok: list[str] = []
+    ownership: list[str] = []
+    use_zone: list[str] = []
+    land_use: list[str] = []
+
+
 class LotRead(BaseSchema):
     """필지 조회 스키마."""
 
     pnu: str
-    sido_code: str
-    sgg_code: str
-    emd_code: str
-    ri_code: str
-    is_mountain: bool
-    main_number: str
-    sub_number: str
-    jibun_address: str | None
-    collected_at: datetime
-    created_at: datetime | None
-    updated_at: datetime | None
+    address: str | None = None
+    geometry: GeoJSON = None
+    created_at: datetime | None = None
+
+    # flat 컬럼
+    jimok: str | None = None
+    area: float | None = None
+    use_zone: str | None = None
+    land_use: str | None = None
+    official_price: int | None = None
+    ownership: str | None = None
+    owner_count: int | None = None
+
+    # JSONB 컬럼
+    use_plans: list[dict[str, Any]] | None = None
+    official_prices: list[dict[str, Any]] | None = None
+    ancillary_lots: list[dict[str, Any]] | None = None
 
 
-class AncillaryLandCreate(BaseSchema):
-    """부속필지 생성 스키마."""
-
-    pnu: str
-    raw_data: dict[str, Any] | None = None
-
-
-class AncillaryLandRead(BaseSchema):
-    """부속필지 조회 스키마."""
-
-    id: int
-    pnu: str
-    raw_data: dict[str, Any] | None
-    collected_at: datetime
-    created_at: datetime | None
-    updated_at: datetime | None

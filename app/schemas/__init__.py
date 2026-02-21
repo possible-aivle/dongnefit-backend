@@ -1,35 +1,36 @@
 """Pydantic schemas for request/response validation."""
 
 from app.schemas.administrative import (
-    AdministrativeDivisionCreate,
-    AdministrativeDivisionRead,
     AdministrativeEmdCreate,
     AdministrativeEmdRead,
+    AdministrativeSggCreate,
+    AdministrativeSggRead,
+    AdministrativeSidoCreate,
+    AdministrativeSidoRead,
 )
 from app.schemas.base import (
     BaseSchema,
+    GeoJSON,
     PaginatedResponse,
     PaginationMeta,
     PaginationParams,
     TimestampSchema,
+    wkb_to_geojson,
+    wkb_to_shapely,
 )
 from app.schemas.building import (
+    BuildingRegisterAreaCreate,
+    BuildingRegisterAreaRead,
     BuildingRegisterFloorDetailCreate,
     BuildingRegisterFloorDetailRead,
+    BuildingRegisterGeneralCreate,
+    BuildingRegisterGeneralRead,
     BuildingRegisterHeaderCreate,
     BuildingRegisterHeaderRead,
-)
-from app.schemas.land import (
-    LandAndForestInfoCreate,
-    LandAndForestInfoRead,
-    LandCharacteristicCreate,
-    LandCharacteristicRead,
-    LandUsePlanCreate,
-    LandUsePlanRead,
+    GisBuildingIntegratedCreate,
+    GisBuildingIntegratedRead,
 )
 from app.schemas.lot import (
-    AncillaryLandCreate,
-    AncillaryLandRead,
     LotCreate,
     LotRead,
 )
@@ -40,10 +41,10 @@ from app.schemas.spatial import (
     UseRegionDistrictRead,
 )
 from app.schemas.transaction import (
-    OfficialLandPriceCreate,
-    OfficialLandPriceRead,
-    RealEstateTransactionCreate,
-    RealEstateTransactionRead,
+    RealEstateRentalCreate,
+    RealEstateRentalRead,
+    RealEstateSaleCreate,
+    RealEstateSaleRead,
 )
 
 __all__ = [
@@ -53,33 +54,36 @@ __all__ = [
     "PaginationParams",
     "PaginationMeta",
     "PaginatedResponse",
+    # Geometry
+    "GeoJSON",
+    "wkb_to_geojson",
+    "wkb_to_shapely",
     # Lot
     "LotCreate",
     "LotRead",
-    "AncillaryLandCreate",
-    "AncillaryLandRead",
     # Administrative
-    "AdministrativeDivisionCreate",
-    "AdministrativeDivisionRead",
+    "AdministrativeSidoCreate",
+    "AdministrativeSidoRead",
+    "AdministrativeSggCreate",
+    "AdministrativeSggRead",
     "AdministrativeEmdCreate",
     "AdministrativeEmdRead",
-    # Land
-    "LandCharacteristicCreate",
-    "LandCharacteristicRead",
-    "LandUsePlanCreate",
-    "LandUsePlanRead",
-    "LandAndForestInfoCreate",
-    "LandAndForestInfoRead",
     # Building
     "BuildingRegisterHeaderCreate",
     "BuildingRegisterHeaderRead",
+    "BuildingRegisterGeneralCreate",
+    "BuildingRegisterGeneralRead",
     "BuildingRegisterFloorDetailCreate",
     "BuildingRegisterFloorDetailRead",
+    "BuildingRegisterAreaCreate",
+    "BuildingRegisterAreaRead",
+    "GisBuildingIntegratedCreate",
+    "GisBuildingIntegratedRead",
     # Transaction
-    "OfficialLandPriceCreate",
-    "OfficialLandPriceRead",
-    "RealEstateTransactionCreate",
-    "RealEstateTransactionRead",
+    "RealEstateSaleCreate",
+    "RealEstateSaleRead",
+    "RealEstateRentalCreate",
+    "RealEstateRentalRead",
     # Spatial
     "RoadCenterLineCreate",
     "RoadCenterLineRead",

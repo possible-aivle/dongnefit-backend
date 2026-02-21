@@ -1,0 +1,68 @@
+"""실거래가 엔드포인트 - 매매/전월세 조회."""
+
+from datetime import date
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.crud import public_data as crud
+from app.database import get_db
+from app.models.enums import PropertyType, TransactionType
+from app.schemas.public_data import (
+    RentalResponse,
+    SaleResponse,
+    TransactionListResponse,
+)
+
+router = APIRouter()
+
+MAX_ITEMS = 10
+
+
+@router.get(
+    "",
+    response_model=TransactionListResponse,
+    summary="실거래가 조회",
+    description="시군구코드 기반으로 최근 매매/전월세 실거래가를 조회합니다. 각 최대 10건.",
+)
+async def get_transactions(
+    sgg_code: str = Query(..., description="시군구코드 (5자리)", min_length=5, max_length=5),
+    property_type: PropertyType | None = Query(None, description="부동산 유형"),
+    transaction_type: TransactionType | None = Query(
+        None, description="거래 유형 (전세/월세, 전월세만 해당)"
+    ),
+    from_date: date | None = Query(None, description="시작일 (YYYY-MM-DD)"),
+    to_date: date | None = Query(None, description="종료일 (YYYY-MM-DD)"),
+    db: AsyncSession = Depends(get_db),
+) -> TransactionListResponse:
+    # 날짜 범위 검증
+    if from_date and to_date and from_date > to_date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="시작일(from_date)은 종료일(to_date)보다 이전이어야 합니다.",
+        )
+
+    sales, _ = await crud.get_sales(
+        db,
+        sgg_code,
+        property_type=property_type,
+        from_date=from_date,
+        to_date=to_date,
+        offset=0,
+        limit=MAX_ITEMS,
+    )
+    rentals, _ = await crud.get_rentals(
+        db,
+        sgg_code,
+        property_type=property_type,
+        transaction_type=transaction_type,
+        from_date=from_date,
+        to_date=to_date,
+        offset=0,
+        limit=MAX_ITEMS,
+    )
+
+    return TransactionListResponse(
+        sales=[SaleResponse.model_validate(s) for s in sales],
+        rentals=[RentalResponse.model_validate(r) for r in rentals],
+    )

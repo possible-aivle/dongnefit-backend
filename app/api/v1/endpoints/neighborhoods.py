@@ -118,7 +118,7 @@ async def get_neighborhood(
 )
 async def create_neighborhood(
     neighborhood_in: NeighborhoodCreate,
-    admin: AdminUser = None,
+    admin: AdminUser,
     db: AsyncSession = Depends(get_db),
 ) -> NeighborhoodResponse:
     """Create a new neighborhood."""
@@ -135,7 +135,7 @@ async def create_neighborhood(
 async def update_neighborhood(
     neighborhood_id: int,
     neighborhood_in: NeighborhoodUpdate,
-    admin: AdminUser = None,
+    admin: AdminUser,
     db: AsyncSession = Depends(get_db),
 ) -> NeighborhoodResponse:
     """Update a neighborhood."""
@@ -160,7 +160,7 @@ async def update_neighborhood(
 )
 async def delete_neighborhood(
     neighborhood_id: int,
-    admin: AdminUser = None,
+    admin: AdminUser,
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """Delete a neighborhood."""

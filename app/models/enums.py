@@ -15,9 +15,8 @@ class PropertyType(Enum):
 
 
 class TransactionType(Enum):
-    """거래 유형."""
+    """거래 유형 (전월세 전용)."""
 
-    SALE = "sale"  # 매매
     JEONSE = "jeonse"  # 전세
     MONTHLY_RENT = "monthly_rent"  # 월세
 
@@ -26,18 +25,23 @@ class PublicDataType(Enum):
     """공공데이터 유형 (수집 이력 추적용)."""
 
     CONTINUOUS_CADASTRAL = "continuous_cadastral"
-    ANCILLARY_LAND = "ancillary_land"
     LAND_CHARACTERISTIC = "land_characteristic"
     LAND_USE_PLAN = "land_use_plan"
     LAND_AND_FOREST_INFO = "land_and_forest_info"
     OFFICIAL_LAND_PRICE = "official_land_price"
-    REAL_ESTATE_TRANSACTION = "real_estate_transaction"
+    REAL_ESTATE_SALE = "real_estate_sale"
+    REAL_ESTATE_RENTAL = "real_estate_rental"
     BUILDING_REGISTER_HEADER = "building_register_header"
+    BUILDING_REGISTER_GENERAL = "building_register_general"
     BUILDING_REGISTER_FLOOR_DETAIL = "building_register_floor_detail"
-    ADMINISTRATIVE_DIVISION = "administrative_division"
+    BUILDING_REGISTER_AREA = "building_register_area"
+    BUILDING_REGISTER_ANCILLARY_LOT = "building_register_ancillary_lot"
+    ADMINISTRATIVE_SIDO = "administrative_sido"
+    ADMINISTRATIVE_SGG = "administrative_sgg"
     ADMINISTRATIVE_EMD = "administrative_emd"
     ROAD_CENTER_LINE = "road_center_line"
     USE_REGION_DISTRICT = "use_region_district"
+    GIS_BUILDING_INTEGRATED = "gis_building_integrated"
 
 
 class CollectionStatus(Enum):

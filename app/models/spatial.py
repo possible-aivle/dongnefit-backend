@@ -1,10 +1,11 @@
 """공간(GIS) 데이터 모델 (도로중심선, 용도지역지구)."""
 
-from sqlalchemy import Column
-from sqlalchemy.dialects.postgresql import JSONB
+from typing import Any
+
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field
 
-from app.models.base import PublicDataBase
+from app.models.base import PublicDataBase, geometry_column
 
 
 class RoadCenterLine(PublicDataBase, table=True):
@@ -12,15 +13,16 @@ class RoadCenterLine(PublicDataBase, table=True):
 
     코어 데이터.
     vworld shp 데이터 기반.
-    geometry는 raw_data JSONB에 GeoJSON 형태로 저장.
-    추후 PostGIS 확장 시 geometry 컬럼으로 마이그레이션 가능.
+    geometry는 PostGIS Geometry 컬럼으로 저장 (SRID=4326).
     """
 
     __tablename__ = "road_center_lines"
+    __table_args__ = (
+        UniqueConstraint("source_id", name="uq_road_center_line_source_id"),
+    )
 
     source_id: str = Field(
         max_length=200,
-        index=True,
         description="원본 데이터 피처 ID",
     )
     road_name: str | None = Field(
@@ -28,17 +30,7 @@ class RoadCenterLine(PublicDataBase, table=True):
         max_length=200,
         description="도로명",
     )
-    admin_code: str | None = Field(
-        default=None,
-        max_length=10,
-        index=True,
-        description="관할 행정구역코드",
-    )
-    geometry: dict | None = Field(
-        default=None,
-        sa_column=Column(JSONB),
-        description="GeoJSON geometry",
-    )
+    geometry: Any = geometry_column(description="도로중심선 (LineString/MultiLineString)")
 
 
 class UseRegionDistrict(PublicDataBase, table=True):
@@ -46,14 +38,16 @@ class UseRegionDistrict(PublicDataBase, table=True):
 
     코어 데이터.
     vworld shp 데이터 기반.
-    geometry는 raw_data JSONB에 GeoJSON 형태로 저장.
+    geometry는 PostGIS Geometry 컬럼으로 저장 (SRID=4326).
     """
 
     __tablename__ = "use_region_districts"
+    __table_args__ = (
+        UniqueConstraint("source_id", name="uq_use_region_district_source_id"),
+    )
 
     source_id: str = Field(
         max_length=200,
-        index=True,
         description="원본 데이터 피처 ID",
     )
     district_name: str | None = Field(
@@ -70,10 +64,6 @@ class UseRegionDistrict(PublicDataBase, table=True):
         default=None,
         max_length=10,
         index=True,
-        description="관할 행정구역코드",
+        description="관할 행정경계코드",
     )
-    geometry: dict | None = Field(
-        default=None,
-        sa_column=Column(JSONB),
-        description="GeoJSON geometry",
-    )
+    geometry: Any = geometry_column(description="용도지역지구 경계 (Polygon/MultiPolygon)")
