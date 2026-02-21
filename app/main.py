@@ -51,6 +51,7 @@ Session-based authentication is used for subsequent requests.
             {"name": "orders", "description": "Order management"},
             {"name": "coupons", "description": "Coupon management"},
             {"name": "notifications", "description": "User notifications"},
+            {"name": "talk", "description": "Tool-calling agent API"},
         ],
     )
 

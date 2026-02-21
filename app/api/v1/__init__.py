@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     notifications,
     properties,
     reports,
+    talk,
     transactions,
     users,
 )
@@ -22,6 +23,7 @@ router.include_router(neighborhoods.router, prefix="/neighborhoods", tags=["neig
 router.include_router(reports.router, prefix="/reports", tags=["reports"])
 router.include_router(discussions.router, prefix="/discussions", tags=["discussions"])
 router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
+router.include_router(talk.router, tags=["talk"])
 
 # 공공데이터 엔드포인트
 router.include_router(lots.router, prefix="/lots", tags=["lots"])

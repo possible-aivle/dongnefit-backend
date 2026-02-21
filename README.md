@@ -38,6 +38,7 @@ backend/
 │   │       ├── reports.py       # 부동산 리포트
 │   │       ├── discussions.py   # 커뮤니티 게시판
 │   │       ├── notifications.py # 알림
+│   │       ├── talk.py          # Tool-calling agent API
 │   │       └── map.py           # 지도 서비스
 │   │
 │   ├── auth/                    # 인증
@@ -81,6 +82,19 @@ backend/
 │   │   └── map/                 # 지도 서비스 (Naver/Google)
 │   │
 │   ├── core/                    # AI 에이전트 시스템
+│   │   ├── agent/               # AI Agent
+│   │   │   ├── talk_agent.py   # Tool-calling talk agent (RTMS/LAWD/VWorld)
+│   │   │   ├── agent.py         # Regional Policy Agent
+│   │   │   ├── supervisor.py    # Supervisor-Worker 아키텍처
+│   │   │   └── tools/           # Agent tools
+│   │   │       ├── lawd.py      # 법정동코드 조회
+│   │   │       ├── rtms.py      # 실거래가 조회
+│   │   │       └── geocoding.py # 주소 파싱
+│   │   ├── public_data/         # 공공데이터 연동
+│   │   │   ├── rtms.py          # RTMS (국토교통부 실거래가) 클라이언트
+│   │   │   ├── lawd.py          # 법정동코드 로컬 데이터
+│   │   │   ├── vworld.py        # VWorld 주소→좌표 변환
+│   │   │   └── xml.py           # XML 파싱 유틸리티
 │   │   ├── agent/               # LangGraph 멀티에이전트
 │   │   │   ├── agent.py         # 메인 에이전트 오케스트레이터
 │   │   │   ├── supervisor.py    # 멀티에이전트 수퍼바이저
@@ -185,6 +199,10 @@ KAKAO_CLIENT_SECRET=...
 # AI (콘텐츠 생성)
 OPENAI_API_KEY=...
 ANTHROPIC_API_KEY=...
+
+# 공공데이터 (Talk API 사용 시 필수)
+DATA_GO_KR_API_DECODE_KEY=...  # 공공데이터포털 API 키 (RTMS 실거래가)
+VWORLD_API_KEY=...              # VWorld API 키 (주소→좌표 변환)
 ```
 
 ### 3. 데이터베이스 설정
@@ -362,6 +380,30 @@ Excel → openpyxl      PNU 생성              JSONB 집계 (jsonb_column)
 | GET    | `/api/v1/notifications/unread-count` | 읽지 않은 알림 수 |
 | POST   | `/api/v1/notifications/read-all`     | 모두 읽음 처리    |
 
+### Talk (Tool-calling Agent)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| POST | `/api/v1/talk` | 실거래가/법정동코드/좌표 변환 도구를 사용하는 대화형 API |
+
+**사용 예시:**
+```bash
+curl -X POST "http://localhost:8000/api/v1/talk" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "판교 202401 아파트 매매 동별로 요약 해줘"}
+    ],
+    "context": {},
+    "options": {"model": "gpt-4o-mini", "temperature": 0.0}
+  }'
+```
+
+**사용 가능한 도구:**
+- `lawd_resolve_code`: 지역명으로 법정동코드 조회
+- `lawd_search`: 키워드로 법정동코드 후보 검색
+- `rtms_apt_trade_detail`: 아파트 매매 상세 실거래가 조회
+- `vworld_get_coord`: 주소를 좌표(위도/경도)로 변환
+
 ## 아키텍처 패턴
 
 - **CRUD Factory**: `CRUDBase[ModelType]` 제네릭 클래스로 공통 CRUD 추상화
@@ -371,6 +413,9 @@ Excel → openpyxl      PNU 생성              JSONB 집계 (jsonb_column)
 - **Service Layer**: 비즈니스 로직 분리 (content, map)
 - **Multi-Agent System**: LangGraph 수퍼바이저 → 서브 에이전트 (의도분석, 데이터수집, 콘텐츠생성, SEO)
 - **Pipeline Pattern**: collect → transform → load (BaseProcessor 추상 클래스, 자동 등록 레지스트리)
+- **Tool-calling Agent**: LangGraph 기반 대화형 API (`/api/v1/talk`)
+  - 공공데이터 도구를 LLM이 자동으로 선택하여 호출
+  - 실거래가 조회, 법정동코드 검색, 좌표 변환 등 지원
 
 ## 개발
 
