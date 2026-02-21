@@ -9,6 +9,7 @@ from .park import ParkToolService
 from .river import RiverToolService
 from .rtms import RtmsToolService
 from .school import SchoolToolService
+from .store import StoreToolService
 
 __all__ = [
     "GeocodingService",
@@ -17,4 +18,5 @@ __all__ = [
     "RiverToolService",
     "RtmsToolService",
     "SchoolToolService",
+    "StoreToolService",
 ]

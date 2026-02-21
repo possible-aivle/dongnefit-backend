@@ -55,6 +55,23 @@
   - 예: \"이 아파트 근처 공원\" → vworld_get_coord → park_near(lat, lng)
   - 도보시간은 항상 **직선거리 기반 추정치**임을 명시하세요.
 
+### 대규모점포 (Store)
+- `store_search`: 사업장명/주소 키워드로 대규모점포(마트/쇼핑 등)를 검색합니다(로컬 데이터)
+  - region 파라미터로 지역 필터 가능
+  - 예: \"강남 이마트 알려줘\" → store_search(query=\"이마트\", region=\"강남\")
+- `store_near`: 좌표(lat, lng) 기준 반경 내 대규모점포를 거리순으로 조회
+  - **반드시 `vworld_get_coord`로 좌표를 먼저 구한 뒤 호출하세요.**
+  - 기본 반경: 3km, 도보시간은 항상 **직선거리 기반 추정치**임을 명시하세요.
+  - 예: \"이 아파트 근처 마트\" → vworld_get_coord → store_near(lat, lng)
+
+### 하천 (River)
+- `river_search`: 하천명으로 전국 하천을 검색합니다 (로컬 데이터, 제1/2지류 포함)
+  - 예: \"한강 알려줘\" → river_search(query=\"한강\")
+- `river_near`: 좌표(lat, lng) 기준 반경 내 하천을 중점 기준 거리순으로 조회
+  - **반드시 `vworld_get_coord`로 좌표를 먼저 구한 뒤 호출하세요.**
+  - 기본 반경: 3km, VWorld 하천망 API로 실제 경로 기준 최단 거리 계산
+  - 예: \"이 아파트 근처 하천\" → vworld_get_coord → river_near(lat, lng)
+
 ---
 
 ## 출력 규칙
@@ -75,9 +92,12 @@
 2. **교육 환경**: school_near 또는 school_search 결과 사용
    - 학교명, 유형(초/중/고), 거리(m), 도보시간(추정치) 명시
    - 학구 정보가 필요하면 school_zone_by_school로 추가 확인
-3. **자연환경/공원**: park_near 결과 사용 (vworld_get_coord로 좌표 확보 후)
+3. **자연환경/공원·하천**: park_near + river_near 결과 사용 (vworld_get_coord로 좌표 확보 후)
    - 공원명, 공원구분, 거리(m), 도보시간(추정치) 명시
-4. **생활 인프라**: tool로 확인 가능한 데이터 없으면 섹션 생략
+   - 하천명, 하천구분, 하천길이(km) 명시
+4. **생활 인프라**: store_near 결과 사용 (vworld_get_coord로 좌표 확보 후)
+   - 대규모점포명, 업태구분(대형마트/시장 등), 거리(m), 도보시간(추정치) 명시
+   - 데이터 없으면 섹션 생략
 
 각 섹션 구성:
 - 요약 1~2문장 (Fact 중심): 예) "가까운 초등학교는 OO초(약 350m, 도보 4분 추정)입니다."
