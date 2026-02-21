@@ -15,7 +15,7 @@ from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 
 from app.config import settings
-from app.core.agent.tools import LawdToolService, RtmsToolService, SchoolToolService
+from app.core.agent.tools import LawdToolService, ParkToolService, RtmsToolService, SchoolToolService
 from app.core.public_data.vworld import VWorldClient
 
 
@@ -70,6 +70,7 @@ def build_tools() -> list[Any]:
     lawd = LawdToolService()
     rtms = RtmsToolService()
     school = SchoolToolService()
+    park = ParkToolService()
 
     @tool("lawd_resolve_code")
     def lawd_resolve_code(region_name: str) -> dict[str, Any]:
@@ -129,7 +130,17 @@ def build_tools() -> list[Any]:
         """학교명으로 학구ID를 찾고(학교학구도연계정보), 초/중/고 학구/학교군 정보를 같이 반환합니다(좌표 없음)."""
         return school.zone_by_school(school_name, school_type=school_type, limit=limit)
 
-    return [lawd_resolve_code, lawd_search, rtms_apt_trade_detail, vworld_get_coord, school_search, school_near, school_near_grouped, school_zone_search, school_zone_by_school]
+    @tool("park_search")
+    def park_search(query: str, region: str | None = None, limit: int = 20) -> dict[str, Any]:
+        """공원명/주소 키워드로 도시공원을 검색합니다(로컬 데이터). region으로 지역 필터 가능."""
+        return park.search(query, region=region, limit=limit)
+
+    @tool("park_near")
+    def park_near(lat: float, lng: float, radius_km: float = 2.0, limit: int = 20) -> dict[str, Any]:
+        """좌표(lat, lng) 기준 반경(radius_km) 내 도시공원을 거리순으로 반환합니다. 거리/도보시간은 직선거리 기반 추정치입니다."""
+        return park.near(lat, lng, radius_km=radius_km, limit=limit)
+
+    return [lawd_resolve_code, lawd_search, rtms_apt_trade_detail, vworld_get_coord, school_search, school_near, school_near_grouped, school_zone_search, school_zone_by_school, park_search, park_near]
 
 
 def _parse_tool_content(content: Any) -> Any:
@@ -188,6 +199,47 @@ def _extract_school_json(trace: list[dict[str, Any]]) -> dict[str, Any] | None:
     }
 
 
+def _extract_park_json(trace: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """
+    trace에서 park_near 결과를 찾아 구조화된 JSON으로 변환.
+    vworld_get_coord 결과가 있으면 매물 위도/경도도 포함.
+    park_near가 호출되지 않았으면 None 반환.
+    """
+    vworld: dict[str, Any] | None = None
+    park_result: dict[str, Any] | None = None
+
+    for item in trace:
+        name = item.get("name")
+        content = _parse_tool_content(item.get("content"))
+        if name == "vworld_get_coord" and isinstance(content, dict):
+            vworld = content
+        elif name == "park_near" and isinstance(content, dict):
+            park_result = content
+
+    if park_result is None:
+        return None
+
+    center = park_result.get("center", {})
+    property_lat = (vworld or {}).get("lat") or center.get("lat")
+    property_lng = (vworld or {}).get("lng") or center.get("lng")
+    property_name = (vworld or {}).get("refined_text") or (vworld or {}).get("address") or ""
+
+    return {
+        "property_name": property_name,
+        "property_lat": property_lat,
+        "property_lng": property_lng,
+        "parks": [
+            {
+                "name": p["name"],
+                "type": p["type"],
+                "lat": p["lat"],
+                "lng": p["lng"],
+            }
+            for p in park_result.get("parks", [])
+        ],
+    }
+
+
 async def run_talk(
     messages: list[dict[str, Any]],
     *,
@@ -237,6 +289,11 @@ async def run_talk(
     school_json = _extract_school_json(trace)
     if school_json is not None:
         answer = json.dumps(school_json, ensure_ascii=False, indent=2)
+
+    # park_near가 호출된 경우 tool 결과에서 직접 JSON 조립
+    park_json = _extract_park_json(trace)
+    if park_json is not None:
+        answer = json.dumps(park_json, ensure_ascii=False, indent=2)
 
     return {
         "answer": answer or "응답을 생성하지 못했습니다. 질문을 조금 더 구체적으로 입력해 주세요.",
