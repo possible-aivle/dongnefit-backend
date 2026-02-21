@@ -21,8 +21,7 @@ class LawdCandidate:
 def _get_default_data_dir() -> Path:
     """Return default data directory: app/core/api_data/"""
     this_file = Path(__file__)
-    # app/repositories/lawd.py -> app/core/api_data/
-    return this_file.parent.parent / "core" / "api_data"
+    return this_file.parent.parent / "api_data"
 
 
 class LawdRepository:
