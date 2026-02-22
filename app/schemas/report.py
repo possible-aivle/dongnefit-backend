@@ -3,10 +3,11 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
 
 from pydantic import Field
 
-from app.schemas.base import BaseSchema, PaginationParams, TimestampSchema
+from app.schemas.base import BaseSchema, GeoJSON, PaginationParams, TimestampSchema
 from app.schemas.neighborhood import NeighborhoodSummary
 from app.schemas.user import UserPublic
 
@@ -33,6 +34,10 @@ class ReportCreate(BaseSchema):
 
     neighborhood_id: int
     category_id: int | None = None
+    pnu: str | None = Field(None, max_length=19)
+    latitude: float | None = None
+    longitude: float | None = None
+    geometry: dict[str, Any] | None = None
     title: str = Field(..., min_length=1, max_length=255)
     subtitle: str | None = Field(None, max_length=500)
     cover_image: str | None = None
@@ -48,6 +53,10 @@ class ReportUpdate(BaseSchema):
     """Schema for updating a report."""
 
     category_id: int | None = None
+    pnu: str | None = Field(None, max_length=19)
+    latitude: float | None = None
+    longitude: float | None = None
+    geometry: dict[str, Any] | None = None
     title: str | None = Field(None, min_length=1, max_length=255)
     subtitle: str | None = None
     cover_image: str | None = None
@@ -110,6 +119,7 @@ class ReportResponse(TimestampSchema):
     purchase_count: int
     rating: Decimal
     review_count: int
+    comment_count: int
     tags: list[str] | None
     meta_description: str | None
     featured_until: datetime | None

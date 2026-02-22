@@ -3,12 +3,13 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
 
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import JSON
 from sqlmodel import Field
 
-from app.models.base import TimestampMixin
+from app.models.base import TimestampMixin, geometry_column
 
 
 class ReportStatus(Enum):

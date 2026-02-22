@@ -1,13 +1,32 @@
 """CRUD operations for reports."""
 
 from datetime import datetime
+from typing import Any
 
+from geoalchemy2.elements import WKBElement
+from shapely.geometry import shape
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import and_, func, or_, select
 
 from app.crud.base import CRUDBase
-from app.models.report import Report, ReportCategory, ReportReview, ReportStatus
-from app.schemas.report import ReportCreate, ReportQuery, ReportReviewCreate, ReportUpdate
+from app.models.report import Report, ReportCategory, ReportComment, ReportReview, ReportStatus
+from app.schemas.report import (
+    ReportCommentCreate,
+    ReportCreate,
+    ReportQuery,
+    ReportReviewCreate,
+    ReportUpdate,
+)
+
+
+def _geojson_to_wkb(geojson: dict[str, Any] | None) -> WKBElement | None:
+    """GeoJSON dict를 WKBElement로 변환합니다."""
+    if geojson is None:
+        return None
+    geom = shape(geojson)
+    from geoalchemy2.shape import from_shape
+
+    return from_shape(geom, srid=4326)
 
 
 class CRUDReportCategory(CRUDBase[ReportCategory]):
@@ -121,6 +140,35 @@ class CRUDReport(CRUDBase[Report]):
 
         return reports, total
 
+    async def get_reports_in_bbox(
+        self,
+        db: AsyncSession,
+        *,
+        min_lng: float,
+        min_lat: float,
+        max_lng: float,
+        max_lat: float,
+        limit: int = 100,
+    ) -> list[Report]:
+        """Get published reports within a bounding box."""
+        result = await db.execute(
+            select(Report)
+            .where(
+                and_(
+                    Report.status == ReportStatus.PUBLISHED.value,
+                    Report.latitude.is_not(None),
+                    Report.longitude.is_not(None),
+                    Report.latitude >= min_lat,
+                    Report.latitude <= max_lat,
+                    Report.longitude >= min_lng,
+                    Report.longitude <= max_lng,
+                )
+            )
+            .order_by(Report.published_at.desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
     async def create_report(
         self,
         db: AsyncSession,
@@ -133,6 +181,10 @@ class CRUDReport(CRUDBase[Report]):
             author_id=author_id,
             neighborhood_id=obj_in.neighborhood_id,
             category_id=obj_in.category_id,
+            pnu=obj_in.pnu,
+            latitude=obj_in.latitude,
+            longitude=obj_in.longitude,
+            geometry=_geojson_to_wkb(obj_in.geometry),
             title=obj_in.title,
             subtitle=obj_in.subtitle,
             cover_image=obj_in.cover_image,
