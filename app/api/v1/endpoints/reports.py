@@ -363,7 +363,7 @@ async def list_report_comments(
 async def create_report_comment(
     report_id: int,
     comment_in: ReportCommentCreate,
-    current_user: CurrentUser = None,
+    current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
 ) -> ReportCommentResponse:
     """Create a comment on a report."""
@@ -392,7 +392,7 @@ async def update_report_comment(
     report_id: int,
     comment_id: int,
     comment_in: ReportCommentUpdate,
-    current_user: CurrentUser = None,
+    current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
 ) -> ReportCommentResponse:
     """Update a comment."""
@@ -424,7 +424,7 @@ async def update_report_comment(
 async def delete_report_comment(
     report_id: int,
     comment_id: int,
-    current_user: CurrentUser = None,
+    current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """Delete a comment."""
