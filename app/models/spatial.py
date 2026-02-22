@@ -16,7 +16,7 @@ class RoadCenterLine(PublicDataBase, table=True):
     geometry는 PostGIS Geometry 컬럼으로 저장 (SRID=4326).
     """
 
-    __tablename__ = "road_center_lines"
+    __tablename__ = "local_road_center_lines"
     __table_args__ = (
         UniqueConstraint("source_id", name="uq_road_center_line_source_id"),
     )
@@ -41,7 +41,7 @@ class UseRegionDistrict(PublicDataBase, table=True):
     geometry는 PostGIS Geometry 컬럼으로 저장 (SRID=4326).
     """
 
-    __tablename__ = "use_region_districts"
+    __tablename__ = "local_use_region_districts"
     __table_args__ = (
         UniqueConstraint("source_id", name="uq_use_region_district_source_id"),
     )

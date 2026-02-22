@@ -29,7 +29,7 @@ class Lot(SQLModel, table=True):
     PNU가 없는 경우 새로 생성, 이미 있는 경우 기존 데이터 업데이트.
     """
 
-    __tablename__ = "lots"
+    __tablename__ = "local_lots"
 
     pnu: str = Field(
         max_length=19,

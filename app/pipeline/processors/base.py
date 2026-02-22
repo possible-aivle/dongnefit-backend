@@ -157,7 +157,9 @@ class BaseProcessor(ABC):
 
         console.print("  [dim]연속지적도 PNU 목록 로딩 중...[/]")
         async with async_session_maker() as session:
-            rows = await session.execute(text("SELECT pnu FROM lots"))
+            from app.models.lot import Lot
+
+            rows = await session.execute(text(f"SELECT pnu FROM {Lot.__tablename__}"))  # noqa: S608
             _valid_pnu_cache = {row[0] for row in rows}
 
         console.print(f"  [dim]유효 PNU: {len(_valid_pnu_cache):,}건 로드[/]")

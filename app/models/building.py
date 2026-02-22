@@ -15,7 +15,7 @@ class BuildingRegisterHeader(PublicDataBase, table=True):
     동별 건축물 정보를 관리합니다.
     """
 
-    __tablename__ = "building_register_headers"
+    __tablename__ = "local_building_register_headers"
     __table_args__ = (
         UniqueConstraint("mgm_bldrgst_pk", name="uq_bldrgst_header_pk"),
     )
@@ -48,7 +48,7 @@ class BuildingRegisterGeneral(PublicDataBase, table=True):
     건물 전체 총괄 정보를 관리합니다.
     """
 
-    __tablename__ = "building_register_generals"
+    __tablename__ = "local_building_register_generals"
     __table_args__ = (
         UniqueConstraint("mgm_bldrgst_pk", name="uq_bldrgst_general_pk"),
     )
@@ -78,7 +78,7 @@ class BuildingRegisterFloorDetail(PublicDataBase, table=True):
     동별 층별 용도 및 면적 정보를 관리합니다.
     """
 
-    __tablename__ = "building_register_floor_details"
+    __tablename__ = "local_building_register_floor_details"
     __table_args__ = (
         UniqueConstraint(
             "mgm_bldrgst_pk", "floor_type_name", "floor_no",
@@ -105,7 +105,7 @@ class BuildingRegisterArea(PublicDataBase, table=True):
     세대별 전유면적/공용면적을 관리하여 공급면적 도출에 사용합니다.
     """
 
-    __tablename__ = "building_register_areas"
+    __tablename__ = "local_building_register_areas"
     __table_args__ = (
         UniqueConstraint(
             "mgm_bldrgst_pk", "dong_name", "ho_name", "floor_no", "exclu_common_type",
@@ -136,7 +136,7 @@ class GisBuildingIntegrated(PublicDataBase, table=True):
     geometry는 PostGIS Geometry 컬럼으로 저장 (SRID=4326).
     """
 
-    __tablename__ = "gis_building_integrated"
+    __tablename__ = "local_gis_building_integrated"
     __table_args__ = (UniqueConstraint("pnu", "building_id", name="uq_gis_building_pnu_bid"),)
 
     pnu: str = Field(
