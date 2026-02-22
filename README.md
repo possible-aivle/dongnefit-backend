@@ -4,18 +4,18 @@
 
 ## 기술 스택
 
-| 카테고리        | 패키지                                  |
-| --------------- | --------------------------------------- |
-| Package Manager | uv                                      |
-| Web Framework   | FastAPI, Uvicorn                        |
-| ORM             | SQLAlchemy 2.0 (async), SQLModel        |
-| Database        | PostgreSQL 17, asyncpg, PostGIS, Alembic |
-| Validation      | Pydantic v2 (+ email)                   |
-| Authentication  | OAuth2 (Google, Kakao), Session-based   |
+| 카테고리        | 패키지                                                       |
+| --------------- | ------------------------------------------------------------ |
+| Package Manager | uv                                                           |
+| Web Framework   | FastAPI, Uvicorn                                             |
+| ORM             | SQLAlchemy 2.0 (async), SQLModel                             |
+| Database        | PostgreSQL 17, asyncpg, PostGIS, Alembic                     |
+| Validation      | Pydantic v2 (+ email)                                        |
+| Authentication  | OAuth2 (Google, Kakao), Session-based                        |
 | AI/LLM          | LangGraph 멀티에이전트, LangChain, OpenAI, Anthropic, Ollama |
-| Data Pipeline   | httpx, fiona (SHP), openpyxl (Excel)    |
-| Code Quality    | Ruff (lint + format), mypy (strict)     |
-| Testing         | pytest, pytest-asyncio, pytest-cov      |
+| Data Pipeline   | httpx, fiona (SHP), openpyxl (Excel)                         |
+| Code Quality    | Ruff (lint + format), mypy (strict)                          |
+| Testing         | pytest, pytest-asyncio, pytest-cov                           |
 
 ## 프로젝트 구조
 
@@ -69,10 +69,13 @@ backend/
 │   │   ├── administrative.py    # 행정경계 스키마
 │   │   ├── spatial.py           # 공간 데이터 스키마
 │   │   ├── public_data.py       # 공공데이터 통합 스키마
-│   │   └── ...                  # report, discussion, notification, content, map 등
+│   │   ├── content.py           # 콘텐츠 생성 스키마
+│   │   ├── map.py               # 지도 서비스 스키마
+│   │   └── ...                  # report, discussion, notification 등
 │   │
 │   ├── crud/                    # 데이터베이스 CRUD
 │   │   ├── base.py              # CRUDBase[ModelType] (Generic CRUD)
+│   │   ├── public_data.py       # 공공데이터 조회
 │   │   └── ...                  # user, report, discussion, notification, neighborhood
 │   │
 │   ├── services/                # 비즈니스 로직
@@ -81,31 +84,45 @@ backend/
 │   │   │   └── scraper.py       # RealEstateScraper (Selenium)
 │   │   └── map/                 # 지도 서비스 (Naver/Google)
 │   │
-│   ├── core/                    # AI 에이전트 시스템
-│   │   ├── agent/               # AI Agent
-│   │   │   ├── talk_agent.py   # Tool-calling talk agent (RTMS/LAWD/VWorld)
-│   │   │   ├── agent.py         # Regional Policy Agent
-│   │   │   ├── supervisor.py    # Supervisor-Worker 아키텍처
-│   │   │   └── tools/           # Agent tools
-│   │   │       ├── lawd.py      # 법정동코드 조회
-│   │   │       ├── rtms.py      # 실거래가 조회
-│   │   │       └── geocoding.py # 주소 파싱
-│   │   ├── public_data/         # 공공데이터 연동
-│   │   │   ├── rtms.py          # RTMS (국토교통부 실거래가) 클라이언트
-│   │   │   ├── lawd.py          # 법정동코드 로컬 데이터
-│   │   │   ├── vworld.py        # VWorld 주소→좌표 변환
-│   │   │   └── xml.py           # XML 파싱 유틸리티
-│   │   ├── agent/               # LangGraph 멀티에이전트
+│   ├── core/                    # AI 에이전트 및 외부 데이터 연동
+│   │   ├── agent/               # LangGraph 멀티에이전트 시스템
+│   │   │   ├── main.py          # 에이전트 진입점
 │   │   │   ├── agent.py         # 메인 에이전트 오케스트레이터
 │   │   │   ├── supervisor.py    # 멀티에이전트 수퍼바이저
+│   │   │   ├── talk_agent.py    # Tool-calling talk agent (RTMS/LAWD/VWorld)
+│   │   │   ├── models.py        # 에이전트 데이터 모델
 │   │   │   ├── sub_agents/      # 서브 에이전트
-│   │   │   │   ├── intent_analyzer.py    # 의도 분석
-│   │   │   │   ├── data_collector.py     # 데이터 수집
-│   │   │   │   ├── data_classifier.py    # 데이터 분류
-│   │   │   │   ├── content_generator.py  # 콘텐츠 생성
-│   │   │   │   └── seo/                  # SEO 최적화 에이전트
+│   │   │   │   ├── intent_analyzer.py         # 의도 분석
+│   │   │   │   ├── data_collector.py          # 데이터 수집
+│   │   │   │   ├── data_classifier.py         # 데이터 분류
+│   │   │   │   ├── content_generator.py       # 콘텐츠 생성
+│   │   │   │   ├── development_event_agent.py # 개발사업 이벤트
+│   │   │   │   └── seo/                       # SEO 최적화 에이전트
 │   │   │   ├── tools/           # 에이전트 도구
+│   │   │   │   ├── rtms.py              # 실거래가 조회
+│   │   │   │   ├── lawd.py              # 법정동코드 조회
+│   │   │   │   ├── geocoding.py         # 주소 파싱
+│   │   │   │   ├── convenience.py       # 편의점 조회
+│   │   │   │   ├── grocery.py           # 마트/식료품점 조회
+│   │   │   │   ├── hospital.py          # 병원 조회
+│   │   │   │   ├── hospital_animal.py   # 동물병원 조회
+│   │   │   │   ├── park.py              # 공원 조회
+│   │   │   │   ├── river.py             # 하천 조회
+│   │   │   │   ├── school.py            # 학교 조회
+│   │   │   │   └── tistory_publisher.py # 티스토리 발행
 │   │   │   └── resources/       # 프롬프트 템플릿
+│   │   ├── repositories/        # 외부 데이터 소스 클라이언트 (Repository Pattern)
+│   │   │   ├── rtms.py          # RTMS (국토교통부 실거래가)
+│   │   │   ├── lawd.py          # 법정동코드 로컬 데이터
+│   │   │   ├── vworld.py        # VWorld 주소→좌표 변환
+│   │   │   ├── xml.py           # XML 파싱 유틸리티
+│   │   │   ├── convenience.py   # 편의점 데이터
+│   │   │   ├── grocery.py       # 마트/식료품점 데이터
+│   │   │   ├── hospital.py      # 병원 데이터
+│   │   │   ├── hospital_animal.py # 동물병원 데이터
+│   │   │   ├── park.py          # 공원 데이터
+│   │   │   ├── river.py         # 하천 데이터
+│   │   │   └── school.py        # 학교 데이터
 │   │   └── langgraph/           # LangGraph 워크플로우
 │   │
 │   ├── utils/                   # 유틸리티
@@ -208,6 +225,27 @@ LLM_PROVIDER=gpt                         # LLM 제공자: "gpt" 또는 "local_ll
 # 공공데이터 (Talk API 사용 시 필수)
 DATA_GO_KR_API_DECODE_KEY=...  # 공공데이터포털 API 키 (RTMS 실거래가)
 VWORLD_API_KEY=...              # VWorld API 키 (주소→좌표 변환)
+KOSIS_API_KEY=...               # KOSIS 통계정보 API 키
+R_ONE_API_KEY=...               # 한국부동산원 R-ONE API 키
+
+# Naver Map
+NAVER_MAP_PROVIDER=naver        # 지도 제공자
+NAVER_CLIENT_ID=...             # Naver Cloud Platform Client ID
+NAVER_CLIENT_SECRET=...         # Naver Cloud Platform Client Secret
+
+# AWS S3 (파일 저장)
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_REGION=ap-northeast-2
+S3_BUCKET=...
+
+# Tistory (블로그 연동)
+TISTORY_ID=...                  # Tistory 계정 ID
+TISTORY_PASSWORD=...            # Tistory 계정 비밀번호
+
+# Selenium (웹 크롤링)
+SELENIUM_HEADLESS=true          # 헤드리스 모드 (기본값: true)
+SELENIUM_TIMEOUT=30             # 타임아웃 초 (기본값: 30)
 ```
 
 ### 3. 데이터베이스 설정
@@ -330,27 +368,28 @@ OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.2
 LLM_PROVIDER=local_llm  # "gpt" 또는 "local_llm"
 ```
+
 또는 요청에서 `provider`를 지정하지 않으면 환경변수 `LLM_PROVIDER`의 값이 사용됩니다.
 
 ## DB 스키마
 
 ### 공공데이터 테이블 (13개)
 
-| 테이블 | PK/Unique | 설명 |
-|--------|-----------|------|
-| `lots` | pnu + data_type | 필지 통합 (지적도 + JSONB: use_plans, ownerships, official_prices, ancillary_lots) |
-| `building_register_mains` | mgm_bldrgst_pk | 건축물대장 표제부 |
-| `building_register_generals` | mgm_bldrgst_pk | 건축물대장 총괄표제부 |
-| `building_register_floor_details` | mgm_bldrgst_pk + floor_no + floor_type | 건축물대장 층별개요 |
-| `building_register_areas` | mgm_bldrgst_pk + area_type + area_name | 건축물대장 전유공용면적 |
-| `gis_building_integrated` | pnu + building_id | GIS건물통합정보 |
-| `administrative_sidos` | sido_code | 시도 행정경계 |
-| `administrative_sggs` | sgg_code | 시군구 행정경계 |
-| `administrative_emds` | emd_code | 읍면동 행정경계 |
-| `road_center_lines` | source_id | 도로중심선 |
-| `use_region_districts` | source_id | 용도지역지구 |
-| `real_estate_sales` | composite | 실거래가 매매 |
-| `real_estate_rentals` | composite | 실거래가 전월세 |
+| 테이블                            | PK/Unique                              | 설명                                                                               |
+| --------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------- |
+| `lots`                            | pnu + data_type                        | 필지 통합 (지적도 + JSONB: use_plans, ownerships, official_prices, ancillary_lots) |
+| `building_register_mains`         | mgm_bldrgst_pk                         | 건축물대장 표제부                                                                  |
+| `building_register_generals`      | mgm_bldrgst_pk                         | 건축물대장 총괄표제부                                                              |
+| `building_register_floor_details` | mgm_bldrgst_pk + floor_no + floor_type | 건축물대장 층별개요                                                                |
+| `building_register_areas`         | mgm_bldrgst_pk + area_type + area_name | 건축물대장 전유공용면적                                                            |
+| `gis_building_integrated`         | pnu + building_id                      | GIS건물통합정보                                                                    |
+| `administrative_sidos`            | sido_code                              | 시도 행정경계                                                                      |
+| `administrative_sggs`             | sgg_code                               | 시군구 행정경계                                                                    |
+| `administrative_emds`             | emd_code                               | 읍면동 행정경계                                                                    |
+| `road_center_lines`               | source_id                              | 도로중심선                                                                         |
+| `use_region_districts`            | source_id                              | 용도지역지구                                                                       |
+| `real_estate_sales`               | composite                              | 실거래가 매매                                                                      |
+| `real_estate_rentals`             | composite                              | 실거래가 전월세                                                                    |
 
 ### 파이프라인 아키텍처
 
@@ -397,11 +436,11 @@ Excel → openpyxl      PNU 생성              JSONB 집계 (jsonb_column)
 
 ### 부동산 데이터
 
-| Method | Endpoint                           | 설명                            |
-| ------ | ---------------------------------- | ------------------------------- |
-| GET    | `/api/v1/lots/{pnu}`               | 필지 상세 (토지 통합 데이터)    |
-| GET    | `/api/v1/buildings/{pnu}`          | 건축물 정보                     |
-| GET    | `/api/v1/transactions/{sgg_code}`  | 실거래가 조회                   |
+| Method | Endpoint                           | 설명                              |
+| ------ | ---------------------------------- | --------------------------------- |
+| GET    | `/api/v1/lots/{pnu}`               | 필지 상세 (토지 통합 데이터)      |
+| GET    | `/api/v1/buildings/{pnu}`          | 건축물 정보                       |
+| GET    | `/api/v1/transactions/{sgg_code}`  | 실거래가 조회                     |
 | GET    | `/api/v1/properties/{pnu}/summary` | 부동산 종합 요약 (필지+건물+거래) |
 
 ### 동네
@@ -439,13 +478,15 @@ Excel → openpyxl      PNU 생성              JSONB 집계 (jsonb_column)
 | POST   | `/api/v1/notifications/read-all`     | 모두 읽음 처리    |
 
 ### Talk (Tool-calling Agent)
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| POST | `/api/v1/talk` | 실거래가/법정동코드/좌표 변환 도구를 사용하는 대화형 API |
+
+| Method | Endpoint       | 설명                                                     |
+| ------ | -------------- | -------------------------------------------------------- |
+| POST   | `/api/v1/talk` | 실거래가/법정동코드/좌표 변환 도구를 사용하는 대화형 API |
 
 **사용 예시:**
 
 OpenAI GPT 사용:
+
 ```bash
 curl -X POST "http://localhost:8000/api/v1/talk" \
   -H "Content-Type: application/json" \
@@ -459,6 +500,7 @@ curl -X POST "http://localhost:8000/api/v1/talk" \
 ```
 
 Local LLM (Ollama) 사용:
+
 ```bash
 curl -X POST "http://localhost:8000/api/v1/talk" \
   -H "Content-Type: application/json" \
@@ -472,6 +514,7 @@ curl -X POST "http://localhost:8000/api/v1/talk" \
 ```
 
 **사용 가능한 도구:**
+
 - `lawd_resolve_code`: 지역명으로 법정동코드 조회
 - `lawd_search`: 키워드로 법정동코드 후보 검색
 - `rtms_apt_trade_detail`: 아파트 매매 상세 실거래가 조회
@@ -484,7 +527,8 @@ curl -X POST "http://localhost:8000/api/v1/talk" \
 - **Async-first**: AsyncSession, async generators 전면 사용
 - **Schema Validation**: Pydantic v2 + SQLModel 통합
 - **Service Layer**: 비즈니스 로직 분리 (content, map)
-- **Multi-Agent System**: LangGraph 수퍼바이저 → 서브 에이전트 (의도분석, 데이터수집, 콘텐츠생성, SEO)
+- **Repository Pattern**: `core/repositories/`에서 외부 데이터 소스 클라이언트 추상화 (편의점, 마트, 병원, 동물병원, 공원, 하천, 학교 등)
+- **Multi-Agent System**: LangGraph 수퍼바이저 → 서브 에이전트 (의도분석, 데이터수집, 콘텐츠생성, 개발사업, SEO)
 - **Pipeline Pattern**: collect → transform → load (BaseProcessor 추상 클래스, 자동 등록 레지스트리)
 - **Tool-calling Agent**: LangGraph 기반 대화형 API (`/api/v1/talk`)
   - 공공데이터 도구를 LLM이 자동으로 선택하여 호출

@@ -25,7 +25,7 @@ from app.models.file import FileStorage
 from app.models.lot import Lot
 from app.models.neighborhood import Neighborhood
 from app.models.notification import Notification, NotificationSettings, NotificationType
-from app.models.report import Report, ReportCategory, ReportReview, ReportStatus
+from app.models.report import Report, ReportCategory, ReportComment, ReportReview, ReportStatus
 from app.models.spatial import RoadCenterLine, UseRegionDistrict
 from app.models.transaction import RealEstateRental, RealEstateSale
 from app.models.user import AuthProvider, User, UserRole
@@ -48,6 +48,7 @@ __all__ = [
     # Report
     "Report",
     "ReportCategory",
+    "ReportComment",
     "ReportReview",
     "ReportStatus",
     # Discussion

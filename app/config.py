@@ -47,21 +47,21 @@ class Settings(BaseSettings):
     # 공공데이터
     # -----------------------------------------
 
-# 공공데이터포털 API 키 (https://www.data.go.kr/)
-    data_go_kr_api_encode_key: str = ''
-    data_go_kr_api_decode_key: str = ''
+    # 공공데이터포털 API 키 (https://www.data.go.kr/)
+    data_go_kr_api_encode_key: str = ""
+    data_go_kr_api_decode_key: str = ""
 
     # VWORLD API 키 (https://www.vworld.kr/)
-    vworld_api_key: str = ''
+    vworld_api_key: str = ""
 
     # KOSIS Open API (https://KOSIS.kostat.go.kr/)
-    kosis_api_key: str = ''
+    kosis_api_key: str = ""
 
     # 한국부동산원 R-ONE 부동산통계정보 API (https://www.reb.or.kr/r-one/portal/openapi/openApiIntroPage.do)
-    r_one_api_key: str = ''
+    r_one_api_key: str = ""
 
     # 데이터 저장 경로 (기본값: ./pipeline/public_data)
-    data_dir: str = './pipeline/public_data'
+    data_dir: str = "./pipeline/public_data"
 
     # -----------------------------------------
     # 부동산(로컬 데이터/RTMS)
@@ -69,7 +69,6 @@ class Settings(BaseSettings):
 
     # 법정동코드 CSV 파일명 -> TODO: 추후 DB 연결하면 삭제
     lawd_code_csv_filename: str = "국토교통부_전국 법정동_20250807.csv"
-
 
     # -----------------------------------------
     # THIRD PARTY
@@ -90,13 +89,6 @@ class Settings(BaseSettings):
 
     # Anthropic
     anthropic_api_key: str = ""
-
-    # Ollama
-    ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = ""
-    
-    # LLM Provider (기본값: "gpt" 또는 "local_llm")
-    llm_provider: str = "gpt"
 
     # Naver API
     naver_map_provider: str = "naver"
@@ -124,6 +116,17 @@ class Settings(BaseSettings):
     # Tistory Credentials
     tistory_id: str = ""
     tistory_password: str = ""
+
+    # -----------------------------------------
+    # LLM 설정
+    # -----------------------------------------
+
+    # LLM Provider (기본값: "gpt" 또는 "local_llm")
+    llm_provider: str = "gpt"
+
+    # Ollama
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = ""
 
 
 @lru_cache

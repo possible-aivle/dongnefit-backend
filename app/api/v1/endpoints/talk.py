@@ -46,7 +46,6 @@ class TalkResponse(BaseModel):
     response_model=TalkResponse,
     summary="Tool-calling talk",
     description="실거래가/법정동코드/좌표 변환 도구를 사용하는 대화형 API",
-    tags=["talk"],
 )
 async def talk(req: TalkRequest) -> TalkResponse:
     try:

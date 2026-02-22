@@ -1,13 +1,32 @@
 """CRUD operations for reports."""
 
 from datetime import datetime
+from typing import Any
 
+from geoalchemy2.elements import WKBElement
+from shapely.geometry import shape
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import and_, func, or_, select
 
 from app.crud.base import CRUDBase
-from app.models.report import Report, ReportCategory, ReportReview, ReportStatus
-from app.schemas.report import ReportCreate, ReportQuery, ReportReviewCreate, ReportUpdate
+from app.models.report import Report, ReportCategory, ReportComment, ReportReview, ReportStatus
+from app.schemas.report import (
+    ReportCommentCreate,
+    ReportCreate,
+    ReportQuery,
+    ReportReviewCreate,
+    ReportUpdate,
+)
+
+
+def _geojson_to_wkb(geojson: dict[str, Any] | None) -> WKBElement | None:
+    """GeoJSON dict를 WKBElement로 변환합니다."""
+    if geojson is None:
+        return None
+    geom = shape(geojson)
+    from geoalchemy2.shape import from_shape
+
+    return from_shape(geom, srid=4326)
 
 
 class CRUDReportCategory(CRUDBase[ReportCategory]):
@@ -121,6 +140,35 @@ class CRUDReport(CRUDBase[Report]):
 
         return reports, total
 
+    async def get_reports_in_bbox(
+        self,
+        db: AsyncSession,
+        *,
+        min_lng: float,
+        min_lat: float,
+        max_lng: float,
+        max_lat: float,
+        limit: int = 100,
+    ) -> list[Report]:
+        """Get published reports within a bounding box."""
+        result = await db.execute(
+            select(Report)
+            .where(
+                and_(
+                    Report.status == ReportStatus.PUBLISHED.value,
+                    Report.latitude.is_not(None),
+                    Report.longitude.is_not(None),
+                    Report.latitude >= min_lat,
+                    Report.latitude <= max_lat,
+                    Report.longitude >= min_lng,
+                    Report.longitude <= max_lng,
+                )
+            )
+            .order_by(Report.published_at.desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
     async def create_report(
         self,
         db: AsyncSession,
@@ -133,6 +181,10 @@ class CRUDReport(CRUDBase[Report]):
             author_id=author_id,
             neighborhood_id=obj_in.neighborhood_id,
             category_id=obj_in.category_id,
+            pnu=obj_in.pnu,
+            latitude=obj_in.latitude,
+            longitude=obj_in.longitude,
+            geometry=_geojson_to_wkb(obj_in.geometry),
             title=obj_in.title,
             subtitle=obj_in.subtitle,
             cover_image=obj_in.cover_image,
@@ -160,6 +212,8 @@ class CRUDReport(CRUDBase[Report]):
         update_data = obj_in.model_dump(exclude_unset=True)
         if "status" in update_data:
             update_data["status"] = update_data["status"].value
+        if "geometry" in update_data:
+            update_data["geometry"] = _geojson_to_wkb(update_data["geometry"])
         update_data["last_updated"] = datetime.utcnow()
         return await self.update(db, db_obj=db_obj, obj_in=update_data)
 
@@ -188,6 +242,83 @@ class CRUDReport(CRUDBase[Report]):
     ) -> Report:
         """Increment purchase count."""
         db_obj.purchase_count += 1
+        db.add(db_obj)
+        await db.flush()
+        await db.refresh(db_obj)
+        return db_obj
+
+    async def update_comment_count(
+        self,
+        db: AsyncSession,
+        *,
+        report_id: int,
+    ) -> None:
+        """Update comment count for a report."""
+        count_result = await db.execute(
+            select(func.count())
+            .select_from(ReportComment)
+            .where(ReportComment.report_id == report_id)
+        )
+        count = count_result.scalar() or 0
+
+        await db.execute(
+            Report.__table__.update()
+            .where(Report.id == report_id)
+            .values(comment_count=count)
+        )
+
+
+class CRUDReportComment(CRUDBase[ReportComment]):
+    """CRUD operations for ReportComment model."""
+
+    async def get_by_report(
+        self,
+        db: AsyncSession,
+        *,
+        report_id: int,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> list[ReportComment]:
+        """Get comments for a report."""
+        result = await db.execute(
+            select(ReportComment)
+            .where(ReportComment.report_id == report_id)
+            .order_by(ReportComment.created_at.asc())
+            .offset(offset)
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
+    async def create_comment(
+        self,
+        db: AsyncSession,
+        *,
+        report_id: int,
+        user_id: str,
+        obj_in: ReportCommentCreate,
+    ) -> ReportComment:
+        """Create a new comment."""
+        db_obj = ReportComment(
+            report_id=report_id,
+            user_id=user_id,
+            parent_id=obj_in.parent_id,
+            content=obj_in.content,
+        )
+        db.add(db_obj)
+        await db.flush()
+        await db.refresh(db_obj)
+        return db_obj
+
+    async def update_comment(
+        self,
+        db: AsyncSession,
+        *,
+        db_obj: ReportComment,
+        content: str,
+    ) -> ReportComment:
+        """Update a comment."""
+        db_obj.content = content
+        db_obj.is_edited = True
         db.add(db_obj)
         await db.flush()
         await db.refresh(db_obj)
@@ -265,4 +396,5 @@ class CRUDReportReview(CRUDBase[ReportReview]):
 
 report_category = CRUDReportCategory(ReportCategory)
 report = CRUDReport(Report)
+report_comment = CRUDReportComment(ReportComment)
 report_review = CRUDReportReview(ReportReview)

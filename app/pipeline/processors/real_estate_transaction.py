@@ -26,6 +26,7 @@ import pandas as pd
 
 from app.models.base import get_utc_now
 from app.models.enums import PropertyType, PublicDataType, TransactionType
+from app.models.transaction import RealEstateRental, RealEstateSale
 from app.pipeline import console
 from app.pipeline.processors.base import BaseProcessor, ProcessResult
 from app.pipeline.registry import Registry
@@ -423,7 +424,7 @@ class RealEstateSaleProcessor(BaseProcessor):
 
         return await _run_excel_pipeline(
             excel_dir=Path(params.get("excel_dir", str(SALE_EXCEL_DIR))),
-            table_name="real_estate_sales",
+            table_name=RealEstateSale.__tablename__,
             transform_fn=transform_sale_row,
             target_props=set(params.get("property_types", list(PROPERTY_TYPE_MAP.keys()))),
             truncate=params.get("truncate", False),
@@ -461,7 +462,7 @@ class RealEstateRentalProcessor(BaseProcessor):
 
         return await _run_excel_pipeline(
             excel_dir=Path(params.get("excel_dir", str(RENTAL_EXCEL_DIR))),
-            table_name="real_estate_rentals",
+            table_name=RealEstateRental.__tablename__,
             transform_fn=transform_rental_row,
             target_props=set(params.get("property_types", list(PROPERTY_TYPE_MAP.keys()))),
             truncate=params.get("truncate", False),

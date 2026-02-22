@@ -6,6 +6,7 @@
 from typing import Any
 
 from app.models.enums import PublicDataType
+from app.models.spatial import RoadCenterLine
 from app.pipeline import console
 from app.pipeline.file_utils import (
     cleanup_temp_dir,
@@ -126,7 +127,7 @@ class RoadCenterLineProcessor(BaseProcessor):
 
         async with async_session_maker() as session:
             count = await bulk_insert(
-                session, "road_center_lines", records, batch_size=2000
+                session, RoadCenterLine.__tablename__, records, batch_size=2000
             )
 
         return ProcessResult(inserted=count)

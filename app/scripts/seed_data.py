@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 from faker import Faker
+from geoalchemy2 import WKTElement
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -19,6 +20,7 @@ from app.models import (
     NotificationType,
     Report,
     ReportCategory,
+    ReportComment,
     ReportReview,
     ReportStatus,
     User,
@@ -32,61 +34,31 @@ logger = logging.getLogger(__name__)
 fake = Faker(["ko_KR"])
 
 KOREAN_CITIES_DATA = [
-    {"city": "서울특별시", "district": "강남구", "name": "역삼동", "lat": 37.5009, "lng": 127.0365},
-    {"city": "서울특별시", "district": "송파구", "name": "잠실동", "lat": 37.5144, "lng": 127.1026},
-    {
-        "city": "서울특별시",
-        "district": "마포구",
-        "name": "홍대입구",
-        "lat": 37.5563,
-        "lng": 126.9226,
-    },
-    {"city": "부산광역시", "district": "해운대구", "name": "우동", "lat": 35.1631, "lng": 129.1635},
-    {"city": "부산광역시", "district": "부산진구", "name": "서면", "lat": 35.1579, "lng": 129.06},
-    {"city": "대구광역시", "district": "중구", "name": "동성로", "lat": 35.8686, "lng": 128.5934},
-    {
-        "city": "인천광역시",
-        "district": "연수구",
-        "name": "송도국제도시",
-        "lat": 37.3946,
-        "lng": 126.6434,
-    },
-    {"city": "광주광역시", "district": "서구", "name": "충장로", "lat": 35.1547, "lng": 126.9127},
-    {
-        "city": "대전광역시",
-        "district": "유성구",
-        "name": "대덕연구단지",
-        "lat": 36.3722,
-        "lng": 127.3605,
-    },
-    {"city": "울산광역시", "district": "남구", "name": "삼산동", "lat": 35.5372, "lng": 129.3183},
-    {
-        "city": "세종특별자치시",
-        "district": "한솔동",
-        "name": "정부세종청사",
-        "lat": 36.48,
-        "lng": 127.289,
-    },
-    {"city": "경기도", "district": "수원시", "name": "영통구", "lat": 37.2571, "lng": 127.0447},
-    {"city": "경기도", "district": "성남시", "name": "분당구", "lat": 37.3825, "lng": 127.1197},
-    {"city": "경기도", "district": "고양시", "name": "일산동구", "lat": 37.6583, "lng": 126.7747},
-    {"city": "경기도", "district": "용인시", "name": "수지구", "lat": 37.3246, "lng": 127.0983},
-    {"city": "경기도", "district": "부천시", "name": "원미구", "lat": 37.4989, "lng": 126.7831},
-    {"city": "경기도", "district": "안산시", "name": "단원구", "lat": 37.3219, "lng": 126.8309},
-    {"city": "경기도", "district": "안양시", "name": "만안구", "lat": 37.3943, "lng": 126.9568},
-    {"city": "경기도", "district": "남양주시", "name": "호평동", "lat": 37.6369, "lng": 127.2183},
-    {"city": "충청남도", "district": "천안시", "name": "서북구", "lat": 36.8151, "lng": 127.1139},
-    {"city": "전라북도", "district": "전주시", "name": "완산구", "lat": 35.8242, "lng": 127.148},
-    {"city": "경상남도", "district": "창원시", "name": "성산구", "lat": 35.2541, "lng": 128.6424},
-    {"city": "충청북도", "district": "청주시", "name": "서원구", "lat": 36.6424, "lng": 127.489},
-    {"city": "강원도", "district": "춘천시", "name": "소양로", "lat": 37.8813, "lng": 127.7298},
-    {
-        "city": "제주특별자치도",
-        "district": "제주시",
-        "name": "연동",
-        "lat": 33.4996,
-        "lng": 126.5312,
-    },
+    {"city": "서울특별시", "district": "강남구", "name": "역삼동", "lat": 37.5009, "lng": 127.0365, "pnu": "1168010100"},
+    {"city": "서울특별시", "district": "송파구", "name": "잠실동", "lat": 37.5144, "lng": 127.1026, "pnu": "1171010100"},
+    {"city": "서울특별시", "district": "마포구", "name": "홍대입구", "lat": 37.5563, "lng": 126.9226, "pnu": "1144012200"},
+    {"city": "부산광역시", "district": "해운대구", "name": "우동", "lat": 35.1631, "lng": 129.1635, "pnu": "2635010300"},
+    {"city": "부산광역시", "district": "부산진구", "name": "서면", "lat": 35.1579, "lng": 129.06, "pnu": "2623010100"},
+    {"city": "대구광역시", "district": "중구", "name": "동성로", "lat": 35.8686, "lng": 128.5934, "pnu": "2711010100"},
+    {"city": "인천광역시", "district": "연수구", "name": "송도국제도시", "lat": 37.3946, "lng": 126.6434, "pnu": "2818510100"},
+    {"city": "광주광역시", "district": "서구", "name": "충장로", "lat": 35.1547, "lng": 126.9127, "pnu": "2914010100"},
+    {"city": "대전광역시", "district": "유성구", "name": "대덕연구단지", "lat": 36.3722, "lng": 127.3605, "pnu": "3020010100"},
+    {"city": "울산광역시", "district": "남구", "name": "삼산동", "lat": 35.5372, "lng": 129.3183, "pnu": "3114010300"},
+    {"city": "세종특별자치시", "district": "한솔동", "name": "정부세종청사", "lat": 36.48, "lng": 127.289, "pnu": "3611025300"},
+    {"city": "경기도", "district": "수원시", "name": "영통구", "lat": 37.2571, "lng": 127.0447, "pnu": "4111510100"},
+    {"city": "경기도", "district": "성남시", "name": "분당구", "lat": 37.3825, "lng": 127.1197, "pnu": "4113510100"},
+    {"city": "경기도", "district": "고양시", "name": "일산동구", "lat": 37.6583, "lng": 126.7747, "pnu": "4128510100"},
+    {"city": "경기도", "district": "용인시", "name": "수지구", "lat": 37.3246, "lng": 127.0983, "pnu": "4146310100"},
+    {"city": "경기도", "district": "부천시", "name": "원미구", "lat": 37.4989, "lng": 126.7831, "pnu": "4119010100"},
+    {"city": "경기도", "district": "안산시", "name": "단원구", "lat": 37.3219, "lng": 126.8309, "pnu": "4127310100"},
+    {"city": "경기도", "district": "안양시", "name": "만안구", "lat": 37.3943, "lng": 126.9568, "pnu": "4117110100"},
+    {"city": "경기도", "district": "남양주시", "name": "호평동", "lat": 37.6369, "lng": 127.2183, "pnu": "4136010100"},
+    {"city": "충청남도", "district": "천안시", "name": "서북구", "lat": 36.8151, "lng": 127.1139, "pnu": "4413310100"},
+    {"city": "전라북도", "district": "전주시", "name": "완산구", "lat": 35.8242, "lng": 127.148, "pnu": "4511110100"},
+    {"city": "경상남도", "district": "창원시", "name": "성산구", "lat": 35.2541, "lng": 128.6424, "pnu": "4812510100"},
+    {"city": "충청북도", "district": "청주시", "name": "서원구", "lat": 36.6424, "lng": 127.489, "pnu": "4311410100"},
+    {"city": "강원도", "district": "춘천시", "name": "소양로", "lat": 37.8813, "lng": 127.7298, "pnu": "5111010100"},
+    {"city": "제주특별자치도", "district": "제주시", "name": "연동", "lat": 33.4996, "lng": 126.5312, "pnu": "5011025000"},
 ]
 
 
@@ -195,10 +167,29 @@ async def seed_data():
             for _ in range(20):
                 neighborhood = random.choice(neighborhoods)
                 category = random.choice(categories)
+                city_data = random.choice(KOREAN_CITIES_DATA)
+                lat = city_data["lat"] + random.uniform(-0.005, 0.005)
+                lng = city_data["lng"] + random.uniform(-0.005, 0.005)
+                pnu_suffix = f"{random.randint(1, 9999):04d}{random.randint(1, 9999):04d}0"
+                pnu = city_data["pnu"] + pnu_suffix
+                # ~60m×60m 사각형 폴리곤 생성
+                d_lat = 0.00027  # ~30m
+                d_lng = 0.00034  # ~30m
+                wkt = (
+                    f"POLYGON(({lng - d_lng} {lat - d_lat},"
+                    f"{lng + d_lng} {lat - d_lat},"
+                    f"{lng + d_lng} {lat + d_lat},"
+                    f"{lng - d_lng} {lat + d_lat},"
+                    f"{lng - d_lng} {lat - d_lat}))"
+                )
                 report = Report(
                     author_id=admin_user.id,
                     neighborhood_id=neighborhood.id,
                     category_id=category.id,
+                    pnu=pnu,
+                    latitude=round(lat, 7),
+                    longitude=round(lng, 7),
+                    geometry=WKTElement(wkt, srid=4326),
                     title=fake.sentence(nb_words=4),
                     subtitle=fake.sentence(),
                     price=Decimal(random.randint(100, 1000) * 100),
@@ -287,6 +278,19 @@ async def seed_data():
                     content=fake.paragraph(),
                 )
                 session.add(review)
+            await session.flush()
+
+            # 10. Report Comments
+            logger.info("Creating report comments...")
+            for _ in range(30):
+                report = random.choice(reports)
+                user = random.choice(users)
+                comment = ReportComment(
+                    report_id=report.id,
+                    user_id=user.id,
+                    content=fake.paragraph(),
+                )
+                session.add(comment)
             await session.flush()
 
             await session.commit()

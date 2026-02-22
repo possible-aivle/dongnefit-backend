@@ -13,7 +13,7 @@ class AdministrativeSido(PublicDataBase, table=True):
     행정경계 시도 SHP 데이터 기반.
     """
 
-    __tablename__ = "administrative_sidos"
+    __tablename__ = "local_administrative_sidos"
 
     sido_code: str = Field(
         max_length=2,
@@ -30,7 +30,7 @@ class AdministrativeSgg(PublicDataBase, table=True):
     행정경계 시군구 SHP 데이터 기반.
     """
 
-    __tablename__ = "administrative_sggs"
+    __tablename__ = "local_administrative_sggs"
 
     sgg_code: str = Field(
         max_length=5,
@@ -53,7 +53,7 @@ class AdministrativeEmd(PublicDataBase, table=True):
     서브 데이터로 분류됨.
     """
 
-    __tablename__ = "administrative_emds"
+    __tablename__ = "local_administrative_emds"
 
     emd_code: str = Field(
         max_length=10,

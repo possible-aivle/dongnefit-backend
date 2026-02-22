@@ -16,7 +16,7 @@ class RealEstateSale(PublicDataBase, table=True):
     https://rt.molit.go.kr/pt/xls/xls.do?mobileAt=
     """
 
-    __tablename__ = "real_estate_sales"
+    __tablename__ = "local_real_estate_sales"
     __table_args__ = (
         Index("ix_sales_sgg_txdate", "sgg_code", "transaction_date"),
     )
@@ -72,7 +72,7 @@ class RealEstateRental(PublicDataBase, table=True):
     https://rt.molit.go.kr/pt/xls/xls.do?mobileAt=
     """
 
-    __tablename__ = "real_estate_rentals"
+    __tablename__ = "local_real_estate_rentals"
     __table_args__ = (
         Index("ix_rentals_sgg_txdate", "sgg_code", "transaction_date"),
     )

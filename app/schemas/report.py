@@ -3,10 +3,11 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
 
 from pydantic import Field
 
-from app.schemas.base import BaseSchema, PaginationParams, TimestampSchema
+from app.schemas.base import BaseSchema, GeoJSON, PaginationParams, TimestampSchema
 from app.schemas.neighborhood import NeighborhoodSummary
 from app.schemas.user import UserPublic
 
@@ -33,6 +34,10 @@ class ReportCreate(BaseSchema):
 
     neighborhood_id: int
     category_id: int | None = None
+    pnu: str | None = Field(None, max_length=19)
+    latitude: float | None = None
+    longitude: float | None = None
+    geometry: dict[str, Any] | None = None
     title: str = Field(..., min_length=1, max_length=255)
     subtitle: str | None = Field(None, max_length=500)
     cover_image: str | None = None
@@ -48,6 +53,10 @@ class ReportUpdate(BaseSchema):
     """Schema for updating a report."""
 
     category_id: int | None = None
+    pnu: str | None = Field(None, max_length=19)
+    latitude: float | None = None
+    longitude: float | None = None
+    geometry: dict[str, Any] | None = None
     title: str | None = Field(None, min_length=1, max_length=255)
     subtitle: str | None = None
     cover_image: str | None = None
@@ -71,6 +80,19 @@ class ReportQuery(PaginationParams):
     min_price: Decimal | None = None
     max_price: Decimal | None = None
     sort_by: str = "newest"  # newest, popular, rating, price_low, price_high
+
+
+class ReportCommentCreate(BaseSchema):
+    """Schema for creating a report comment."""
+
+    content: str = Field(..., min_length=1)
+    parent_id: int | None = None
+
+
+class ReportCommentUpdate(BaseSchema):
+    """Schema for updating a report comment."""
+
+    content: str = Field(..., min_length=1)
 
 
 class ReportReviewCreate(BaseSchema):
@@ -99,6 +121,10 @@ class ReportResponse(TimestampSchema):
     author_id: str
     neighborhood_id: int
     category_id: int | None
+    pnu: str | None
+    latitude: float | None
+    longitude: float | None
+    geometry: GeoJSON = None
     title: str
     subtitle: str | None
     cover_image: str | None
@@ -110,11 +136,28 @@ class ReportResponse(TimestampSchema):
     purchase_count: int
     rating: Decimal
     review_count: int
+    comment_count: int
     tags: list[str] | None
     meta_description: str | None
     featured_until: datetime | None
     published_at: datetime | None
     last_updated: datetime | None
+
+
+class ReportMapItem(BaseSchema):
+    """Lightweight report data for map markers."""
+
+    id: int
+    title: str
+    summary: str | None
+    pnu: str | None
+    latitude: float | None
+    longitude: float | None
+    geometry: GeoJSON = None
+    price: Decimal
+    rating: Decimal
+    category_id: int | None
+    cover_image: str | None
 
 
 class ReportSummary(BaseSchema):
@@ -137,6 +180,19 @@ class ReportWithDetails(ReportResponse):
     author: UserPublic | None = None
     neighborhood: NeighborhoodSummary | None = None
     category: ReportCategoryResponse | None = None
+
+
+class ReportCommentResponse(TimestampSchema):
+    """Report comment response."""
+
+    id: int
+    report_id: int
+    user_id: str
+    parent_id: int | None
+    content: str
+    like_count: int
+    is_edited: bool
+    user: UserPublic | None = None
 
 
 class ReportReviewResponse(TimestampSchema):

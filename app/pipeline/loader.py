@@ -242,8 +242,10 @@ async def bulk_upsert(
 
 # ── Address Population ──
 
-_POPULATE_ADDRESS_SQL = text("""
-    UPDATE lots l
+def _build_populate_address_sql() -> str:
+    """모델 __tablename__을 참조하여 주소 갱신 SQL을 생성합니다."""
+    return f"""
+    UPDATE {Lot.__tablename__} l
     SET address = CONCAT_WS(' ',
         s.name,
         g.name,
@@ -255,17 +257,19 @@ _POPULATE_ADDRESS_SQL = text("""
              ELSE ''
         END
     )
-    FROM administrative_sidos s, administrative_sggs g, administrative_emds e
+    FROM {AdministrativeSido.__tablename__} s,
+         {AdministrativeSgg.__tablename__} g,
+         {AdministrativeEmd.__tablename__} e
     WHERE s.sido_code = SUBSTRING(l.pnu, 1, 2)
       AND g.sgg_code = SUBSTRING(l.pnu, 1, 5)
       AND (e.emd_code = SUBSTRING(l.pnu, 1, 8)
            OR e.emd_code = SUBSTRING(l.pnu, 1, 10))
       AND l.address IS NULL
-""")
+    """
 
 
 async def populate_lot_addresses(session: AsyncSession) -> int:
     """address가 NULL인 lots 레코드의 주소를 행정경계 테이블에서 채웁니다."""
-    result = await session.execute(_POPULATE_ADDRESS_SQL)
+    result = await session.execute(text(_build_populate_address_sql()))
     await session.commit()
     return result.rowcount or 0
