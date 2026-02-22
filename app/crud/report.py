@@ -212,6 +212,8 @@ class CRUDReport(CRUDBase[Report]):
         update_data = obj_in.model_dump(exclude_unset=True)
         if "status" in update_data:
             update_data["status"] = update_data["status"].value
+        if "geometry" in update_data:
+            update_data["geometry"] = _geojson_to_wkb(update_data["geometry"])
         update_data["last_updated"] = datetime.utcnow()
         return await self.update(db, db_obj=db_obj, obj_in=update_data)
 
@@ -240,6 +242,83 @@ class CRUDReport(CRUDBase[Report]):
     ) -> Report:
         """Increment purchase count."""
         db_obj.purchase_count += 1
+        db.add(db_obj)
+        await db.flush()
+        await db.refresh(db_obj)
+        return db_obj
+
+    async def update_comment_count(
+        self,
+        db: AsyncSession,
+        *,
+        report_id: int,
+    ) -> None:
+        """Update comment count for a report."""
+        count_result = await db.execute(
+            select(func.count())
+            .select_from(ReportComment)
+            .where(ReportComment.report_id == report_id)
+        )
+        count = count_result.scalar() or 0
+
+        await db.execute(
+            Report.__table__.update()
+            .where(Report.id == report_id)
+            .values(comment_count=count)
+        )
+
+
+class CRUDReportComment(CRUDBase[ReportComment]):
+    """CRUD operations for ReportComment model."""
+
+    async def get_by_report(
+        self,
+        db: AsyncSession,
+        *,
+        report_id: int,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> list[ReportComment]:
+        """Get comments for a report."""
+        result = await db.execute(
+            select(ReportComment)
+            .where(ReportComment.report_id == report_id)
+            .order_by(ReportComment.created_at.asc())
+            .offset(offset)
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
+    async def create_comment(
+        self,
+        db: AsyncSession,
+        *,
+        report_id: int,
+        user_id: str,
+        obj_in: ReportCommentCreate,
+    ) -> ReportComment:
+        """Create a new comment."""
+        db_obj = ReportComment(
+            report_id=report_id,
+            user_id=user_id,
+            parent_id=obj_in.parent_id,
+            content=obj_in.content,
+        )
+        db.add(db_obj)
+        await db.flush()
+        await db.refresh(db_obj)
+        return db_obj
+
+    async def update_comment(
+        self,
+        db: AsyncSession,
+        *,
+        db_obj: ReportComment,
+        content: str,
+    ) -> ReportComment:
+        """Update a comment."""
+        db_obj.content = content
+        db_obj.is_edited = True
         db.add(db_obj)
         await db.flush()
         await db.refresh(db_obj)
@@ -317,4 +396,5 @@ class CRUDReportReview(CRUDBase[ReportReview]):
 
 report_category = CRUDReportCategory(ReportCategory)
 report = CRUDReport(Report)
+report_comment = CRUDReportComment(ReportComment)
 report_review = CRUDReportReview(ReportReview)

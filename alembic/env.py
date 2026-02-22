@@ -32,6 +32,7 @@ from app.models import (  # noqa: F401 - Import all models for autogenerate
     RealEstateSale,
     Report,
     ReportCategory,
+    ReportComment,
     ReportReview,
     RoadCenterLine,
     User,

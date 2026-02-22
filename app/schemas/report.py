@@ -82,6 +82,19 @@ class ReportQuery(PaginationParams):
     sort_by: str = "newest"  # newest, popular, rating, price_low, price_high
 
 
+class ReportCommentCreate(BaseSchema):
+    """Schema for creating a report comment."""
+
+    content: str = Field(..., min_length=1)
+    parent_id: int | None = None
+
+
+class ReportCommentUpdate(BaseSchema):
+    """Schema for updating a report comment."""
+
+    content: str = Field(..., min_length=1)
+
+
 class ReportReviewCreate(BaseSchema):
     """Schema for creating a report review."""
 
@@ -108,6 +121,10 @@ class ReportResponse(TimestampSchema):
     author_id: str
     neighborhood_id: int
     category_id: int | None
+    pnu: str | None
+    latitude: float | None
+    longitude: float | None
+    geometry: GeoJSON = None
     title: str
     subtitle: str | None
     cover_image: str | None
@@ -125,6 +142,22 @@ class ReportResponse(TimestampSchema):
     featured_until: datetime | None
     published_at: datetime | None
     last_updated: datetime | None
+
+
+class ReportMapItem(BaseSchema):
+    """Lightweight report data for map markers."""
+
+    id: int
+    title: str
+    summary: str | None
+    pnu: str | None
+    latitude: float | None
+    longitude: float | None
+    geometry: GeoJSON = None
+    price: Decimal
+    rating: Decimal
+    category_id: int | None
+    cover_image: str | None
 
 
 class ReportSummary(BaseSchema):
@@ -147,6 +180,19 @@ class ReportWithDetails(ReportResponse):
     author: UserPublic | None = None
     neighborhood: NeighborhoodSummary | None = None
     category: ReportCategoryResponse | None = None
+
+
+class ReportCommentResponse(TimestampSchema):
+    """Report comment response."""
+
+    id: int
+    report_id: int
+    user_id: str
+    parent_id: int | None
+    content: str
+    like_count: int
+    is_edited: bool
+    user: UserPublic | None = None
 
 
 class ReportReviewResponse(TimestampSchema):

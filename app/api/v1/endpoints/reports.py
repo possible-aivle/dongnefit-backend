@@ -6,13 +6,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.deps import AdminUser, CurrentUser
 from app.crud.report import report as report_crud
 from app.crud.report import report_category as category_crud
+from app.crud.report import report_comment as comment_crud
 from app.crud.report import report_review as review_crud
 from app.database import get_db
 from app.schemas.base import PaginatedResponse, PaginationMeta
 from app.schemas.report import (
     ReportCategoryCreate,
     ReportCategoryResponse,
+    ReportCommentCreate,
+    ReportCommentResponse,
+    ReportCommentUpdate,
     ReportCreate,
+    ReportMapItem,
     ReportQuery,
     ReportResponse,
     ReportReviewCreate,
@@ -115,6 +120,27 @@ async def list_published_reports(
             total_pages=(total + limit - 1) // limit,
         ),
     )
+
+
+@router.get(
+    "/in-bbox",
+    response_model=list[ReportMapItem],
+    summary="Get reports in bounding box",
+    description="Get published reports within geographic bounding box",
+)
+async def get_reports_in_bbox(
+    min_lng: float,
+    min_lat: float,
+    max_lng: float,
+    max_lat: float,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+) -> list[ReportMapItem]:
+    """Get published reports within a bounding box."""
+    reports = await report_crud.get_reports_in_bbox(
+        db, min_lng=min_lng, min_lat=min_lat, max_lng=max_lng, max_lat=max_lat, limit=limit
+    )
+    return [ReportMapItem.model_validate(r) for r in reports]
 
 
 @router.get(
@@ -307,3 +333,113 @@ async def create_report_review(
         db, report_id=report_id, user_id=current_user.id, obj_in=review_in
     )
     return ReportReviewResponse.model_validate(review)
+
+
+# === Comments ===
+
+
+@router.get(
+    "/{report_id}/comments",
+    response_model=list[ReportCommentResponse],
+    summary="List report comments",
+    description="Get comments for a report",
+)
+async def list_report_comments(
+    report_id: int,
+    db: AsyncSession = Depends(get_db),
+) -> list[ReportCommentResponse]:
+    """List comments for a report."""
+    comments = await comment_crud.get_by_report(db, report_id=report_id)
+    return [ReportCommentResponse.model_validate(c) for c in comments]
+
+
+@router.post(
+    "/{report_id}/comments",
+    response_model=ReportCommentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create comment",
+    description="Create a comment on a report",
+)
+async def create_report_comment(
+    report_id: int,
+    comment_in: ReportCommentCreate,
+    current_user: CurrentUser = None,
+    db: AsyncSession = Depends(get_db),
+) -> ReportCommentResponse:
+    """Create a comment on a report."""
+    report = await report_crud.get(db, report_id)
+    if not report:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="리포트를 찾을 수 없습니다",
+        )
+
+    comment = await comment_crud.create_comment(
+        db, report_id=report_id, user_id=current_user.id, obj_in=comment_in
+    )
+    await report_crud.update_comment_count(db, report_id=report_id)
+
+    return ReportCommentResponse.model_validate(comment)
+
+
+@router.patch(
+    "/{report_id}/comments/{comment_id}",
+    response_model=ReportCommentResponse,
+    summary="Update comment",
+    description="Update a comment (owner only)",
+)
+async def update_report_comment(
+    report_id: int,
+    comment_id: int,
+    comment_in: ReportCommentUpdate,
+    current_user: CurrentUser = None,
+    db: AsyncSession = Depends(get_db),
+) -> ReportCommentResponse:
+    """Update a comment."""
+    comment = await comment_crud.get(db, comment_id)
+    if not comment or comment.report_id != report_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="댓글을 찾을 수 없습니다",
+        )
+
+    if comment.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="수정 권한이 없습니다",
+        )
+
+    comment = await comment_crud.update_comment(
+        db, db_obj=comment, content=comment_in.content
+    )
+    return ReportCommentResponse.model_validate(comment)
+
+
+@router.delete(
+    "/{report_id}/comments/{comment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete comment",
+    description="Delete a comment (owner or admin)",
+)
+async def delete_report_comment(
+    report_id: int,
+    comment_id: int,
+    current_user: CurrentUser = None,
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Delete a comment."""
+    comment = await comment_crud.get(db, comment_id)
+    if not comment or comment.report_id != report_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="댓글을 찾을 수 없습니다",
+        )
+
+    if comment.user_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="삭제 권한이 없습니다",
+        )
+
+    await comment_crud.delete(db, id=comment_id)
+    await report_crud.update_comment_count(db, report_id=report_id)

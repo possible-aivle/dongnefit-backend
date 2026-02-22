@@ -42,6 +42,10 @@ class Report(TimestampMixin, table=True):
     category_id: int | None = Field(
         default=None, foreign_key="report_categories.id", ondelete="SET NULL"
     )
+    pnu: str | None = Field(default=None, max_length=19, index=True)
+    latitude: float | None = Field(default=None)
+    longitude: float | None = Field(default=None)
+    geometry: Any = geometry_column(description="필지 경계 (Polygon/MultiPolygon)")
 
     # Content
     title: str = Field(max_length=255)
@@ -59,6 +63,7 @@ class Report(TimestampMixin, table=True):
     purchase_count: int = Field(default=0)
     rating: Decimal = Field(default=Decimal("0"), max_digits=2, decimal_places=1)
     review_count: int = Field(default=0)
+    comment_count: int = Field(default=0)
 
     # Metadata
     tags: list | None = Field(default=None, sa_column=Column(JSON))
@@ -66,6 +71,23 @@ class Report(TimestampMixin, table=True):
     featured_until: datetime | None = Field(default=None)
     published_at: datetime | None = Field(default=None)
     last_updated: datetime | None = Field(default=None)
+
+
+class ReportComment(TimestampMixin, table=True):
+    """Comment on a report."""
+
+    __tablename__ = "report_comments"
+
+    id: int | None = Field(default=None, primary_key=True)
+    report_id: int = Field(foreign_key="reports.id", ondelete="CASCADE")
+    user_id: str = Field(foreign_key="users.id", max_length=255, ondelete="CASCADE")
+    parent_id: int | None = Field(
+        default=None, foreign_key="report_comments.id", ondelete="CASCADE"
+    )
+
+    content: str
+    like_count: int = Field(default=0)
+    is_edited: bool = Field(default=False)
 
 
 class ReportReview(TimestampMixin, table=True):
