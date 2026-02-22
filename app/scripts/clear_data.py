@@ -14,6 +14,7 @@ from app.models import (
     NotificationSettings,
     Report,
     ReportCategory,
+    ReportComment,
     ReportReview,
     User,
     UserRole,
@@ -33,6 +34,7 @@ async def clear_database():
             # Order based on foreign key dependencies
             tables_to_clear = [
                 DiscussionLike,
+                ReportComment,
                 ReportReview,
                 DiscussionReply,
                 Report,
